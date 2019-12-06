@@ -1,4 +1,4 @@
-from rwestutil import convfactors
+from commodutil import convfactors
 import unittest
 
 
