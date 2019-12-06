@@ -27,9 +27,12 @@ class TestTransforms(unittest.TestCase):
 
         res = transforms.reindex_year(df)
 
+        # current year series stays the same
         self.assertEqual(df.loc['{}-01-01'.format(dates.curyear), dates.curyear], res.loc['{}-01-01'.format(dates.curyear), dates.curyear])
-        self.assertEqual(df.loc['{}-01-01'.format(dates.curyear), dates.curyear-1], res.loc['{}-01-01'.format(dates.curyear-1), dates.curyear])
-        self.assertEqual(df.loc['{}-01-01'.format(dates.curyear), dates.curyear+1], res.loc['{}-01-01'.format(dates.curyear+1), dates.curyear])
+        # previous year moves forward by 1 year
+        self.assertEqual(df.loc['{}-01-01'.format(dates.curyear-1), dates.curyear-1], res.loc['{}-01-01'.format(dates.curyear), dates.curyear-1])
+        # subsequent year moves back by 1 year
+        self.assertEqual(df.loc['{}-01-01'.format(dates.curyear+1), dates.curyear+1], res.loc['{}-01-01'.format(dates.curyear), dates.curyear+1])
 
 
 if __name__ == '__main__':
