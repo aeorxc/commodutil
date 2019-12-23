@@ -62,7 +62,7 @@ bast_style = """
 """
 
 
-def getbasehtml(title, style=base_html, body="Body to replace"):
+def getbasehtml(title, style=bast_style, body="Body to replace"):
     global base_html
     html_string = base_html
     html_string = html_string.replace("{0}", pd.datetime.now().strftime('%d %b %Y %H:%M'))
@@ -71,3 +71,8 @@ def getbasehtml(title, style=base_html, body="Body to replace"):
     html_string = html_string.replace("{3}", body)
 
     return html_string
+
+
+if __name__ == '__main__':
+    r = getbasehtml('Title1', body='g')
+    print(r)
