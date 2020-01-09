@@ -6,6 +6,10 @@ Wrapper for pandas merge for working on merging timeseries
 """
 def mergets(left, right, leftl=None, rightl=None, how='left'):
 
+    if isinstance(left, pd.Series):
+        left = pd.DataFrame(left)
+    if isinstance(right, pd.Series):
+        right = pd.DataFrame(right)
     res = pd.merge(left, right, left_index=True, right_index=True, how=how)
 
     rename = {}
