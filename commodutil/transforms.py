@@ -5,12 +5,10 @@ from commodutil import dates
 
 
 def seasonailse(df):
-    if isinstance(df, pd.Series):
-        df = pd.DataFrame(df)
+    if isinstance(df, pd.DataFrame):
+        df = pd.Series(df[df.columns[0]])
 
-    assert isinstance(df, pd.DataFrame)
-    if len(df.columns) > 1:
-        df = df[[df.columns[0]]]
+    assert isinstance(df, pd.Series)
 
     s = df[~((df.index.month == 2) & (df.index.day == 29))]  # remove leap dates 29 Feb
     seas = s.groupby([s.index.month, s.index.day, s.index.year, ]).mean().unstack()
@@ -18,8 +16,6 @@ def seasonailse(df):
     # replace index with dates from current year
     newind = [pd.to_datetime('{}-{}-{}'.format(dates.curyear, i[0], i[1])) for i in seas.index]
     seas.index = newind
-    seas = seas[df.columns[0]] # remove multi-index created from group by
-
     return seas
 
 

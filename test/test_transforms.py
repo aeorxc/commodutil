@@ -17,6 +17,8 @@ class TestTransforms(unittest.TestCase):
         last_val = df.tail(1)[col].iloc[0]
 
         self.assertEqual(seas.iloc[0,0], first)
+        for col in seas.columns: # check columns are 4 digitis long ie years
+            self.assertTrue(len(str(col)), 4)
         # self.assertEqual(seas.iloc[0, -1], df[last_date.year].head(1).iloc[0][0])
 
     def test_reindex_year(self):
