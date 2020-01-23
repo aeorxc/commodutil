@@ -15,10 +15,10 @@ def mergets(left, right, leftl=None, rightl=None, how='left'):
     rename = {}
     if leftl is not None:
         rename[left.columns[0]] = leftl
-        rename[left.columns[0] + '_x'] = leftl
+        rename['{}_x'.format(left.columns[0])] = leftl
     if rightl is not None:
         rename[right.columns[0]] = rightl
-        rename[right.columns[0] + '_y'] = rightl
+        rename['{}_y'.format(right.columns[0])] = rightl
 
     res = res.rename(columns=rename)
 
