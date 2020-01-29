@@ -39,4 +39,8 @@ def quarterly_contracts(c):
             dfs.append(s)
 
     res = pd.concat(dfs, 1)
+    # sort columns by years
+    cols = list(res.columns)
+    cols.sort(key=lambda s: s.split()[1])
+    res = res[cols]
     return res
