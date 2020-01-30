@@ -2,14 +2,15 @@
 Utility for forward contracts
 """
 
-
 import pandas as pd
 
-"""
-Given a dataframe of daily values for monthly contracts (eg Brent Jan 15, Brent Feb 15, Brent Mar 15)
-Return a dataframe of quarterly values (eg Brent Q115)
-"""
+
 def quarterly_contracts(c):
+    """
+    Given a dataframe of daily values for monthly contracts (eg Brent Jan 15, Brent Feb 15, Brent Mar 15)
+    with columns headings as '2020-01-01', '2020-02-01'
+    Return a dataframe of quarterly values (eg Q115)
+    """
     years = list(set([x.year for x in c.columns]))
 
     dfs = []
@@ -43,4 +44,34 @@ def quarterly_contracts(c):
     cols = list(res.columns)
     cols.sort(key=lambda s: s.split()[1])
     res = res[cols]
+    return res
+
+
+def quarterly_spreads(q):
+    """
+    Given a dataframe of quarterly contract values (eg Brent Q115, Brent Q215, Brent Q315)
+    with columns headings as 'Q1 2015', 'Q2 2015'
+    Return a dataframe of quarterly spreads (eg Q1-Q2 15)
+    Does Q1-Q2, Q2-Q3, Q3-Q4, Q4-Q1
+    """
+    sprmap = {
+        'Q1': 'Q2 {}',
+        'Q2': 'Q3 {}',
+        'Q3': 'Q4 {}',
+        'Q4': 'Q1 {}',
+    }
+
+    qtrspr = []
+    for col in q.columns:
+        colqx = col.split(' ')[0]
+        colqxyr = col.split(' ')[1]
+        if colqxyr == 'Q4':
+            colqxyr = int(colqxyr) + 1
+        colqy = sprmap.get(colqx).format(colqxyr)
+        if colqy in q.columns:
+            r = q[col] - q[colqy]
+            r.name = '{}-{} {}'.format(colqx, colqy.split(' ')[0], colqxyr)
+            qtrspr.append(r)
+
+    res = pd.concat([qtrspr], 1)
     return res
