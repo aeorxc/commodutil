@@ -73,6 +73,27 @@ def getbasehtml(title, style=bast_style, body="Body to replace"):
     return html_string
 
 
+def chart_row(chartset):
+    """
+    Given a set of charts, make a html row using the standard css layout used for charting hmtl pages
+    """
+    charts = ''
+
+    for chart in chartset:
+        chartbody = """
+        <div class="box{}"><p>{}</p></div>
+        """
+        charts += chartbody.format(len(chartset), chart)
+
+    res = """    
+    <div class="clearfix">
+    {}
+    </div>
+    """
+    res = res.format(charts)
+    return res
+
+
 if __name__ == '__main__':
     r = getbasehtml('Title1', body='g')
     print(r)
