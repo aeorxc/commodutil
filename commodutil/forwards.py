@@ -1,8 +1,39 @@
 """
 Utility for forward contracts
 """
-
+import re
 import pandas as pd
+
+
+futures_month_conv = {
+        1: "F",
+        2: "G",
+        3: "H",
+        4: "J",
+        5: "K",
+        6: "M",
+        7: "N",
+        8: "Q",
+        9: "U",
+        10: "V",
+        11: "X",
+        12: "Z"
+    }
+
+futures_month_conv_inv =  {v: k for k, v in futures_month_conv.items()}
+
+
+def convert_contract_to_date(contract):
+    """
+    Given a string like FB_2020J return 2020-01-01
+    :param contract:
+    :return:
+    """
+    c = re.findall('\d\d\d\d\w', contract)
+    if len(c) > 0:
+        c = c[0]
+    d = '{}-{}-1'.format(c[:4], futures_month_conv_inv.get(c[-1], 0))
+    return d
 
 
 def quarterly_contracts(c):
