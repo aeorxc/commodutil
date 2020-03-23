@@ -3,7 +3,7 @@ Utility for forward contracts
 """
 import re
 import pandas as pd
-
+from commodutil import dates
 
 futures_month_conv = {
         1: "F",
@@ -48,25 +48,25 @@ def quarterly_contracts(c):
     for year in years:
         c1, c2, c3 = '{}-01-01'.format(year), '{}-02-01'.format(year), '{}-03-01'.format(year)
         if c1 in c.columns and c2 in c.columns and c3 in c.columns:
-            s = pd.concat( [c[c1], c[c2], c[c3]], 1).mean(axis=1)
+            s = pd.concat([c[c1], c[c2], c[c3]], 1).dropna(how='any').mean(axis=1)
             s.name = 'Q1 {}'.format(year)
             dfs.append(s)
 
         c4, c5, c6 = '{}-04-01'.format(year), '{}-05-01'.format(year), '{}-06-01'.format(year)
         if c4 in c.columns and c5 in c.columns and c6 in c.columns:
-            s = pd.concat( [c[c3], c[c4], c[c5]], 1).mean(axis=1)
+            s = pd.concat([c[c4], c[c5], c[c6]], 1, sort=True).dropna(how='any').mean(axis=1)
             s.name = 'Q2 {}'.format(year)
             dfs.append(s)
 
         c7, c8, c9 = '{}-07-01'.format(year), '{}-08-01'.format(year), '{}-09-01'.format(year)
         if c7 in c.columns and c8 in c.columns and c9 in c.columns:
-            s = pd.concat( [c[c7], c[c8], c[c9]], 1).mean(axis=1)
+            s = pd.concat( [c[c7], c[c8], c[c9]], 1).dropna(how='any').mean(axis=1)
             s.name = 'Q3 {}'.format(year)
             dfs.append(s)
 
         c10, c11, c12 = '{}-10-01'.format(year), '{}-11-01'.format(year), '{}-12-01'.format(year)
         if c10 in c.columns and c11 in c.columns and c12 in c.columns:
-            s = pd.concat( [c[c10], c[c11], c[c12]], 1).mean(axis=1)
+            s = pd.concat( [c[c10], c[c11], c[c12]], 1).dropna(how='any').mean(axis=1)
             s.name = 'Q4 {}'.format(year)
             dfs.append(s)
 
@@ -96,7 +96,7 @@ def quarterly_spreads(q):
     for col in q.columns:
         colqx = col.split(' ')[0]
         colqxyr = col.split(' ')[1]
-        if colqxyr == 'Q4':
+        if colqx == 'Q4':
             colqxyr = int(colqxyr) + 1
         colqy = sprmap.get(colqx).format(colqxyr)
         if colqy in q.columns:
@@ -106,3 +106,25 @@ def quarterly_spreads(q):
 
     res = pd.concat(qtrspr, 1)
     return res
+
+
+def relevant_qtr_contract(qx):
+    """
+    Given a qtr, eg, Q1, determine the right year to use in seasonal charts.
+    For example after Feb 2020, use Q1 2021 as Q1 2020 would have stopped pricing
+
+    :param qx:
+    :return:
+    """
+    relyear = dates.curyear
+    if qx == 'Q1':
+        if dates.curmon > 1:
+            relyear = relyear + 1
+    elif qx == 'Q2':
+        if dates.curmon > 4:
+            relyear = relyear + 1
+    elif qx == 'Q3':
+        if dates.curmon > 7:
+            relyear = relyear + 1
+
+    return relyear
