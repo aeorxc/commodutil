@@ -2,6 +2,7 @@ import pandas as pd
 import re
 from functools import reduce
 from commodutil import dates
+from commodutil import pandasutil
 
 
 def seasonailse(df):
@@ -25,7 +26,6 @@ Only take forward timeseries from cur month onwards (discarding the history)
 def forward_only(df):
     df = df[dates.curmonyear_str:]
     return df
-
 
 
 """
@@ -64,7 +64,8 @@ def reindex_year(df):
     # merge all series into one dataframe, concat doesn't quite do the job
     res = reduce(lambda left, right: pd.merge(left, right, left_index=True, right_index=True, how='outer'),dfs)
     res = res.dropna(how='all') # drop uneeded columns out into future
-    res = res.fillna(method='ffill', limit=4) # fill weekends
+    # res = res.fillna(method='ffill', limit=4) # fill weekends
+    res = pandasutil.fillna_downbet(res) # use this as above ffills incorrectly at end of timeseries
 
     return res
 

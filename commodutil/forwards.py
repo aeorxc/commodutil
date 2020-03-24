@@ -118,13 +118,16 @@ def relevant_qtr_contract(qx):
     """
     relyear = dates.curyear
     if qx == 'Q1':
-        if dates.curmon > 1:
+        if dates.curmon >= 1:
             relyear = relyear + 1
     elif qx == 'Q2':
-        if dates.curmon > 4:
+        if dates.curmon >= 4:
             relyear = relyear + 1
     elif qx == 'Q3':
-        if dates.curmon > 7:
+        if dates.curmon >= 7:
+            relyear = relyear + 1
+    elif qx == 'Q4':
+        if dates.curyear >= 10:
             relyear = relyear + 1
 
     return relyear

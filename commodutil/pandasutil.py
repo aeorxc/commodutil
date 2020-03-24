@@ -1,5 +1,5 @@
 import pandas as pd
-
+import numpy as np
 
 """
 Wrapper for pandas merge for working on merging timeseries
@@ -23,3 +23,18 @@ def mergets(left, right, leftl=None, rightl=None, how='left'):
     res = res.rename(columns=rename)
 
     return res
+
+
+def fillna_downbet(df):
+    """
+    Fill weekends/holidays in timeseries but dont extend to NaNs at end of the timeseries
+    https://stackoverflow.com/questions/28136663/using-pandas-to-fill-gaps-only-and-not-nans-on-the-ends
+    :param df:
+    :return:
+    """
+    df = df.copy()
+    for col in df:
+        non_nans = df[col][~df[col].apply(np.isnan)]
+        start, end = non_nans.index[0], non_nans.index[-1]
+        df[col].loc[start:end] = df[col].loc[start:end].fillna(method='ffill')
+    return df
