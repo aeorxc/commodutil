@@ -36,6 +36,31 @@ def convert_contract_to_date(contract):
     return d
 
 
+def time_spreads(contracts, m1, m2):
+    """
+    Given a dataframe of daily values for monthly contracts (eg Brent Jan 15, Brent Feb 15, Brent Mar 15)
+    with columns headings as '2020-01-01', '2020-02-01'
+    Return a dataframe of time spreads  (eg m1 = 12, m2 = 12 gives Dec-Dec spread)
+    """
+
+    cf = [x for x in contracts if x.month == m1]
+    dfs = []
+
+    for c1 in cf:
+        year1, year2 = c1.year, c1.year
+        if m1 == m2:
+            year2 = year1 + 1
+        c2 = [x for x in contracts if x.month == m2 and x.year == year2]
+        if len(c2) == 1:
+            c2 = c2[0]
+            s = contracts[c1] - contracts[c2]
+            s.name = year1
+            dfs.append(s)
+
+    res = pd.concat(dfs, 1)
+    return res
+
+
 def quarterly_contracts(c):
     """
     Given a dataframe of daily values for monthly contracts (eg Brent Jan 15, Brent Feb 15, Brent Mar 15)
