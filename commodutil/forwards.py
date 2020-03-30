@@ -58,6 +58,7 @@ def time_spreads(contracts, m1, m2):
             dfs.append(s)
 
     res = pd.concat(dfs, 1)
+    res = res.dropna(how='all', axis=1)
     return res
 
 
