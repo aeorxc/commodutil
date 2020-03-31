@@ -3,7 +3,7 @@ import os
 
 # Major and minor versions
 majorVersion = 1
-minorVersion = 3
+minorVersion = 4
 
 
 # Get build number
