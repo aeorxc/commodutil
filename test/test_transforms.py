@@ -1,4 +1,4 @@
-import unittest
+import unittest, os
 import pandas as pd
 import cufflinks as cf
 from commodutil import transforms
@@ -20,6 +20,17 @@ class TestTransforms(unittest.TestCase):
         for col in seas.columns: # check columns are 4 digitis long ie years
             self.assertTrue(len(str(col)), 4)
         # self.assertEqual(seas.iloc[0, -1], df[last_date.year].head(1).iloc[0][0])
+
+    def test_seasonalise2(self):
+        dirname, filename = os.path.split(os.path.abspath(__file__))
+        cl = pd.read_csv(os.path.join(dirname, 'test_cl.csv'), index_col=0, parse_dates=True, dayfirst=True)
+
+        seas = transforms.seasonailse(cl['CL_2020J'], fillna=True)
+        self.assertEqual(seas[2020].loc[pd.to_datetime('2020-03-15')], 31.73)
+        self.assertEqual(seas[2020].loc[pd.to_datetime('2020-03-16')], 28.7)
+        self.assertEqual(seas[2020].loc[pd.to_datetime('2020-03-17')], 26.95)
+        self.assertEqual(seas[2020].loc[pd.to_datetime('2020-03-18')], 20.37)
+        self.assertEqual(seas[2020].loc[pd.to_datetime('2020-03-19')], 25.22)
 
     def test_reindex_year(self):
         df = cf.datagen.lines(4, 10000)
