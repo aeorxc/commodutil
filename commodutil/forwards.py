@@ -130,7 +130,7 @@ def quarterly_spreads(q):
             r.name = '{}-{} {}'.format(colqx, colqy.split(' ')[0], colqxyr)
             qtrspr.append(r)
 
-    res = pd.concat(qtrspr, 1)
+    res = pd.concat(qtrspr, 1, sort=True)
     return res
 
 

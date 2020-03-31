@@ -5,7 +5,7 @@ from commodutil import dates
 from commodutil import pandasutil
 
 
-def seasonailse(df):
+def seasonailse(df, fillna=True):
     if isinstance(df, pd.DataFrame):
         df = pd.Series(df[df.columns[0]])
 
@@ -17,13 +17,17 @@ def seasonailse(df):
     # replace index with dates from current year
     newind = [pd.to_datetime('{}-{}-{}'.format(dates.curyear, i[0], i[1])) for i in seas.index]
     seas.index = newind
+
+    if fillna:
+        seas = pandasutil.fillna_downbet(seas)
+
     return seas
 
 
-"""
-Only take forward timeseries from cur month onwards (discarding the history)
-"""
 def forward_only(df):
+    """
+    Only take forward timeseries from cur month onwards (discarding the history)
+    """
     df = df[dates.curmonyear_str:]
     return df
 
@@ -39,13 +43,16 @@ def format_fwd(df, last_index=None):
     return df
 
 
-"""
-Reindex a dataframe containing prices to the current year.
-eg dataframe with brent Jan 19, Jan 18, Jan 17   so that 18 is shifted +1 year and 17 is shifted +2 years 
-"""
 def reindex_year(df):
+    """
+    Reindex a dataframe containing prices to the current year.
+    eg dataframe with brent Jan 19, Jan 18, Jan 17   so that 18 is shifted +1 year and 17 is shifted +2 years
+    """
     dfs = []
     for colname in df.columns:
+        if df[colname].isnull().all():
+            continue # logic below wont work on all empty NaN columns
+
         # determine year
         colregex = re.findall('\d\d\d\d', str(colname))
         if len(colregex) == 1:
