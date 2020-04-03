@@ -35,6 +35,7 @@ def fillna_downbet(df):
     df = df.copy()
     for col in df.columns:
         non_nans = df[col][~df[col].apply(np.isnan)]
-        start, end = non_nans.index[0], non_nans.index[-1]
-        df[col].loc[start:end] = df[col].loc[start:end].fillna(method='ffill')
+        if non_nans is not None and len(non_nans) > 1:
+            start, end = non_nans.index[0], non_nans.index[-1]
+            df[col].loc[start:end] = df[col].loc[start:end].fillna(method='ffill')
     return df
