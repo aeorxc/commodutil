@@ -29,6 +29,19 @@ class TestForwards(unittest.TestCase):
         self.assertAlmostEqual(res['Q3-Q4 2019'].loc[pd.to_datetime('2019-06-20')], 0.07, 2)
         self.assertAlmostEqual(res['Q4-Q1 2020'].loc[pd.to_datetime('2019-09-20')], 1.12, 2)
 
+    def test_cal_contracts(self):
+        dirname, filename = os.path.split(os.path.abspath(__file__))
+        cl = pd.read_csv(os.path.join(dirname, 'test_cl.csv'), index_col=0, parse_dates=True, dayfirst=True)
+        contracts = cl.rename(columns={x: pd.to_datetime(forwards.convert_contract_to_date(x)) for x in cl.columns})
+
+        res = forwards.cal_contracts(contracts)
+        self.assertAlmostEqual(res['CAL 2020'].loc[pd.to_datetime('2019-03-20')], 59.53, 2)
+        self.assertAlmostEqual(res['CAL 2021'].loc[pd.to_datetime('2019-03-20')], 57.19, 2)
+
+        res = forwards.cal_spreads(res)
+        self.assertAlmostEqual(res['CAL 2020-2021'].loc[pd.to_datetime('2019-12-19')], 4.77, 2)
+        self.assertAlmostEqual(res['CAL 2021-2022'].loc[pd.to_datetime('2019-03-20')], 1.77, 2)
+
     def test_timespreads(self):
         dirname, filename = os.path.split(os.path.abspath(__file__))
         cl = pd.read_csv(os.path.join(dirname, 'test_cl.csv'), index_col=0, parse_dates=True, dayfirst=True)

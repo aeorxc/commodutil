@@ -1,10 +1,11 @@
 import pandas as pd
 import numpy as np
 
-"""
-Wrapper for pandas merge for working on merging timeseries
-"""
+
 def mergets(left, right, leftl=None, rightl=None, how='left'):
+    """
+    Wrapper for pandas merge for working on merging timeseries
+    """
 
     if isinstance(left, pd.Series):
         left = pd.DataFrame(left)

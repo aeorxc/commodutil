@@ -157,3 +157,53 @@ def relevant_qtr_contract(qx):
             relyear = relyear + 1
 
     return relyear
+
+
+def cal_contracts(c):
+    """
+    Given a dataframe of daily values for monthly contracts (eg Brent Jan 15, Brent Feb 15, Brent Mar 15)
+    with columns headings as '2020-01-01', '2020-02-01'
+    Return a dataframe of cal values (eg Cal15)
+    """
+    years = list(set([x.year for x in c.columns]))
+
+    dfs = []
+    for year in years:
+        s = c[[x for x in c.columns if x.year == year]].dropna(how='all', axis=1)
+        if len(s.columns) == 12: # only do if we have full set of contracts
+            s = s.mean(axis=1)
+            s.name = 'CAL {}'.format(year)
+            dfs.append(s)
+
+    res = pd.concat(dfs, 1)
+    # sort columns by years
+    cols = list(res.columns)
+    cols.sort(key=lambda s: s.split()[1])
+    res = res[cols]
+    return res
+
+
+def cal_spreads(q):
+    """
+    Given a dataframe of cal contract values (eg CAL 2015, CAL 2020)
+    with columns headings as 'CAL 2015', 'CAL 2020'
+    Return a dataframe of cal spreads (eg CAL 2015-2016)
+    Does Q1-Q2, Q2-Q3, Q3-Q4, Q4-Q1
+    """
+
+    calspr = []
+    for col in q.columns:
+        colcal = col.split(' ')[0]
+        colcalyr = col.split(' ')[1]
+
+        curyear = int(colcalyr)
+        nextyear = curyear + 1
+
+        colcalnextyr = 'CAL %s' % (nextyear)
+        if colcalnextyr in q.columns:
+            r = q[col] - q[colcalnextyr]
+            r.name = 'CAL {}-{}'.format(curyear, nextyear)
+            calspr.append(r)
+
+    res = pd.concat(calspr, 1, sort=True)
+    return res
