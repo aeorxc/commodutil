@@ -6,8 +6,22 @@ before_script:
 
 stages:
   - test
+  - deploy
 
 test:
   stage: test
   script:
   - python setup.py test
+
+
+deploy_production:
+  stage: deploy
+  variables:
+    TWINE_USERNAME: $PRODUCTION_USERNAME
+    TWINE_PASSWORD: $PRODUCTION_PASSWORD
+  script:
+    - pip install twine
+    - python setup.py sdist
+    - twine upload dist/*
+  only:
+    - tags
