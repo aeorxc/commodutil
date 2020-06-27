@@ -32,6 +32,13 @@ include:
   - template: Security/SAST.gitlab-ci.yml
 
 
+test:
+  stage: test
+  image: "python:3.7"
+  script:
+  - python setup.py test
+
+
 deploy_production:
   stage: deploy
   variables:
