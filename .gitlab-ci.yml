@@ -1,4 +1,4 @@
-image: "python:3.7"
+
 
 before_script:
   - python --version
@@ -30,12 +30,6 @@ include:
   - template: Security/Dependency-Scanning.gitlab-ci.yml
   - template: Security/License-Management.gitlab-ci.yml
   - template: Security/SAST.gitlab-ci.yml
-
-
-test:
-  stage: test
-  script:
-  - python setup.py test
 
 
 deploy_production:
