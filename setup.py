@@ -1,8 +1,13 @@
 import setuptools
 
+if os.environ.get('CI_COMMIT_TAG'):
+    version = os.environ['CI_COMMIT_TAG']
+else:
+    version = os.environ['CI_JOB_ID']
+
 setuptools.setup(
     name="commodutil",
-    version="1.0.1",
+    version=version,
     author="aeorxc",
     author_email="author@example.com",
     description="common commodity/oil analytics utils",

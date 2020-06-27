@@ -8,10 +8,6 @@ stages:
   - staging
   - canary
   - production
-  - incremental rollout 10%
-  - incremental rollout 25%
-  - incremental rollout 50%
-  - incremental rollout 100%
   - performance
   - cleanup
 
@@ -33,7 +29,7 @@ test:
   - python setup.py test
 
 
-deploy_production:
+deploy:
   stage: deploy
   variables:
     TWINE_USERNAME: $PRODUCTION_USERNAME
