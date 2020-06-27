@@ -35,6 +35,7 @@ test:
 
 deploy:
   stage: deploy
+  image: "python:3.7"
   variables:
     TWINE_USERNAME: $PRODUCTION_USERNAME
     TWINE_PASSWORD: $PRODUCTION_PASSWORD
