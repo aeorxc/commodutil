@@ -47,6 +47,8 @@ coverage:
     artifacts:
       reports:
         cobertura: coverage.xml
+      paths:
+        - htmlcov/
 
 
 pages:
