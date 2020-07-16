@@ -17,7 +17,7 @@ setuptools.setup(
         "License :: OSI Approved :: MIT License",
         "Operating System :: OS Independent",
     ],
-    install_requires=['pandas', 'cufflinks'],
+    install_requires=['pandas'],
     python_requires='>=3.6',
     setup_requires=['pytest-runner'],
     tests_require=['pytest'],
