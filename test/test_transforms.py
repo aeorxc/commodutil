@@ -54,7 +54,7 @@ class TestTransforms(unittest.TestCase):
         col = df.columns[0]
         month1 = df.index[0]
         mean1 = df[month1.strftime('%Y-%m')][col].mean()
-        self.assertEqual(mean1, res[col][month1.year][month1.month])
+        self.assertAlmostEqual(mean1, res[col][month1.year][month1.month], 2)
 
 
 if __name__ == '__main__':
