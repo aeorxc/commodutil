@@ -47,6 +47,15 @@ class TestTransforms(unittest.TestCase):
         # subsequent year moves back by 1 year
         self.assertEqual(df.loc['{}-01-01'.format(dates.curyear+1), dates.curyear+1], res.loc['{}-01-01'.format(dates.curyear), dates.curyear+1])
 
+    def test_monthly_mean(self):
+        df = cf.datagen.lines(4, 10000)
+        res = transforms.monthly_mean(df)
+
+        col = df.columns[0]
+        month1 = df.index[0]
+        mean1 = df[month1.strftime('%Y-%m')][col].mean()
+        self.assertEqual(mean1, res[col][month1.year][month1.month])
+
 
 if __name__ == '__main__':
     unittest.main()

@@ -77,5 +77,20 @@ def reindex_year(df):
     return res
 
 
+def monthly_mean(df):
+    """
+    Given a price series, calculate the monthly mean and return as columns of means over years
+            1  2  3 .. 12
+    2000    x  x  x .. x
+    2001    x  x  x .. x
+
+    :param df:
+    :return:
+    """
+    monthly_mean = df.groupby(pd.Grouper(freq='MS')).mean()
+    month_pivot = monthly_mean.groupby([monthly_mean.index.month, monthly_mean.index.year]).sum().unstack()
+    return month_pivot
+
+
 if __name__ == '__main__':
     pass
