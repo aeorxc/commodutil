@@ -1,10 +1,10 @@
 import pandas as pd
 import re
-from commodutil import dates
+import datetime 
 
-curmon = pd.datetime.now().month
-curyear = pd.datetime.now().year
-curmonyear = pd.to_datetime('{}-{}-1'.format(curyear, curmon))
+curmon = datetime.datetime.now().month
+curyear = datetime.datetime.now().year
+curmonyear = datetime.datetime(curyear, curmon, 1)
 curmonyear_str = '{}-{}'.format(curyear, curmon) # get pandas time filtering
 
 

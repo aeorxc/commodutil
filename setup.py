@@ -3,7 +3,7 @@ import os
 
 setuptools.setup(
     name="commodutil",
-    version="1.0.3",
+    version="1.0.4",
     author="aeorxc",
     author_email="author@example.com",
     description="common commodity/oil analytics utils",
