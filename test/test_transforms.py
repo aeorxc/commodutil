@@ -1,6 +1,7 @@
 import unittest, os
 import pandas as pd
 import cufflinks as cf
+from commodutil import forwards
 from commodutil import transforms
 from commodutil import dates
 
@@ -46,6 +47,21 @@ class TestTransforms(unittest.TestCase):
         self.assertEqual(df.loc['{}-01-01'.format(dates.curyear-1), dates.curyear-1], res.loc['{}-01-01'.format(dates.curyear), dates.curyear-1])
         # subsequent year moves back by 1 year
         self.assertEqual(df.loc['{}-01-01'.format(dates.curyear+1), dates.curyear+1], res.loc['{}-01-01'.format(dates.curyear), dates.curyear+1])
+
+    def test_reindex_year2(self):
+        """
+        Test reindex with cal spread (eg Cal 20-21, Cal 21-22)
+        :return:
+        """
+        dirname, filename = os.path.split(os.path.abspath(__file__))
+        cl = pd.read_csv(os.path.join(dirname, 'test_cl.csv'), index_col=0, parse_dates=True, dayfirst=True)
+        contracts = cl.rename(columns={x: pd.to_datetime(forwards.convert_contract_to_date(x)) for x in cl.columns})
+        qorig = forwards.cal_contracts(contracts)
+        cal_sp = forwards.cal_spreads(qorig)
+
+        res = transforms.reindex_year(cal_sp)
+        self.assertAlmostEqual(-1.04, res['CAL 2020-2021']['2019-01-02'], 2)
+        self.assertAlmostEqual(2.32, res['CAL 2021-2022']['2019-01-02'], 2)
 
     def test_monthly_mean(self):
         df = cf.datagen.lines(4, 10000)

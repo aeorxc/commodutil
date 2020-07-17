@@ -49,24 +49,21 @@ def reindex_year(df):
     eg dataframe with brent Jan 19, Jan 18, Jan 17   so that 18 is shifted +1 year and 17 is shifted +2 years
     """
     dfs = []
+    colyearmap = dates.find_year(df)
     for colname in df.columns:
         if df[colname].isnull().all():
             continue # logic below wont work on all empty NaN columns
 
         # determine year
-        colregex = re.findall('\d\d\d\d', str(colname))
-        if len(colregex) == 1:
-            colyear = int(colregex[0])
-            # determine offset
-            delta = dates.curyear - colyear
-
-            w = df[[colname]]
-            if delta == 0:
-                dfs.append(w)
-            else: # reindex
-                winew = [x + pd.DateOffset(years=delta) for x in w.index]
-                w.index = winew
-                dfs.append(w)
+        colyear = colyearmap[colname]
+        delta = dates.curyear - colyear
+        w = df[[colname]]
+        if delta == 0:
+            dfs.append(w)
+        else: # reindex
+            winew = [x + pd.DateOffset(years=delta) for x in w.index]
+            w.index = winew
+            dfs.append(w)
 
     # merge all series into one dataframe, concat doesn't quite do the job
     res = reduce(lambda left, right: pd.merge(left, right, left_index=True, right_index=True, how='outer'),dfs)

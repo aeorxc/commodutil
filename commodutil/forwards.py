@@ -188,12 +188,11 @@ def cal_spreads(q):
     Given a dataframe of cal contract values (eg CAL 2015, CAL 2020)
     with columns headings as 'CAL 2015', 'CAL 2020'
     Return a dataframe of cal spreads (eg CAL 2015-2016)
-    Does Q1-Q2, Q2-Q3, Q3-Q4, Q4-Q1
     """
 
     calspr = []
     for col in q.columns:
-        colcal = col.split(' ')[0]
+        # colcal = col.split(' ')[0]
         colcalyr = col.split(' ')[1]
 
         curyear = int(colcalyr)
