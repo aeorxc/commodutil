@@ -16,7 +16,7 @@ def find_year(df, use_delta=False):
     res = {}
     for colname in df:
         colregex = re.findall('\d\d\d\d', str(colname))
-        if len(colregex) == 1:
+        if len(colregex) >= 1:
             colyear = int(colregex[0])
 
         res[colname] = colyear
