@@ -4,6 +4,7 @@ Utility for forward contracts
 import re
 import pandas as pd
 from commodutil import dates
+from commodutil import transforms
 
 futures_month_conv = {
         1: "F",
@@ -206,3 +207,17 @@ def cal_spreads(q):
 
     res = pd.concat(calspr, 1, sort=True)
     return res
+
+
+def curve_seasonal_zscore(hist, fwd):
+    """
+    Given some history for a timeseries and a forward curve, calculate the monthly
+    z-score (std dev away from mean) along the forward curve
+    """
+
+    d = transforms.monthly_mean(hist).T.describe()
+
+    if isinstance(fwd, pd.Series):
+        fwd = pd.DataFrame(fwd)
+    fwd['zscore'] = fwd.apply(lambda x: (d[x.name.month].loc['mean'] - x.iloc[0]) / d[x.name.month].loc['std'], 1)
+    return fwd

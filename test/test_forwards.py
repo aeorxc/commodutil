@@ -1,4 +1,5 @@
 from commodutil import forwards
+import cufflinks as cf
 import unittest
 import os
 import pandas as pd
@@ -54,6 +55,19 @@ class TestForwards(unittest.TestCase):
         res = forwards.time_spreads(contracts, m1=12, m2=12)
         self.assertAlmostEqual(res[2019].loc[pd.to_datetime('2019-11-20')], 3.56, 2)
         self.assertAlmostEqual(res[2020].loc[pd.to_datetime('2019-03-20')], 2.11, 2)
+
+    def test_curve_zscore(self):
+        df = cf.datagen.lines(1, 5000)
+        hist = df[:'2020']
+        fwd = df.resample('MS').mean()['2020':]
+
+        res = forwards.curve_seasonal_zscore(hist, fwd)
+
+        # indendent calc
+        d = forwards.transforms.monthly_mean(hist).T.describe()
+        z = (d[1].loc['mean'] - fwd.iloc[0][0]) / d[1].loc['std']
+
+        self.assertAlmostEqual(res.iloc[0]['zscore'], z, 2)
 
 
 if __name__ == '__main__':

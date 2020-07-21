@@ -1,5 +1,4 @@
 import pandas as pd
-import re
 from functools import reduce
 from commodutil import dates
 from commodutil import pandasutil
@@ -32,10 +31,10 @@ def forward_only(df):
     return df
 
 
-"""
-Format a monthly-frequency forward curve into a daily series 
-"""
 def format_fwd(df, last_index=None):
+    """
+    Format a monthly-frequency forward curve into a daily series
+    """
     df = df.resample('D').mean().fillna(method='ffill')
     if last_index is not None:
         df = df[last_index:]
@@ -68,7 +67,6 @@ def reindex_year(df):
     # merge all series into one dataframe, concat doesn't quite do the job
     res = reduce(lambda left, right: pd.merge(left, right, left_index=True, right_index=True, how='outer'),dfs)
     res = res.dropna(how='all') # drop uneeded columns out into future
-    # res = res.fillna(method='ffill', limit=4) # fill weekends
     res = pandasutil.fillna_downbet(res) # use this as above ffills incorrectly at end of timeseries
 
     return res
