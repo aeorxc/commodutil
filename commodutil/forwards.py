@@ -37,7 +37,7 @@ def convert_contract_to_date(contract):
     return d
 
 
-def time_spreads(contracts, m1, m2):
+def time_spreads_monthly(contracts, m1, m2):
     """
     Given a dataframe of daily values for monthly contracts (eg Brent Jan 15, Brent Feb 15, Brent Mar 15)
     with columns headings as '2020-01-01', '2020-02-01'
@@ -61,6 +61,47 @@ def time_spreads(contracts, m1, m2):
     res = pd.concat(dfs, 1)
     res = res.dropna(how='all', axis=1)
     return res
+
+
+def time_spreads_quarterly(contracts, m1, m2):
+    """
+    Given a dataframe of daily values for monthly contracts (eg Brent Jan 15, Brent Feb 15, Brent Mar 15)
+    with columns headings as '2020-01-01', '2020-02-01'
+    Return a dataframe of time spreads  (eg m1 = Q1, m2 = Q2 gives Q1-Q2 spread)
+    """
+
+    qtrcontracts = quarterly_contracts(contracts)
+    qtrcontracts_years = dates.find_year(qtrcontracts)
+    cf = [x for x in qtrcontracts if x.startswith(m1)]
+    dfs = []
+
+    for c1 in cf:
+        year1, year2 = qtrcontracts_years[c1], qtrcontracts_years[c1]
+        if int(m1[-1]) >= int(m2[-1]): # eg Q1-Q1 or Q4-Q1, then do Q419 - Q120 (year ahead)
+            year2 = year1 + 1
+        c2 = [x for x in qtrcontracts if x.startswith(m2) and qtrcontracts_years[x] == year2]
+        if len(c2) == 1:
+            c2 = c2[0]
+            s = qtrcontracts[c1] - qtrcontracts[c2]
+            s.name = year1
+            dfs.append(s)
+
+    res = pd.concat(dfs, 1)
+    res = res.dropna(how='all', axis=1)
+    return res
+
+
+def time_spreads(contracts, m1, m2):
+    """
+    Given a dataframe of daily values for monthly contracts (eg Brent Jan 15, Brent Feb 15, Brent Mar 15)
+    with columns headings as '2020-01-01', '2020-02-01'
+    Return a dataframe of time spreads  (eg m1 = 12, m2 = 12 gives Dec-Dec spread)
+    """
+    if isinstance(m1, int) and isinstance(m2, int):
+        return time_spreads_monthly(contracts, m1, m2)
+
+    if m1.lower().startswith('q') and m2.lower().startswith('q'):
+        return time_spreads_quarterly(contracts, m1, m2)
 
 
 def quarterly_contracts(c):

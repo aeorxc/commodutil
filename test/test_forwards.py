@@ -56,7 +56,21 @@ class TestForwards(unittest.TestCase):
         self.assertAlmostEqual(res[2019].loc[pd.to_datetime('2019-11-20')], 3.56, 2)
         self.assertAlmostEqual(res[2020].loc[pd.to_datetime('2019-03-20')], 2.11, 2)
 
-    def test_curve_zscore(self):
+    def test_timespreads2(self):
+        dirname, filename = os.path.split(os.path.abspath(__file__))
+        cl = pd.read_csv(os.path.join(dirname, 'test_cl.csv'), index_col=0, parse_dates=True, dayfirst=True)
+        contracts = cl.rename(columns={x: pd.to_datetime(forwards.convert_contract_to_date(x)) for x in cl.columns})
+
+        res = forwards.time_spreads(contracts, m1='Q1', m2='Q2')
+        self.assertAlmostEqual(res[2020].loc[pd.to_datetime('2019-01-02')], -0.33, 2)
+        self.assertAlmostEqual(res[2020].loc[pd.to_datetime('2019-05-21')], 1.05, 2)
+
+        res = forwards.time_spreads(contracts, m1='Q4', m2='Q1')
+        self.assertAlmostEqual(res[2020].loc[pd.to_datetime('2019-01-02')], -0.25, 2)
+        self.assertAlmostEqual(res[2020].loc[pd.to_datetime('2019-05-21')], 0.91, 2)
+
+
+def test_curve_zscore(self):
         df = cf.datagen.lines(1, 5000)
         hist = df[:'2020']
         fwd = df.resample('MS').mean()['2020':]
