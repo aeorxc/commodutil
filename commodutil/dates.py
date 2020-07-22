@@ -4,7 +4,7 @@ import datetime
 curmon = datetime.datetime.now().month
 curyear = datetime.datetime.now().year
 curmonyear = datetime.datetime(curyear, curmon, 1)
-curmonyear_str = '{}-{}'.format(curyear, curmon) # get pandas time filtering
+curmonyear_str = '%s-%s' % (curyear, curmon) # get pandas time filtering
 
 
 def find_year(df, use_delta=False):

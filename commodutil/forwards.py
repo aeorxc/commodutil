@@ -33,7 +33,7 @@ def convert_contract_to_date(contract):
     c = re.findall('\d\d\d\d\w', contract)
     if len(c) > 0:
         c = c[0]
-    d = '{}-{}-1'.format(c[:4], futures_month_conv_inv.get(c[-1], 0))
+    d = '%s-%s-1' % (c[:4], futures_month_conv_inv.get(c[-1], 0))
     return d
 
 

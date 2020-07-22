@@ -69,8 +69,7 @@ class TestForwards(unittest.TestCase):
         self.assertAlmostEqual(res[2020].loc[pd.to_datetime('2019-01-02')], -0.25, 2)
         self.assertAlmostEqual(res[2020].loc[pd.to_datetime('2019-05-21')], 0.91, 2)
 
-
-def test_curve_zscore(self):
+    def test_curve_zscore(self):
         df = cf.datagen.lines(1, 5000)
         hist = df[:'2020']
         fwd = df.resample('MS').mean()['2020':]
