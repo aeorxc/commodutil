@@ -1,9 +1,9 @@
 import setuptools
-import os
+
 
 setuptools.setup(
     name="commodutil",
-    version="1.0.13",
+    version="1.0.14",
     author="aeorxc",
     author_email="author@example.com",
     description="common commodity/oil analytics utils",

@@ -82,6 +82,25 @@ class TestForwards(unittest.TestCase):
 
         self.assertAlmostEqual(res.iloc[0]['zscore'], z, 2)
 
+    def test_fly(self):
+        dirname, filename = os.path.split(os.path.abspath(__file__))
+        cl = pd.read_csv(os.path.join(dirname, 'test_cl.csv'), index_col=0, parse_dates=True, dayfirst=True)
+        contracts = cl.rename(columns={x: pd.to_datetime(forwards.convert_contract_to_date(x)) for x in cl.columns})
+
+        res = forwards.fly(contracts, m1=1, m2=2, m3=3)
+        self.assertAlmostEqual(res[2020].loc[pd.to_datetime('2019-01-03')], -0.02, 2)
+        self.assertAlmostEqual(res[2021].loc[pd.to_datetime('2019-05-21')], 0.02, 2)
+
+    def test_fly2(self):
+        dirname, filename = os.path.split(os.path.abspath(__file__))
+        cl = pd.read_csv(os.path.join(dirname, 'test_cl.csv'), index_col=0, parse_dates=True, dayfirst=True)
+        contracts = cl.rename(columns={x: pd.to_datetime(forwards.convert_contract_to_date(x)) for x in cl.columns})
+
+        res = forwards.fly(contracts, m1=12, m2=1, m3=3)
+        self.assertAlmostEqual(res[2020].loc[pd.to_datetime('2019-01-03')], 0.06, 2)
+        self.assertAlmostEqual(res[2021].loc[pd.to_datetime('2019-05-21')], -0.14, 2)
+
+
 
 if __name__ == '__main__':
     unittest.main()
