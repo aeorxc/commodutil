@@ -23,6 +23,21 @@ def seasonailse(df, fillna=True):
     return seas
 
 
+def seasonalise_weekly(df, freq='W'):
+    """
+    Edge case for handling weekly data - eg DOE where we need to tweak the standard
+    seasonalise() method.
+    :param df:
+    :return:
+    """
+    dw = df.resample(freq).mean()
+    c = seasonailse(dw, fillna=True)
+    dr = pd.date_range(start=str(dates.curyear), end=str(dates.nextyear), freq='W')
+    c = c.fillna(method='bfill')
+    c = c.reindex(dr)
+    return c
+
+
 def forward_only(df):
     """
     Only take forward timeseries from cur month onwards (discarding the history)

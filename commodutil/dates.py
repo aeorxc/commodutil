@@ -6,6 +6,8 @@ curyear = datetime.datetime.now().year
 curmonyear = datetime.datetime(curyear, curmon, 1)
 curmonyear_str = '%s-%s' % (curyear, curmon) # get pandas time filtering
 
+nextyear = curyear + 1
+
 
 def find_year(df, use_delta=False):
     """
