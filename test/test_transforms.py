@@ -38,10 +38,11 @@ class TestTransforms(unittest.TestCase):
         cl = pd.read_csv(os.path.join(dirname, 'test_weekly.csv'), index_col=0, parse_dates=True, dayfirst=True)
 
         seas = transforms.seasonalise_weekly(cl['PET.WCRSTUS1.W'])
-        self.assertEqual(seas[2020].loc[pd.to_datetime('2020-01-05')], 1066027)
-        self.assertEqual(seas[2020].loc[pd.to_datetime('2020-01-12')], 1063478)
-        self.assertEqual(seas[2000].loc[pd.to_datetime('2020-01-05')], 842310)
-        self.assertEqual(seas[2000].loc[pd.to_datetime('2020-12-27')], 816514)
+
+        self.assertEqual(seas[2020].loc[pd.to_datetime('2020-01-06')], 1066027)
+        self.assertEqual(seas[2020].loc[pd.to_datetime('2020-01-13')], 1063478)
+        self.assertEqual(seas[2000].loc[pd.to_datetime('2020-01-06')], 844791)
+        self.assertEqual(seas[2000].loc[pd.to_datetime('2020-12-28')], 813959)
 
     def test_reindex_year(self):
         df = cf.datagen.lines(4, 10000)

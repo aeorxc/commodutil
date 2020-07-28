@@ -30,12 +30,17 @@ def seasonalise_weekly(df, freq='W'):
     :param df:
     :return:
     """
-    dw = df.resample(freq).mean()
-    c = seasonailse(dw, fillna=True)
-    dr = pd.date_range(start=str(dates.curyear), end=str(dates.nextyear), freq='W')
-    c = c.fillna(method='bfill')
-    c = c.reindex(dr)
-    return c
+    if isinstance(df, pd.Series):
+        df = pd.DataFrame(df)
+
+    df['woy'] = df.index.week # Week of the year
+    # year - accounting for when WoY becomes 1 when in the final week of Dec
+    df['y'] = df.apply(lambda x: x.name.year + 1 if x.name.month == 12 and x.woy < 5 else x.name.year, 1)
+    df = df.groupby([df.woy, df.y]).mean()[df.columns[0]].unstack()
+    # convert back datetimeindex - take WoY (index) and make it a curr years index
+    # TODO - figure out how to use freq paramter to allow for different start of the week
+    df.index = df.apply(lambda x: pd.to_datetime(dates.curyear * 1000 + x.name * 10 + 1, format='%Y%W%w'), 1)
+    return df
 
 
 def forward_only(df):
