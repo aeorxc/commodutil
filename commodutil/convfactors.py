@@ -18,6 +18,9 @@
 # gj = 1000 mj # thus km3_gj is same as l_mj
 
 
+import pandas as pd
+
+
 # converts different names for commodities to standard used in this file
 commonnamemap = {
     'dies': 'diesel',
@@ -176,6 +179,15 @@ def convfactor(commodity, fromunit, tounit):
     raise ValueError('no conversion factor for {} from: {} to: {}'.format(commodity, fromunit, tounit))
 
 
+def convert_days_in_month(s, transform='mul'):
+    m = pd.Series(s.index.days_in_month, index=s.index)
+    if transform == 'mul':
+        s = s.mul(m, 0)
+    elif transform == 'div':
+        s = s.div(m, 0)
+    return s
+
+
 def convert(val, commodity, fromunit=None, tounit=None):
     if fromunit != tounit:
         assert commodity is not None, 'need type of commodity to convert {} from {} to {}'.format(val, fromunit, tounit)
@@ -187,12 +199,12 @@ def convert(val, commodity, fromunit=None, tounit=None):
         unitconvfactor = convfactor(commodity, fromunit_i, tounit_i)
 
         if fromunit.endswith('/d'):
-            val = val.mul(val.index.days_in_month)
+            val = convert_days_in_month(val, 'mul')
 
         val = val * unitconvfactor
 
         if tounit.endswith('/d'):
-            val = val.div(val.index.days_in_month)
+            val = convert_days_in_month(val, 'div')
 
     return val
 
