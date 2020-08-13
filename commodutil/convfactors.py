@@ -114,7 +114,7 @@ fo_kt_bbl = 6.35
 
 # Natgas
 
-natgas_density_kg_l = 0.542 # From BP group
+natgas_density_kg_l = 0.542
 natgas_kt_bbl = 11.6
 natgas_kt_km3 = 1/natgas_density_kg_l  # 1.844
 natgas_km3_bbl = natgas_kt_bbl / natgas_kt_km3
@@ -177,15 +177,26 @@ def convfactor(commodity, fromunit, tounit):
 
 
 def convert(val, commodity, fromunit=None, tounit=None):
-    res = val
     if fromunit != tounit:
         assert commodity is not None, 'need type of commodity to convert {} from {} to {}'.format(val, fromunit, tounit)
-        unitconvfactor = convfactor(commodity, fromunit, tounit)
-        res = val * unitconvfactor
+        fromunit_i, tounit_i = fromunit, tounit
+        if fromunit.endswith('/d'):
+            fromunit_i = fromunit_i.replace('/d', '')
+        if tounit.endswith('/d'):
+            tounit_i = tounit_i.replace('/d', '')
+        unitconvfactor = convfactor(commodity, fromunit_i, tounit_i)
 
-    return res
+        if fromunit.endswith('/d'):
+            val = val.mul(val.index.days_in_month)
+
+        val = val * unitconvfactor
+
+        if tounit.endswith('/d'):
+            val = val.div(val.index.days_in_month)
+
+    return val
 
 
 if __name__ == '__main__':
-    a = convfactor('hvo', 'kt', 'km3')
+    a = convfactor('diesel', 'kt', 'km3')
     print(a)

@@ -1,5 +1,6 @@
 from commodutil import convfactors
 import unittest
+import pandas as pd
 
 
 class TestUtils(unittest.TestCase):
@@ -22,6 +23,14 @@ class TestUtils(unittest.TestCase):
 
         res = convfactors.convert(diesel_kt, 'diesel', 'kt', 'km3')
         self.assertAlmostEqual(res, 616.84, 2)
+
+    def test_convert_2(self):
+        d = pd.Series([50, 60, 70, 80], index=pd.date_range('2020', periods=4, freq='MS'))
+        res = convfactors.convert(d, 'diesel', 'kt', 'bbl/d')
+        self.assertAlmostEqual(res['2020-1'].iloc[0], 12.02, 2)
+
+        res = convfactors.convert(d, 'diesel', 'bbl/d', 'kt')
+        self.assertAlmostEqual(res['2020-1'].iloc[0], 208.05, 2)
 
     def test_ec(self):
 
