@@ -40,3 +40,20 @@ def fillna_downbet(df):
             start, end = non_nans.index[0], non_nans.index[-1]
             df[col].loc[start:end] = df[col].loc[start:end].fillna(method='ffill')
     return df
+
+
+def sql_insert_statement_from_dataframe(df, table_name):
+    """
+    Turn a dataframe into a set of insert statements
+    Taken from https://stackoverflow.com/questions/31071952/generate-sql-statements-from-a-pandas-dataframe
+    :param df:
+    :param table_name:
+    :return:
+    """
+    sql_texts = []
+    for index, row in df.iterrows():
+        q = 'INSERT INTO ' + table_name + ' (' + str(', '.join(df.columns)) + ') VALUES ' + str(tuple(row.values))
+        print(q)
+        sql_texts.append(q)
+
+    return sql_texts
