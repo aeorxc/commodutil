@@ -33,7 +33,7 @@ def seasonalise_weekly(df, freq='W'):
     if isinstance(df, pd.Series):
         df = pd.DataFrame(df)
 
-    df['woy'] = df.index.week # Week of the year
+    df['woy'] = df.index.isocalendar().week # Week of the year
     # year - accounting for when WoY becomes 1 when in the final week of Dec
     df['y'] = df.apply(lambda x: x.name.year + 1 if x.name.month == 12 and x.woy < 5 else x.name.year, 1)
     df = df.groupby([df.woy, df.y]).mean()[df.columns[0]].unstack()
