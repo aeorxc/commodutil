@@ -279,6 +279,25 @@ def cal_spreads(q):
     return res
 
 
+def spread_combinations(contracts):
+    output = {}
+    output['Calendar'] = cal_contracts(contracts)
+    output['Calendar Spread'] = cal_spreads(output['Calendar'])
+    output['Quarterly'] = quarterly_contracts(contracts)
+
+    q = output['Quarterly']
+    for qx in ['Q1', 'Q2', 'Q3', 'Q4']:
+        output[qx] = q[[x for x in q if 'Q1' in x]]
+    output['Quarterly Spread'] = quarterly_spreads(q)
+    q = output['Quarterly Spread']
+    for qx in ['Q1-Q2', 'Q2-Q3', 'Q3-Q4', 'Q4-Q1']:
+        output[qx] = q[[x for x in q if 'Q1' in x]]
+    for x in [[1,2], [2,3], [3,4], [4,5], [5,6], [6,7], [7,8], [8,9], [9,10], [10,11], [11,12], [6,6], [12,12], [10,12], [4,9], [10,3]]:
+        output['%s-%s' % (x[0], x[1])] = time_spreads(contracts, x[0], x[1])
+
+    return output
+
+
 def curve_seasonal_zscore(hist, fwd):
     """
     Given some history for a timeseries and a forward curve, calculate the monthly

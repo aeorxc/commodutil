@@ -100,7 +100,16 @@ class TestForwards(unittest.TestCase):
         self.assertAlmostEqual(res[2020].loc[pd.to_datetime('2019-01-03')], 0.06, 2)
         self.assertAlmostEqual(res[2021].loc[pd.to_datetime('2019-05-21')], -0.14, 2)
 
+    def test_spread_combinations(self):
+        dirname, filename = os.path.split(os.path.abspath(__file__))
+        cl = pd.read_csv(os.path.join(dirname, 'test_cl.csv'), index_col=0, parse_dates=True, dayfirst=True)
+        contracts = cl.rename(columns={x: pd.to_datetime(forwards.convert_contract_to_date(x)) for x in cl.columns})
 
+        res = forwards.spread_combinations(contracts)
+        self.assertIn('Q1', res)
+        self.assertIn('Q1-Q2', res)
+        self.assertIn('1-2', res)
+        self.assertIn('Calendar', res)
 
 if __name__ == '__main__':
     unittest.main()
