@@ -1,4 +1,5 @@
 from commodutil import forwards
+from commodutil import transforms
 import cufflinks as cf
 import unittest
 import os
@@ -82,6 +83,18 @@ class TestForwards(unittest.TestCase):
 
         self.assertAlmostEqual(res.iloc[0]['zscore'], z, 2)
 
+    def test_reindex_zscore(self):
+        dirname, filename = os.path.split(os.path.abspath(__file__))
+        cl = pd.read_csv(os.path.join(dirname, 'test_cl.csv'), index_col=0, parse_dates=True, dayfirst=True)
+        contracts = cl.rename(columns={x: pd.to_datetime(forwards.convert_contract_to_date(x)) for x in cl.columns})
+
+        q = forwards.quarterly_contracts(contracts)
+        q = q[[x for x in q.columns if 'Q1' in x]]
+        q = transforms.reindex_year(q)
+
+        res = forwards.reindex_zscore(q)
+        self.assertIsNotNone(res)
+
     def test_fly(self):
         dirname, filename = os.path.split(os.path.abspath(__file__))
         cl = pd.read_csv(os.path.join(dirname, 'test_cl.csv'), index_col=0, parse_dates=True, dayfirst=True)
@@ -108,7 +121,7 @@ class TestForwards(unittest.TestCase):
         res = forwards.spread_combinations(contracts)
         self.assertIn('Q1', res)
         self.assertIn('Q1-Q2', res)
-        self.assertIn('1-2', res)
+        self.assertIn('JanFeb', res)
         self.assertIn('Calendar', res)
 
 if __name__ == '__main__':

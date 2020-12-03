@@ -3,6 +3,7 @@ Utility for forward contracts
 """
 import re
 import pandas as pd
+import calendar
 from commodutil import dates
 from commodutil import transforms
 
@@ -275,8 +276,9 @@ def cal_spreads(q):
             r.name = 'CAL {}-{}'.format(curyear, nextyear)
             calspr.append(r)
 
-    res = pd.concat(calspr, 1, sort=True)
-    return res
+    if len(calspr) > 0:
+        res = pd.concat(calspr, 1, sort=True)
+        return res
 
 
 def spread_combinations(contracts):
@@ -293,7 +295,7 @@ def spread_combinations(contracts):
     for qx in ['Q1-Q2', 'Q2-Q3', 'Q3-Q4', 'Q4-Q1']:
         output[qx] = q[[x for x in q if qx in x]]
     for x in [[1,2], [2,3], [3,4], [4,5], [5,6], [6,7], [7,8], [8,9], [9,10], [10,11], [11,12], [12,1], [6,6], [6,12], [12,12], [10,12], [4,9], [10,3]]:
-        output['%s-%s' % (x[0], x[1])] = time_spreads(contracts, x[0], x[1])
+        output['%s%s' % (calendar.month_abbr[x[0]], calendar.month_abbr[x[1]])] = time_spreads(contracts, x[0], x[1])
 
     return output
 
@@ -310,3 +312,22 @@ def curve_seasonal_zscore(hist, fwd):
         fwd = pd.DataFrame(fwd)
     fwd['zscore'] = fwd.apply(lambda x: (d[x.name.month].loc['mean'] - x.iloc[0]) / d[x.name.month].loc['std'], 1)
     return fwd
+
+
+def reindex_zscore(df, range=10):
+    """
+    Given a dataframe of contracts (or spreads), calculate z-score for current year onwards
+    Essentially returns how far away the 'curve' is from historical trading range
+    """
+    df = transforms.reindex_year(df)
+    df = df.rename(columns={x: int(re.findall('\d\d\d\d', x)[0]) for x in df.columns})  # turn columns into years
+    d = df.loc[:, dates.curyear - range - 1:dates.curyear - 1]  # get subset of range years
+
+    dfs = []
+    for year in df.loc[:, dates.curyear:df.columns[-1]]:
+        z = (d.mean(axis=1) - df.loc[:, year]) / d.std(axis=1)
+        z.name = year
+        dfs.append(z)
+    res = pd.concat(dfs, 1)
+
+    return res
