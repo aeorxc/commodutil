@@ -70,31 +70,6 @@ class TestForwards(unittest.TestCase):
         self.assertAlmostEqual(res[2020].loc[pd.to_datetime('2019-01-02')], -0.25, 2)
         self.assertAlmostEqual(res[2020].loc[pd.to_datetime('2019-05-21')], 0.91, 2)
 
-    def test_curve_zscore(self):
-        df = cf.datagen.lines(1, 5000)
-        hist = df[:'2020']
-        fwd = df.resample('MS').mean()['2020':]
-
-        res = forwards.curve_seasonal_zscore(hist, fwd)
-
-        # indendent calc
-        d = forwards.transforms.monthly_mean(hist).T.describe()
-        z = (d[1].loc['mean'] - fwd.iloc[0][0]) / d[1].loc['std']
-
-        self.assertAlmostEqual(res.iloc[0]['zscore'], z, 2)
-
-    def test_reindex_zscore(self):
-        dirname, filename = os.path.split(os.path.abspath(__file__))
-        cl = pd.read_csv(os.path.join(dirname, 'test_cl.csv'), index_col=0, parse_dates=True, dayfirst=True)
-        contracts = cl.rename(columns={x: pd.to_datetime(forwards.convert_contract_to_date(x)) for x in cl.columns})
-
-        q = forwards.quarterly_contracts(contracts)
-        q = q[[x for x in q.columns if 'Q1' in x]]
-        q = transforms.reindex_year(q)
-
-        res = forwards.reindex_zscore(q)
-        self.assertIsNotNone(res)
-
     def test_fly(self):
         dirname, filename = os.path.split(os.path.abspath(__file__))
         cl = pd.read_csv(os.path.join(dirname, 'test_cl.csv'), index_col=0, parse_dates=True, dayfirst=True)
