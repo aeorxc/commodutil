@@ -1,19 +1,20 @@
 import unittest
 import pandas as pd
-import cufflinks as cf
 from commodutil import pandasutil
+from commodutil import forwards
+import os
 
 
 class TestPandasUtils(unittest.TestCase):
 
     def test_mergets(self):
-        left = cf.datagen.lines(2,1000)
-        right = cf.datagen.lines(2, 1000)
+        dirname, filename = os.path.split(os.path.abspath(__file__))
+        cl = pd.read_csv(os.path.join(dirname, 'test_cl.csv'), index_col=0, parse_dates=True, dayfirst=True)
+        contracts = cl.rename(columns={x: pd.to_datetime(forwards.convert_contract_to_date(x)) for x in cl.columns})
 
-        res = pandasutil.mergets(left, right, leftl='Test1', rightl='Test2')
+        res = pandasutil.mergets(contracts['2020-01-01'], contracts['2020-02-01'], leftl='Test1', rightl='Test2')
         self.assertIn('Test1', res.columns)
         self.assertIn('Test2', res.columns)
-        # self.assertEqual(seas.iloc[0, -1], df[last_date.year].head(1).iloc[0][0])
 
     def test_sql_insert(self):
         df = pd.DataFrame([[1,2,3], [4,5,6], [7,8,9]], columns=['a', 'b', 'c'])
