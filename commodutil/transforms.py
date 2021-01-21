@@ -1,4 +1,5 @@
 import pandas as pd
+from datetime import datetime
 from functools import reduce
 from commodutil import dates
 from commodutil import pandasutil
@@ -33,13 +34,11 @@ def seasonalise_weekly(df, freq='W'):
     if isinstance(df, pd.Series):
         df = pd.DataFrame(df)
 
-    df['woy'] = df.index.isocalendar().week # Week of the year
-    # year - accounting for when WoY becomes 1 when in the final week of Dec
-    df['y'] = df.apply(lambda x: x.name.year + 1 if x.name.month == 12 and x.woy < 5 else x.name.year, 1)
-    df = df.groupby([df.woy, df.y]).mean()[df.columns[0]].unstack()
-    # convert back datetimeindex - take WoY (index) and make it a curr years index
-    # TODO - figure out how to use freq paramter to allow for different start of the week
-    df.index = df.apply(lambda x: pd.to_datetime(dates.curyear * 1000 + x.name * 10 + 1, format='%Y%W%w'), 1)
+    df = pd.merge(df, df.index.isocalendar(), left_index=True, right_index=True)
+    df = df.groupby([df.week, df.year]).mean()[df.columns[0]].unstack()
+    if 53 in df.index: # when converting back to date, some years don't have week 53 so drop for now
+        df = df.drop(53)
+    df.index = df.index.map(lambda x: datetime.fromisocalendar(2021, x, 1))
     return df
 
 
