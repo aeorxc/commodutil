@@ -38,7 +38,6 @@ def seasonalise_weekly(df, freq='W'):
     df = df.groupby([df.week, df.year]).mean()[df.columns[0]].unstack()
     # when converting back to date format, some years don't have week 53 so drop for now
     if 53 in df.index and pd.to_datetime('%s-12-31' % dates.curyear).isocalendar()[1] == 52:
-
         df = df.drop(53)
     df.index = df.index.map(lambda x: datetime.fromisocalendar(2021, x, 1))
     return df
