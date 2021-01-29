@@ -5,7 +5,7 @@ import re
 import pandas as pd
 import calendar
 from commodutil import dates
-from commodutil import transforms
+
 
 futures_month_conv = {
         1: "F",
@@ -294,8 +294,12 @@ def spread_combinations(contracts):
     q = output['Quarterly Spread']
     for qx in ['Q1-Q2', 'Q2-Q3', 'Q3-Q4', 'Q4-Q1']:
         output[qx] = q[[x for x in q if qx in x]]
-    for x in [[1,2], [2,3], [3,4], [4,5], [5,6], [6,7], [7,8], [8,9], [9,10], [10,11], [11,12], [12,1], [6,6], [6,12], [12,12], [10,12], [4,9], [10,3]]:
-        output['%s%s' % (calendar.month_abbr[x[0]], calendar.month_abbr[x[1]])] = time_spreads(contracts, x[0], x[1])
+
+    for month in [1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12]:
+        output[month] = contracts[[x for x in contracts.columns if x.month == month]]
+
+    for spread in [[1,2], [2,3], [3,4], [4,5], [5,6], [6,7], [7,8], [8,9], [9,10], [10,11], [11,12], [12,1], [6,6], [6,12], [12,12], [10,12], [4,9], [10,3]]:
+        output['%s%s' % (calendar.month_abbr[spread[0]], calendar.month_abbr[spread[1]])] = time_spreads(contracts, spread[0], spread[1])
 
     return output
 
