@@ -94,8 +94,10 @@ class TestForwards(unittest.TestCase):
         res = forwards.spread_combinations(contracts)
         self.assertIn('Q1', res)
         self.assertIn('Q1-Q2', res)
-        self.assertIn('JanFeb', res)
         self.assertIn('Calendar', res)
+        self.assertIn('JanFeb', res)
+        self.assertIn('JanFebMar', res)
+
 
 if __name__ == '__main__':
     unittest.main()
