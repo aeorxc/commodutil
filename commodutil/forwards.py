@@ -302,9 +302,9 @@ def spread_combinations(contracts):
         tag = '%s%s' % (calendar.month_abbr[spread[0]], calendar.month_abbr[spread[1]])
         output[tag] = time_spreads(contracts, spread[0], spread[1])
 
-    for fly in [[1,2,3], [2,3,4], [3,4,5], [4,5,6], [5,6,7], [6,7,8], [7,8,9], [8,9,10], [9,10,11], [10,11,12], [11,12,1], [12,1,2]]:
-        '%s%s%s' % (calendar.month_abbr[fly[0]], calendar.month_abbr[fly[1]], calendar.month_abbr[fly[2]])
-        output[tag] = fly(contracts, fly[0], fly[1], fly[2])
+    for flyx in [[1,2,3], [2,3,4], [3,4,5], [4,5,6], [5,6,7], [6,7,8], [7,8,9], [8,9,10], [9,10,11], [10,11,12], [11,12,1], [12,1,2]]:
+        tag = '%s%s%s' % (calendar.month_abbr[flyx[0]], calendar.month_abbr[flyx[1]], calendar.month_abbr[flyx[2]])
+        output[tag] = fly(contracts, flyx[0], flyx[1], flyx[2])
 
     return output
 
