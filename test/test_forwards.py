@@ -98,6 +98,26 @@ class TestForwards(unittest.TestCase):
         self.assertIn('JanFeb', res)
         self.assertIn('JanFebMar', res)
 
+    def test_spread_combination(self):
+        dirname, filename = os.path.split(os.path.abspath(__file__))
+        cl = pd.read_csv(os.path.join(dirname, 'test_cl.csv'), index_col=0, parse_dates=True, dayfirst=True)
+        contracts = cl.rename(columns={x: pd.to_datetime(forwards.convert_contract_to_date(x)) for x in cl.columns})
+
+        # res = forwards.spread_combination(contracts, 'calendar')
+        # self.assertIsNotNone(res)
+        # res = forwards.spread_combination(contracts, 'calendar spread')
+        # self.assertIsNotNone(res)
+        # res = forwards.spread_combination(contracts, 'q1')
+        # self.assertIsNotNone(res)
+        # res = forwards.spread_combination(contracts, 'q1-q2')
+        # self.assertIsNotNone(res)
+        # res = forwards.spread_combination(contracts, 'jan')
+        # self.assertIsNotNone(res)
+        res = forwards.spread_combination(contracts, 'janfeb')
+        self.assertIsNotNone(res)
+        res = forwards.spread_combination(contracts, 'janfebmar')
+        self.assertIsNotNone(res)
+
 
 if __name__ == '__main__':
     unittest.main()

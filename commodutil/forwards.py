@@ -3,7 +3,7 @@ Utility for forward contracts
 """
 import re
 import pandas as pd
-import calendar
+from calendar import month_abbr
 from commodutil import dates
 
 
@@ -60,7 +60,7 @@ def time_spreads_monthly(contracts, m1, m2):
             dfs.append(s)
 
     res = pd.concat(dfs, 1)
-    res = res.dropna(how='all', axis=1)
+    res = res.dropna(how='all', axis='rows')
     return res
 
 
@@ -88,7 +88,7 @@ def time_spreads_quarterly(contracts, m1, m2):
             dfs.append(s)
 
     res = pd.concat(dfs, 1)
-    res = res.dropna(how='all', axis=1)
+    res = res.dropna(how='all', axis='rows')
     return res
 
 
@@ -117,7 +117,7 @@ def fly(contracts, m1, m2, m3):
             dfs.append(s)
 
     res = pd.concat(dfs, 1)
-    res = res.dropna(how='all', axis=1)
+    res = res.dropna(how='all', axis='rows')
     return res
 
 
@@ -299,13 +299,59 @@ def spread_combinations(contracts):
         output[month] = contracts[[x for x in contracts.columns if x.month == month]]
 
     for spread in [[1,2], [2,3], [3,4], [4,5], [5,6], [6,7], [7,8], [8,9], [9,10], [10,11], [11,12], [12,1], [6,6], [6,12], [12,12], [10,12], [4,9], [10,3]]:
-        tag = '%s%s' % (calendar.month_abbr[spread[0]], calendar.month_abbr[spread[1]])
+        tag = '%s%s' % (month_abbr[spread[0]], month_abbr[spread[1]])
         output[tag] = time_spreads(contracts, spread[0], spread[1])
 
     for flyx in [[1,2,3], [2,3,4], [3,4,5], [4,5,6], [5,6,7], [6,7,8], [7,8,9], [8,9,10], [9,10,11], [10,11,12], [11,12,1], [12,1,2]]:
-        tag = '%s%s%s' % (calendar.month_abbr[flyx[0]], calendar.month_abbr[flyx[1]], calendar.month_abbr[flyx[2]])
+        tag = '%s%s%s' % (month_abbr[flyx[0]], month_abbr[flyx[1]], month_abbr[flyx[2]])
         output[tag] = fly(contracts, flyx[0], flyx[1], flyx[2])
 
     return output
+
+
+def spread_combination(contracts, combination_type):
+    """
+    Convenience method to access functionality in forwards using a combination_type keyword
+    :param contracts:
+    :param combination_type:
+    :return:
+    """
+    combination_type = combination_type.lower()
+
+    if combination_type == "calendar":
+        return cal_contracts(contracts)
+    if combination_type == "calendar spread":
+        return cal_spreads(cal_contracts(contracts))
+
+    if combination_type.startswith('q'):
+        q_contracts = quarterly_contracts(contracts)
+        m = re.search('q\d-q\d', combination_type)
+        if m:
+            q_spreads = quarterly_spreads(q_contracts)
+            q_spreads = q_spreads[[x for x in q_spreads.columns if x.startswith(combination_type.upper())]]
+            return q_spreads
+        m = re.search('q\d', combination_type)
+        if m:
+            q_contracts = q_contracts[[x for x in q_contracts.columns if x.startswith(combination_type.upper())]]
+            return q_contracts
+
+    # handle monthly, spread and fly inputs
+    month_abbr_inv = {month.lower(): index for index, month in enumerate(month_abbr) if month}
+    months = [x.lower() for x in month_abbr]
+    if len(combination_type) == 3 and combination_type in months:
+        c = contracts[[x for x in contracts if x.month == month_abbr_inv[combination_type]]]
+        return c
+    if len(combination_type) == 6:
+        m1, m2 = combination_type[0:3], combination_type[3:6]
+        if m1 in months and m2 in months:
+            c = time_spreads(contracts, month_abbr_inv[m1], month_abbr_inv[m2])
+            return c
+    if len(combination_type) == 9:
+        m1, m2, m3 = combination_type[0:3], combination_type[3:6], combination_type[6:9]
+        if m1 in months and m2 in months and m3 in months:
+            c = fly(contracts, month_abbr_inv[m1], month_abbr_inv[m2], month_abbr_inv[m3])
+            return c
+
+
 
 
