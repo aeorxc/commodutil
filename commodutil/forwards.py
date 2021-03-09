@@ -246,6 +246,10 @@ def cal_contracts(c):
             s = s.mean(axis=1)
             s.name = 'CAL {}'.format(year)
             dfs.append(s)
+        elif year == dates.curyear and len(s.columns) > 0: # sometimes current year passed in has less than 12 columns but should be included
+            s = s.mean(axis=1)
+            s.name = 'CAL {}'.format(year)
+            dfs.append(s)
 
     res = pd.concat(dfs, 1)
     # sort columns by years
