@@ -16,6 +16,10 @@ class TestDates(unittest.TestCase):
         res = dates.find_year(df)
         self.assertEqual(res['CAL 2020-2021'], 2020)
 
+    def test_find_year3(self):
+        df = pd.DataFrame(columns=['FB', 'FP'])
+        res = dates.find_year(df)
+        self.assertIsNone(res['FP'])
 
 
 if __name__ == '__main__':
