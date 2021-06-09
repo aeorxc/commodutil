@@ -19,7 +19,8 @@ class TestDates(unittest.TestCase):
     def test_find_year3(self):
         df = pd.DataFrame(columns=['FB', 'FP'])
         res = dates.find_year(df)
-        self.assertIsNone(res['FP'])
+        self.assertEqual(res['FB'], 'FB')
+        self.assertEqual(res['FP'], 'FP')
 
     def test_find_year4(self):
         df = pd.DataFrame(columns=['FB', 'FP 2021'])
