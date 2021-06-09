@@ -21,6 +21,12 @@ class TestDates(unittest.TestCase):
         res = dates.find_year(df)
         self.assertIsNone(res['FP'])
 
+    def test_find_year4(self):
+        df = pd.DataFrame(columns=['FB', 'FP 2021'])
+        res = dates.find_year(df)
+        self.assertEqual(res['FB'], 'FB')
+        self.assertEqual(res['FP 2021'], 2021)
+
 
 if __name__ == '__main__':
     unittest.main()

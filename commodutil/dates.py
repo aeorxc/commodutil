@@ -21,9 +21,12 @@ def find_year(df, use_delta=False):
         if len(colregex) >= 1:
             colyear = int(colregex[0])
 
-        res[colname] = colyear
-        if colyear and use_delta:
-            delta = colyear - curyear
-            res[colname] = delta
+        if colyear:
+            res[colname] = colyear
+            if colyear and use_delta:
+                delta = colyear - curyear
+                res[colname] = delta
+        else:
+            res[colname] = colname
 
     return res
