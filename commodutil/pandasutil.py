@@ -53,7 +53,7 @@ def sql_insert_statement_from_dataframe(df, table_name):
     sql_texts = []
     for index, row in df.iterrows():
         q = 'INSERT INTO ' + table_name + ' (' + str(', '.join(df.columns)) + ') VALUES ' + str(tuple(row.values))
-        q = q.replace('nan', 'Null')
+        q = q.replace('nan', 'Null').replace('None', 'Null')
         print(q)
         sql_texts.append(q)
 
