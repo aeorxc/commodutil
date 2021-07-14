@@ -17,10 +17,12 @@ class TestPandasUtils(unittest.TestCase):
         self.assertIn('Test2', res.columns)
 
     def test_sql_insert(self):
-        df = pd.DataFrame([[1,2,3], [4,5,6], [7,8,9]], columns=['a', 'b', 'c'])
+        df = pd.DataFrame([[1,2,3], [4,'test\'ing',6], [7,8,9]], columns=['a', 'b', 'c'])
         res = pandasutil.sql_insert_statement_from_dataframe(df, 'table')
         exp = 'INSERT INTO table (a, b, c) VALUES (1, 2, 3)'
         self.assertEqual(res[0], exp)
+        exp = "INSERT INTO table (a, b, c) VALUES (4, \"testing\", 6)"
+        self.assertEqual(res[1], exp)
 
 
 if __name__ == '__main__':

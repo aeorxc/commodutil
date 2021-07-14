@@ -1,5 +1,6 @@
 import pandas as pd
 import numpy as np
+import re
 
 
 def mergets(left, right, leftl=None, rightl=None, how='left'):
@@ -54,6 +55,7 @@ def sql_insert_statement_from_dataframe(df, table_name):
     for index, row in df.iterrows():
         q = 'INSERT INTO ' + table_name + ' (' + str(', '.join(df.columns)) + ') VALUES ' + str(tuple(row.values))
         q = q.replace('nan', 'Null').replace('None', 'Null')
+        q = re.sub(r'\'', "", q)
         print(q)
         sql_texts.append(q)
 
