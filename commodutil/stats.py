@@ -33,6 +33,6 @@ def reindex_zscore(df, range=10):
         z = (d.mean(axis=1) - df.loc[:, year]) / d.std(axis=1)
         z.name = year
         dfs.append(z)
-    res = pd.concat(dfs, 1)
+    res = pd.concat(dfs, axis=1)
 
     return res
