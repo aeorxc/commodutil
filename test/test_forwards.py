@@ -23,11 +23,17 @@ class TestForwards(unittest.TestCase):
 
         self.assertAlmostEqual(res['Q2 2020'].loc[pd.to_datetime('2020-03-20')], 23.14, 2)
 
-        res = forwards.quarterly_spreads(res)
-        self.assertAlmostEqual(res['Q1-Q2 2020'].loc[pd.to_datetime('2019-12-19')], 1.14, 2)
-        self.assertAlmostEqual(res['Q2-Q3 2019'].loc[pd.to_datetime('2019-03-20')], -0.73, 2)
-        self.assertAlmostEqual(res['Q3-Q4 2019'].loc[pd.to_datetime('2019-06-20')], 0.07, 2)
-        self.assertAlmostEqual(res['Q4-Q1 2020'].loc[pd.to_datetime('2019-09-20')], 1.12, 2)
+        res_qs = forwards.quarterly_spreads(res)
+        self.assertAlmostEqual(res_qs['Q1-Q2 2020'].loc[pd.to_datetime('2019-12-19')], 1.14, 2)
+        self.assertAlmostEqual(res_qs['Q2-Q3 2019'].loc[pd.to_datetime('2019-03-20')], -0.73, 2)
+        self.assertAlmostEqual(res_qs['Q3-Q4 2019'].loc[pd.to_datetime('2019-06-20')], 0.07, 2)
+        self.assertAlmostEqual(res_qs['Q4-Q1 2020'].loc[pd.to_datetime('2019-09-20')], 1.12, 2)
+
+        res_qf = forwards.quarterly_flys(res)
+        self.assertAlmostEqual(res_qf['Q1Q2Q3 2020'].loc[pd.to_datetime('2019-12-19')], -0.53, 2)
+        self.assertAlmostEqual(res_qf['Q2Q3Q4 2019'].loc[pd.to_datetime('2019-03-20')], -0.66, 2)
+        self.assertAlmostEqual(res_qf['Q3Q4Q1 2019'].loc[pd.to_datetime('2019-06-20')], -0.58, 2)
+        self.assertAlmostEqual(res_qf['Q4Q1Q2 2020'].loc[pd.to_datetime('2019-09-20')], 0.21, 2)
 
     def test_cal_contracts(self):
         dirname, filename = os.path.split(os.path.abspath(__file__))
@@ -86,6 +92,15 @@ class TestForwards(unittest.TestCase):
         self.assertAlmostEqual(res[2020].loc[pd.to_datetime('2019-01-03')], 0.06, 2)
         self.assertAlmostEqual(res[2021].loc[pd.to_datetime('2019-05-21')], -0.14, 2)
 
+    def test_fly_quarterly(self):
+        dirname, filename = os.path.split(os.path.abspath(__file__))
+        cl = pd.read_csv(os.path.join(dirname, 'test_cl.csv'), index_col=0, parse_dates=True, dayfirst=True)
+        contracts = cl.rename(columns={x: pd.to_datetime(forwards.convert_contract_to_date(x)) for x in cl.columns})
+        contracts = forwards.quarterly_contracts(contracts)
+        res = forwards.fly_quarterly(contracts, x=1, y=2, z=3)
+        self.assertAlmostEqual(res['q1q2q3 2020'].loc[pd.to_datetime('2019-01-03')], -0.073, 3)
+        self.assertAlmostEqual(res['q1q2q3 2021'].loc[pd.to_datetime('2019-05-21')], 0.11, 2)
+
     def test_spread_combinations(self):
         dirname, filename = os.path.split(os.path.abspath(__file__))
         cl = pd.read_csv(os.path.join(dirname, 'test_cl.csv'), index_col=0, parse_dates=True, dayfirst=True)
@@ -116,6 +131,8 @@ class TestForwards(unittest.TestCase):
         res = forwards.spread_combination(contracts, 'janfeb')
         self.assertIsNotNone(res)
         res = forwards.spread_combination(contracts, 'janfebmar')
+        self.assertIsNotNone(res)
+        res = forwards.spread_combination(contracts, 'q4q1q2')
         self.assertIsNotNone(res)
 
 

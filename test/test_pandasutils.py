@@ -21,7 +21,7 @@ class TestPandasUtils(unittest.TestCase):
         res = pandasutil.sql_insert_statement_from_dataframe(df, 'table')
         exp = 'INSERT INTO table (a, b, c) VALUES (1, 2, 3)'
         self.assertEqual(res[0], exp)
-        exp = "INSERT INTO table (a, b, c) VALUES (4, \"testing\", 6)"
+        exp = "INSERT INTO table (a, b, c) VALUES (4, 'testing', 6)"
         self.assertEqual(res[1], exp)
 
 

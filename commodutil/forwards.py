@@ -6,23 +6,22 @@ import pandas as pd
 from calendar import month_abbr
 from commodutil import dates
 
-
 futures_month_conv = {
-        1: "F",
-        2: "G",
-        3: "H",
-        4: "J",
-        5: "K",
-        6: "M",
-        7: "N",
-        8: "Q",
-        9: "U",
-        10: "V",
-        11: "X",
-        12: "Z"
-    }
+    1: "F",
+    2: "G",
+    3: "H",
+    4: "J",
+    5: "K",
+    6: "M",
+    7: "N",
+    8: "Q",
+    9: "U",
+    10: "V",
+    11: "X",
+    12: "Z"
+}
 
-futures_month_conv_inv =  {v: k for k, v in futures_month_conv.items()}
+futures_month_conv_inv = {v: k for k, v in futures_month_conv.items()}
 
 
 def convert_contract_to_date(contract):
@@ -78,7 +77,7 @@ def time_spreads_quarterly(contracts, m1, m2):
 
     for c1 in cf:
         year1, year2 = qtrcontracts_years[c1], qtrcontracts_years[c1]
-        if int(m1[-1]) >= int(m2[-1]): # eg Q1-Q1 or Q4-Q1, then do Q419 - Q120 (year ahead)
+        if int(m1[-1]) >= int(m2[-1]):  # eg Q1-Q1 or Q4-Q1, then do Q419 - Q120 (year ahead)
             year2 = year1 + 1
         c2 = [x for x in qtrcontracts if x.startswith(m2) and qtrcontracts_years[x] == year2]
         if len(c2) == 1:
@@ -104,7 +103,7 @@ def fly(contracts, m1, m2, m3):
     for c1 in cf:
         year1, year2, year3 = c1.year, c1.year, c1.year
         # year rollover
-        if m2 < m1: # eg dec/jan/feb, make jan y+1
+        if m2 < m1:  # eg dec/jan/feb, make jan y+1
             year2 = year2 + 1
         if m3 < m1:
             year3 = year3 + 1
@@ -112,8 +111,42 @@ def fly(contracts, m1, m2, m3):
         c3 = [x for x in contracts if x.month == m3 and x.year == year3]
         if len(c2) == 1 and len(c3) == 1:
             c2, c3 = c2[0], c3[0]
-            s = contracts[c1] + contracts[c3] - (2*contracts[c2])
+            s = contracts[c1] + contracts[c3] - (2 * contracts[c2])
             s.name = year1
+            dfs.append(s)
+
+    res = pd.concat(dfs, 1)
+    res = res.dropna(how='all', axis='rows')
+    return res
+
+
+def fly_quarterly(contracts, x, y, z):
+    """
+    Given a dataframe of quarterly contract values (eg Brent Q115, Brent Q215, Brent Q315)
+    with columns headings as 'Q1 2015', 'Q2 2015'
+    Return a dataframe of flys  (eg x = q1 y = q2 z = q3 gives Q1/Q2/Q3 fly)
+    """
+
+    dfs = []
+    cf = [n for n in contracts if 'Q%s' % x in n]
+    for c1 in cf:
+        year1, year2, year3 = int(c1[-4:]), int(c1[-4:]), int(c1[-4:])
+        # year rollover
+
+        if x == 4 and y == 1:  # 412 or 413
+            year2 = year2 + 1
+            year3 = year3 + 1
+        if (x == 2 and y == 3 and z == 1) or (x == 2 and y == 3 and z == 1):
+            year3 = year3 + 1
+        if x == 3 and y == 4:  # 341 or 342
+            year3 = year3 + 1
+
+        c2 = [n for n in contracts if 'Q%d' % y in n and str(year2) in n]
+        c3 = [n for n in contracts if 'Q%d' % z in n and str(year3) in n]
+        if len(c2) == 1 and len(c3) == 1:
+            c2, c3 = c2[0], c3[0]
+            s = contracts[c1] + contracts[c3] - (2 * contracts[c2])
+            s.name = 'Q%dQ%dQ%d %d' % (x, y, z, year1)
             dfs.append(s)
 
     res = pd.concat(dfs, 1)
@@ -158,13 +191,13 @@ def quarterly_contracts(c):
 
         c7, c8, c9 = '{}-07-01'.format(year), '{}-08-01'.format(year), '{}-09-01'.format(year)
         if c7 in c.columns and c8 in c.columns and c9 in c.columns:
-            s = pd.concat( [c[c7], c[c8], c[c9]], 1).dropna(how='any').mean(axis=1)
+            s = pd.concat([c[c7], c[c8], c[c9]], 1).dropna(how='any').mean(axis=1)
             s.name = 'Q3 {}'.format(year)
             dfs.append(s)
 
         c10, c11, c12 = '{}-10-01'.format(year), '{}-11-01'.format(year), '{}-12-01'.format(year)
         if c10 in c.columns and c11 in c.columns and c12 in c.columns:
-            s = pd.concat( [c[c10], c[c11], c[c12]], 1).dropna(how='any').mean(axis=1)
+            s = pd.concat([c[c10], c[c11], c[c12]], 1).dropna(how='any').mean(axis=1)
             s.name = 'Q4 {}'.format(year)
             dfs.append(s)
 
@@ -206,6 +239,24 @@ def quarterly_spreads(q):
     return res
 
 
+def quarterly_flys(q):
+    """
+    Given a dataframe of quarterly contract values (eg Brent Q115, Brent Q215, Brent Q315)
+    with columns headings as 'Q1 2015', 'Q2 2015'
+    Return a dataframe of quarterly flys (eg Q1Q2Q3)
+    Does Q1Q2Q3, Q2Q3Q4, Q3Q4Q1, Q4Q1Q2
+    """
+    flycombos = ((1, 2, 3), (2, 3, 4), (3, 4, 1), (4, 1, 2))
+
+    dfs = []
+    for flycombo in flycombos:
+        s = fly_quarterly(contracts=q, x=flycombo[0], y=flycombo[1], z=flycombo[2])
+        dfs.append(s)
+
+    res = pd.concat(dfs, 1, sort=True)
+    return res
+
+
 def relevant_qtr_contract(qx):
     """
     Given a qtr, eg, Q1, determine the right year to use in seasonal charts.
@@ -242,11 +293,12 @@ def cal_contracts(c):
     dfs = []
     for year in years:
         s = c[[x for x in c.columns if x.year == year]].dropna(how='all', axis=1)
-        if len(s.columns) == 12: # only do if we have full set of contracts
+        if len(s.columns) == 12:  # only do if we have full set of contracts
             s = s.mean(axis=1)
             s.name = 'CAL {}'.format(year)
             dfs.append(s)
-        elif year == dates.curyear and len(s.columns) > 0: # sometimes current year passed in has less than 12 columns but should be included
+        elif year == dates.curyear and len(
+                s.columns) > 0:  # sometimes current year passed in has less than 12 columns but should be included
             s = s.mean(axis=1)
             s.name = 'CAL {}'.format(year)
             dfs.append(s)
@@ -302,11 +354,13 @@ def spread_combinations(contracts):
     for month in [1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12]:
         output[month] = contracts[[x for x in contracts.columns if x.month == month]]
 
-    for spread in [[1,2], [2,3], [3,4], [4,5], [5,6], [6,7], [7,8], [8,9], [9,10], [10,11], [11,12], [12,1], [6,6], [6,12], [12,12], [10,12], [4,9], [10,3]]:
+    for spread in [[1, 2], [2, 3], [3, 4], [4, 5], [5, 6], [6, 7], [7, 8], [8, 9], [9, 10], [10, 11], [11, 12], [12, 1],
+                   [6, 6], [6, 12], [12, 12], [10, 12], [4, 9], [10, 3]]:
         tag = '%s%s' % (month_abbr[spread[0]], month_abbr[spread[1]])
         output[tag] = time_spreads(contracts, spread[0], spread[1])
 
-    for flyx in [[1,2,3], [2,3,4], [3,4,5], [4,5,6], [5,6,7], [6,7,8], [7,8,9], [8,9,10], [9,10,11], [10,11,12], [11,12,1], [12,1,2]]:
+    for flyx in [[1, 2, 3], [2, 3, 4], [3, 4, 5], [4, 5, 6], [5, 6, 7], [6, 7, 8], [7, 8, 9], [8, 9, 10], [9, 10, 11],
+                 [10, 11, 12], [11, 12, 1], [12, 1, 2]]:
         tag = '%s%s%s' % (month_abbr[flyx[0]], month_abbr[flyx[1]], month_abbr[flyx[2]])
         output[tag] = fly(contracts, flyx[0], flyx[1], flyx[2])
 
@@ -340,13 +394,20 @@ def spread_combination(contracts, combination_type):
             q_spreads = quarterly_spreads(q_contracts)
             q_spreads = q_spreads[[x for x in q_spreads.columns if x.startswith(combination_type.upper())]]
             colmap = dates.find_year(q_spreads)
-            q_spreads = q_spreads.rename(columns={x:colmap[x] for x in q_spreads.columns})
+            q_spreads = q_spreads.rename(columns={x: colmap[x] for x in q_spreads.columns})
+            return q_spreads
+        m = re.search('q\dq\dq\d', combination_type)
+        if m:
+            q_spreads = fly_quarterly(q_contracts, x=int(combination_type[1]), y=int(combination_type[3]),
+                                      z=int(combination_type[5]))
+            colmap = dates.find_year(q_spreads)
+            q_spreads = q_spreads.rename(columns={x: colmap[x] for x in q_spreads.columns})
             return q_spreads
         m = re.search('q\d', combination_type)
         if m:
             q_contracts = q_contracts[[x for x in q_contracts.columns if x.startswith(combination_type.upper())]]
             colmap = dates.find_year(q_contracts)
-            q_contracts = q_contracts.rename(columns={x:colmap[x] for x in q_contracts.columns})
+            q_contracts = q_contracts.rename(columns={x: colmap[x] for x in q_contracts.columns})
             return q_contracts
 
     # handle monthly, spread and fly inputs
@@ -354,7 +415,7 @@ def spread_combination(contracts, combination_type):
     months = [x.lower() for x in month_abbr]
     if len(combination_type) == 3 and combination_type in months:
         c = contracts[[x for x in contracts if x.month == month_abbr_inv[combination_type]]]
-        c = c.rename(columns={x:x.year for x in c.columns})
+        c = c.rename(columns={x: x.year for x in c.columns})
         return c
     if len(combination_type) == 6:
         m1, m2 = combination_type[0:3], combination_type[3:6]
@@ -366,7 +427,3 @@ def spread_combination(contracts, combination_type):
         if m1 in months and m2 in months and m3 in months:
             c = fly(contracts, month_abbr_inv[m1], month_abbr_inv[m2], month_abbr_inv[m3])
             return c
-
-
-
-

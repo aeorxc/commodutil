@@ -43,7 +43,7 @@ def fillna_downbet(df):
     return df
 
 
-def sql_insert_statement_from_dataframe(df, table_name):
+def sql_insert_statement_from_dataframe(df, table_name, print_statemnt=False):
     """
     Turn a dataframe into a set of insert statements
     Taken from https://stackoverflow.com/questions/31071952/generate-sql-statements-from-a-pandas-dataframe
@@ -53,10 +53,11 @@ def sql_insert_statement_from_dataframe(df, table_name):
     """
     sql_texts = []
     for index, row in df.iterrows():
-        q = 'INSERT INTO ' + table_name + ' (' + str(', '.join(df.columns)) + ') VALUES ' + str(tuple(row.values))
+        vals = [re.sub(r'\'', "", x) if isinstance(x, str) else x for x in row.values]
+        q = 'INSERT INTO ' + table_name + ' (' + str(', '.join(df.columns)) + ') VALUES ' + str(tuple(vals))
         q = q.replace('nan', 'Null').replace('None', 'Null')
-        q = re.sub(r'\'', "", q)
-        print(q)
+        if print_statemnt:
+            print(q)
         sql_texts.append(q)
 
     return sql_texts
