@@ -98,8 +98,8 @@ class TestForwards(unittest.TestCase):
         contracts = cl.rename(columns={x: pd.to_datetime(forwards.convert_contract_to_date(x)) for x in cl.columns})
         contracts = forwards.quarterly_contracts(contracts)
         res = forwards.fly_quarterly(contracts, x=1, y=2, z=3)
-        self.assertAlmostEqual(res['q1q2q3 2020'].loc[pd.to_datetime('2019-01-03')], -0.073, 3)
-        self.assertAlmostEqual(res['q1q2q3 2021'].loc[pd.to_datetime('2019-05-21')], 0.11, 2)
+        self.assertAlmostEqual(res['Q1Q2Q3 2020'].loc[pd.to_datetime('2019-01-03')], -0.073, 3)
+        self.assertAlmostEqual(res['Q1Q2Q3 2021'].loc[pd.to_datetime('2019-05-21')], 0.11, 2)
 
     def test_spread_combinations(self):
         dirname, filename = os.path.split(os.path.abspath(__file__))
