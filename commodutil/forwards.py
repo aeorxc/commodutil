@@ -69,7 +69,7 @@ def time_spreads_quarterly(contracts, m1, m2):
     with columns headings as '2020-01-01', '2020-02-01'
     Return a dataframe of time spreads  (eg m1 = Q1, m2 = Q2 gives Q1-Q2 spread)
     """
-
+    m1, m2 = m1.upper(), m2.upper()
     qtrcontracts = quarterly_contracts(contracts)
     qtrcontracts_years = dates.find_year(qtrcontracts)
     cf = [x for x in qtrcontracts if x.startswith(m1)]
@@ -400,11 +400,10 @@ def spread_combination(contracts, combination_type, verbose_columns=True):
             return q_spreads
         m = re.search('q\dq\d', combination_type)
         if m:
-            q_spreads = quarterly_spreads(q_contracts)
-            q_spreads = q_spreads[[x for x in q_spreads.columns if x.startswith(combination_type.upper())]]
-            if not verbose_columns:
+            q_spreads = time_spreads_quarterly(contracts, combination_type[0:2], combination_type[2:4])
+            if verbose_columns:
                 colmap = dates.find_year(q_spreads)
-                q_spreads = q_spreads.rename(columns={x: colmap[x] for x in q_spreads.columns})
+                q_spreads = q_spreads.rename(columns={x: '%s %s' % (combination_type.upper(), colmap[x]) for x in q_spreads.columns})
             return q_spreads
 
         m = re.search('q\d', combination_type)
