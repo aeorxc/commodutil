@@ -232,7 +232,7 @@ def quarterly_spreads(q):
         colqy = sprmap.get(colqx).format(colqxyr)
         if colqy in q.columns:
             r = q[col] - q[colqy]
-            r.name = '{}-{} {}'.format(colqx, colqy.split(' ')[0], colqxyr)
+            r.name = '{}{} {}'.format(colqx, colqy.split(' ')[0], colqxyr)
             qtrspr.append(r)
 
     res = pd.concat(qtrspr, 1, sort=True)
@@ -367,7 +367,7 @@ def spread_combinations(contracts):
     return output
 
 
-def spread_combination(contracts, combination_type):
+def spread_combination(contracts, combination_type, verbose_columns=True):
     """
     Convenience method to access functionality in forwards using a combination_type keyword
     :param contracts:
@@ -384,30 +384,35 @@ def spread_combination(contracts, combination_type):
         return c_contracts
     if combination_type == "calendar spread":
         c_contracts = cal_spreads(cal_contracts(contracts))
-        colmap = dates.find_year(c_contracts)
-        c_contracts = c_contracts.rename(columns={x: colmap[x] for x in c_contracts.columns})
+        if not verbose_columns:
+            colmap = dates.find_year(c_contracts)
+            c_contracts = c_contracts.rename(columns={x: colmap[x] for x in c_contracts.columns})
         return c_contracts
     if combination_type.startswith('q'):
         q_contracts = quarterly_contracts(contracts)
-        m = re.search('q\d-q\d', combination_type)
-        if m:
-            q_spreads = quarterly_spreads(q_contracts)
-            q_spreads = q_spreads[[x for x in q_spreads.columns if x.startswith(combination_type.upper())]]
-            colmap = dates.find_year(q_spreads)
-            q_spreads = q_spreads.rename(columns={x: colmap[x] for x in q_spreads.columns})
-            return q_spreads
         m = re.search('q\dq\dq\d', combination_type)
         if m:
             q_spreads = fly_quarterly(q_contracts, x=int(combination_type[1]), y=int(combination_type[3]),
                                       z=int(combination_type[5]))
-            colmap = dates.find_year(q_spreads)
-            q_spreads = q_spreads.rename(columns={x: colmap[x] for x in q_spreads.columns})
+            if not verbose_columns:
+                colmap = dates.find_year(q_spreads)
+                q_spreads = q_spreads.rename(columns={x: colmap[x] for x in q_spreads.columns})
             return q_spreads
+        m = re.search('q\dq\d', combination_type)
+        if m:
+            q_spreads = quarterly_spreads(q_contracts)
+            q_spreads = q_spreads[[x for x in q_spreads.columns if x.startswith(combination_type.upper())]]
+            if not verbose_columns:
+                colmap = dates.find_year(q_spreads)
+                q_spreads = q_spreads.rename(columns={x: colmap[x] for x in q_spreads.columns})
+            return q_spreads
+
         m = re.search('q\d', combination_type)
         if m:
             q_contracts = q_contracts[[x for x in q_contracts.columns if x.startswith(combination_type.upper())]]
-            colmap = dates.find_year(q_contracts)
-            q_contracts = q_contracts.rename(columns={x: colmap[x] for x in q_contracts.columns})
+            if not verbose_columns:
+                colmap = dates.find_year(q_contracts)
+                q_contracts = q_contracts.rename(columns={x: colmap[x] for x in q_contracts.columns})
             return q_contracts
 
     # handle monthly, spread and fly inputs
@@ -415,15 +420,22 @@ def spread_combination(contracts, combination_type):
     months = [x.lower() for x in month_abbr]
     if len(combination_type) == 3 and combination_type in months:
         c = contracts[[x for x in contracts if x.month == month_abbr_inv[combination_type]]]
-        c = c.rename(columns={x: x.year for x in c.columns})
+        if verbose_columns:
+            c = c.rename(columns={x: x.strftime('%b %Y') for x in c.columns})
+        else:
+            c = c.rename(columns={x: x.year for x in c.columns})
         return c
     if len(combination_type) == 6:
         m1, m2 = combination_type[0:3], combination_type[3:6]
         if m1 in months and m2 in months:
             c = time_spreads(contracts, month_abbr_inv[m1], month_abbr_inv[m2])
+            if verbose_columns:
+                c = c.rename(columns={x: '%s%s %s' % (m1.title(), m2.title(), x) for x in c.columns})
             return c
     if len(combination_type) == 9:
         m1, m2, m3 = combination_type[0:3], combination_type[3:6], combination_type[6:9]
         if m1 in months and m2 in months and m3 in months:
             c = fly(contracts, month_abbr_inv[m1], month_abbr_inv[m2], month_abbr_inv[m3])
+            if verbose_columns:
+                c = c.rename(columns={x: '%s%s%s %s' % (m1.title(), m2.title(), m3.title(), x) for x in c.columns})
             return c
