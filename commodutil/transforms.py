@@ -3,6 +3,7 @@ from datetime import datetime
 from functools import reduce
 from commodutil import dates
 from commodutil import pandasutil
+import dask
 
 
 def seasonailse(df, fillna=True):
@@ -62,6 +63,22 @@ def format_fwd(df, last_index=None):
     return df
 
 
+def _reindex_col(df, colname, colyearmap):
+    if df[colname].isnull().all():
+        return  # logic below wont work on all empty NaN columns
+
+    # determine year
+    colyear = colyearmap[colname]
+    delta = dates.curyear - colyear
+    w = df[[colname]]
+    if delta == 0:
+        return w
+    else:  # reindex
+        winew = [x + pd.DateOffset(years=delta) for x in w.index]
+        w.index = winew
+        return w
+
+
 def reindex_year(df):
     """
     Reindex a dataframe containing prices to the current year.
@@ -70,20 +87,10 @@ def reindex_year(df):
     dfs = []
     colyearmap = dates.find_year(df)
     for colname in df.columns:
-        if df[colname].isnull().all():
-            continue # logic below wont work on all empty NaN columns
+        dfs.append(dask.delayed(_reindex_col(df, colname, colyearmap)))
 
-        # determine year
-        colyear = colyearmap[colname]
-        delta = dates.curyear - colyear
-        w = df[[colname]]
-        if delta == 0:
-            dfs.append(w)
-        else: # reindex
-            winew = [x + pd.DateOffset(years=delta) for x in w.index]
-            w.index = winew
-            dfs.append(w)
-
+    dfs = dask.compute(*dfs)
+    dfs = [x for x in dfs if x is not None]
     # merge all series into one dataframe, concat doesn't quite do the job
     res = reduce(lambda left, right: pd.merge(left, right, left_index=True, right_index=True, how='outer'),dfs)
     res = res.dropna(how='all') # drop uneeded columns out into future
