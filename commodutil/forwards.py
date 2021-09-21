@@ -37,12 +37,27 @@ def convert_contract_to_date(contract):
     return d
 
 
+def convert_columns_to_date(contracts: pd.DataFrame) -> pd.DataFrame:
+    remap = {}
+    for col in contracts.columns:
+        try:
+            remap[col] = pd.to_datetime(convert_contract_to_date(col))
+        except IndexError as _:
+            pass
+        except TypeError as _:
+            pass
+    contracts = contracts.rename(columns=remap)
+    return contracts
+
+
 def time_spreads_monthly(contracts, m1, m2):
     """
     Given a dataframe of daily values for monthly contracts (eg Brent Jan 15, Brent Feb 15, Brent Mar 15)
     with columns headings as '2020-01-01', '2020-02-01'
     Return a dataframe of time spreads  (eg m1 = 12, m2 = 12 gives Dec-Dec spread)
     """
+
+    contracts = convert_columns_to_date(contracts)
 
     cf = [x for x in contracts if x.month == m1]
     dfs = []
@@ -69,6 +84,8 @@ def time_spreads_quarterly(contracts, m1, m2):
     with columns headings as '2020-01-01', '2020-02-01'
     Return a dataframe of time spreads  (eg m1 = Q1, m2 = Q2 gives Q1-Q2 spread)
     """
+    contracts = convert_columns_to_date(contracts)
+
     m1, m2 = m1.upper(), m2.upper()
     qtrcontracts = quarterly_contracts(contracts)
     qtrcontracts_years = dates.find_year(qtrcontracts)
@@ -97,6 +114,7 @@ def fly(contracts, m1, m2, m3):
     with columns headings as '2020-01-01', '2020-02-01'
     Return a dataframe of flys  (eg m1 = 1, m2 = 2, m3 = 3 gives Jan/Feb/Mar fly)
     """
+    contracts = convert_columns_to_date(contracts)
 
     cf = [x for x in contracts if x.month == m1]
     dfs = []
@@ -126,6 +144,7 @@ def fly_quarterly(contracts, x, y, z):
     with columns headings as 'Q1 2015', 'Q2 2015'
     Return a dataframe of flys  (eg x = q1 y = q2 z = q3 gives Q1/Q2/Q3 fly)
     """
+    contracts = convert_columns_to_date(contracts)
 
     dfs = []
     cf = [n for n in contracts if 'Q%s' % x in n]
@@ -167,37 +186,38 @@ def time_spreads(contracts, m1, m2):
         return time_spreads_quarterly(contracts, m1, m2)
 
 
-def quarterly_contracts(c):
+def quarterly_contracts(contracts):
     """
     Given a dataframe of daily values for monthly contracts (eg Brent Jan 15, Brent Feb 15, Brent Mar 15)
     with columns headings as '2020-01-01', '2020-02-01'
     Return a dataframe of quarterly values (eg Q115)
     """
-    years = list(set([x.year for x in c.columns]))
+    contracts = convert_columns_to_date(contracts)
+    years = list(set([x.year for x in contracts.columns]))
 
     dfs = []
     for year in years:
         c1, c2, c3 = '{}-01-01'.format(year), '{}-02-01'.format(year), '{}-03-01'.format(year)
-        if c1 in c.columns and c2 in c.columns and c3 in c.columns:
-            s = pd.concat([c[c1], c[c2], c[c3]], 1).dropna(how='any').mean(axis=1)
+        if c1 in contracts.columns and c2 in contracts.columns and c3 in contracts.columns:
+            s = pd.concat([contracts[c1], contracts[c2], contracts[c3]], 1).dropna(how='any').mean(axis=1)
             s.name = 'Q1 {}'.format(year)
             dfs.append(s)
 
         c4, c5, c6 = '{}-04-01'.format(year), '{}-05-01'.format(year), '{}-06-01'.format(year)
-        if c4 in c.columns and c5 in c.columns and c6 in c.columns:
-            s = pd.concat([c[c4], c[c5], c[c6]], 1, sort=True).dropna(how='any').mean(axis=1)
+        if c4 in contracts.columns and c5 in contracts.columns and c6 in contracts.columns:
+            s = pd.concat([contracts[c4], contracts[c5], contracts[c6]], 1, sort=True).dropna(how='any').mean(axis=1)
             s.name = 'Q2 {}'.format(year)
             dfs.append(s)
 
         c7, c8, c9 = '{}-07-01'.format(year), '{}-08-01'.format(year), '{}-09-01'.format(year)
-        if c7 in c.columns and c8 in c.columns and c9 in c.columns:
-            s = pd.concat([c[c7], c[c8], c[c9]], 1).dropna(how='any').mean(axis=1)
+        if c7 in contracts.columns and c8 in contracts.columns and c9 in contracts.columns:
+            s = pd.concat([contracts[c7], contracts[c8], contracts[c9]], 1).dropna(how='any').mean(axis=1)
             s.name = 'Q3 {}'.format(year)
             dfs.append(s)
 
         c10, c11, c12 = '{}-10-01'.format(year), '{}-11-01'.format(year), '{}-12-01'.format(year)
-        if c10 in c.columns and c11 in c.columns and c12 in c.columns:
-            s = pd.concat([c[c10], c[c11], c[c12]], 1).dropna(how='any').mean(axis=1)
+        if c10 in contracts.columns and c11 in contracts.columns and c12 in contracts.columns:
+            s = pd.concat([contracts[c10], contracts[c11], contracts[c12]], 1).dropna(how='any').mean(axis=1)
             s.name = 'Q4 {}'.format(year)
             dfs.append(s)
 
@@ -282,17 +302,19 @@ def relevant_qtr_contract(qx):
     return relyear
 
 
-def cal_contracts(c):
+def cal_contracts(contracts):
     """
     Given a dataframe of daily values for monthly contracts (eg Brent Jan 15, Brent Feb 15, Brent Mar 15)
     with columns headings as '2020-01-01', '2020-02-01'
     Return a dataframe of cal values (eg Cal15)
     """
-    years = list(set([x.year for x in c.columns]))
+
+    contracts = convert_columns_to_date(contracts)
+    years = list(set([x.year for x in contracts.columns]))
 
     dfs = []
     for year in years:
-        s = c[[x for x in c.columns if x.year == year]].dropna(how='all', axis=1)
+        s = contracts[[x for x in contracts.columns if x.year == year]].dropna(how='all', axis=1)
         if len(s.columns) == 12:  # only do if we have full set of contracts
             s = s.mean(axis=1)
             s.name = 'CAL {}'.format(year)
@@ -351,6 +373,7 @@ def spread_combinations(contracts):
     for qx in ['Q1-Q2', 'Q2-Q3', 'Q3-Q4', 'Q4-Q1']:
         output[qx] = q[[x for x in q if qx in x]]
 
+    contracts = convert_columns_to_date(contracts)
     for month in [1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12]:
         output[month] = contracts[[x for x in contracts.columns if x.month == month]]
 
@@ -415,6 +438,7 @@ def spread_combination(contracts, combination_type, verbose_columns=True):
             return q_contracts
 
     # handle monthly, spread and fly inputs
+    contracts = convert_columns_to_date(contracts)
     month_abbr_inv = {month.lower(): index for index, month in enumerate(month_abbr) if month}
     months = [x.lower() for x in month_abbr]
     if len(combination_type) == 3 and combination_type in months:

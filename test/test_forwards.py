@@ -6,6 +6,11 @@ import pandas as pd
 
 class TestForwards(unittest.TestCase):
 
+    def test_convert_columns_to_date(self):
+        df = pd.DataFrame([], columns=['2020J', '2020M', 'Test'])
+        res = forwards.convert_columns_to_date(df)
+        self.assertIn(pd.to_datetime('2020-04-1'), res.columns)
+
     def test_conv_factor(self):
         res = forwards.convert_contract_to_date('2020F')
         self.assertEqual(res, '2020-1-1')
@@ -13,7 +18,7 @@ class TestForwards(unittest.TestCase):
     def test_quarterly_contracts(self):
         dirname, filename = os.path.split(os.path.abspath(__file__))
         cl = pd.read_csv(os.path.join(dirname, 'test_cl.csv'), index_col=0, parse_dates=True, dayfirst=True)
-        contracts = cl.rename(columns={x: pd.to_datetime(forwards.convert_contract_to_date(x)) for x in cl.columns})
+        contracts = cl
 
         res = forwards.quarterly_contracts(contracts)
         self.assertAlmostEqual(res['Q2 2019'].loc[pd.to_datetime('2019-03-20')], 60.18, 2)
@@ -38,7 +43,7 @@ class TestForwards(unittest.TestCase):
     def test_cal_contracts(self):
         dirname, filename = os.path.split(os.path.abspath(__file__))
         cl = pd.read_csv(os.path.join(dirname, 'test_cl.csv'), index_col=0, parse_dates=True, dayfirst=True)
-        contracts = cl.rename(columns={x: pd.to_datetime(forwards.convert_contract_to_date(x)) for x in cl.columns})
+        contracts = cl
 
         res = forwards.cal_contracts(contracts)
         self.assertAlmostEqual(res['CAL 2020'].loc[pd.to_datetime('2019-03-20')], 59.53, 2)
@@ -51,7 +56,7 @@ class TestForwards(unittest.TestCase):
     def test_timespreads(self):
         dirname, filename = os.path.split(os.path.abspath(__file__))
         cl = pd.read_csv(os.path.join(dirname, 'test_cl.csv'), index_col=0, parse_dates=True, dayfirst=True)
-        contracts = cl.rename(columns={x: pd.to_datetime(forwards.convert_contract_to_date(x)) for x in cl.columns})
+        contracts = cl
 
         res = forwards.time_spreads(contracts, m1=6, m2=12)
         self.assertAlmostEqual(res[2019].loc[pd.to_datetime('2019-01-02')], -1.51, 2)
@@ -64,38 +69,35 @@ class TestForwards(unittest.TestCase):
     def test_timespreads2(self):
         dirname, filename = os.path.split(os.path.abspath(__file__))
         cl = pd.read_csv(os.path.join(dirname, 'test_cl.csv'), index_col=0, parse_dates=True, dayfirst=True)
-        contracts = cl.rename(columns={x: pd.to_datetime(forwards.convert_contract_to_date(x)) for x in cl.columns})
 
-        res = forwards.time_spreads(contracts, m1='Q1', m2='Q2')
+        res = forwards.time_spreads(cl, m1='Q1', m2='Q2')
         self.assertAlmostEqual(res[2020].loc[pd.to_datetime('2019-01-02')], -0.33, 2)
         self.assertAlmostEqual(res[2020].loc[pd.to_datetime('2019-05-21')], 1.05, 2)
 
-        res = forwards.time_spreads(contracts, m1='Q4', m2='Q1')
+        res = forwards.time_spreads(cl, m1='Q4', m2='Q1')
         self.assertAlmostEqual(res[2020].loc[pd.to_datetime('2019-01-02')], -0.25, 2)
         self.assertAlmostEqual(res[2020].loc[pd.to_datetime('2019-05-21')], 0.91, 2)
 
     def test_fly(self):
         dirname, filename = os.path.split(os.path.abspath(__file__))
         cl = pd.read_csv(os.path.join(dirname, 'test_cl.csv'), index_col=0, parse_dates=True, dayfirst=True)
-        contracts = cl.rename(columns={x: pd.to_datetime(forwards.convert_contract_to_date(x)) for x in cl.columns})
 
-        res = forwards.fly(contracts, m1=1, m2=2, m3=3)
+        res = forwards.fly(cl, m1=1, m2=2, m3=3)
         self.assertAlmostEqual(res[2020].loc[pd.to_datetime('2019-01-03')], -0.02, 2)
         self.assertAlmostEqual(res[2021].loc[pd.to_datetime('2019-05-21')], 0.02, 2)
 
     def test_fly2(self):
         dirname, filename = os.path.split(os.path.abspath(__file__))
         cl = pd.read_csv(os.path.join(dirname, 'test_cl.csv'), index_col=0, parse_dates=True, dayfirst=True)
-        contracts = cl.rename(columns={x: pd.to_datetime(forwards.convert_contract_to_date(x)) for x in cl.columns})
 
-        res = forwards.fly(contracts, m1=12, m2=1, m3=3)
+        res = forwards.fly(cl, m1=12, m2=1, m3=3)
         self.assertAlmostEqual(res[2020].loc[pd.to_datetime('2019-01-03')], 0.06, 2)
         self.assertAlmostEqual(res[2021].loc[pd.to_datetime('2019-05-21')], -0.14, 2)
 
     def test_fly_quarterly(self):
         dirname, filename = os.path.split(os.path.abspath(__file__))
         cl = pd.read_csv(os.path.join(dirname, 'test_cl.csv'), index_col=0, parse_dates=True, dayfirst=True)
-        contracts = cl.rename(columns={x: pd.to_datetime(forwards.convert_contract_to_date(x)) for x in cl.columns})
+        contracts = cl
         contracts = forwards.quarterly_contracts(contracts)
         res = forwards.fly_quarterly(contracts, x=1, y=2, z=3)
         self.assertAlmostEqual(res['Q1Q2Q3 2020'].loc[pd.to_datetime('2019-01-03')], -0.073, 3)
@@ -104,9 +106,8 @@ class TestForwards(unittest.TestCase):
     def test_spread_combinations(self):
         dirname, filename = os.path.split(os.path.abspath(__file__))
         cl = pd.read_csv(os.path.join(dirname, 'test_cl.csv'), index_col=0, parse_dates=True, dayfirst=True)
-        contracts = cl.rename(columns={x: pd.to_datetime(forwards.convert_contract_to_date(x)) for x in cl.columns})
 
-        res = forwards.spread_combinations(contracts)
+        res = forwards.spread_combinations(cl)
         self.assertIn('Q1', res)
         self.assertIn('Q1-Q2', res)
         self.assertIn('Calendar', res)
@@ -116,24 +117,22 @@ class TestForwards(unittest.TestCase):
     def test_spread_combination_calendar(self):
         dirname, filename = os.path.split(os.path.abspath(__file__))
         cl = pd.read_csv(os.path.join(dirname, 'test_cl.csv'), index_col=0, parse_dates=True, dayfirst=True)
-        contracts = cl.rename(columns={x: pd.to_datetime(forwards.convert_contract_to_date(x)) for x in cl.columns})
 
-        res = forwards.spread_combination(contracts, 'calendar')
+        res = forwards.spread_combination(cl, 'calendar')
         self.assertIsNotNone(res)
         self.assertAlmostEqual(res[2020]['2020-01-02'], 59.174, 3)
 
     def test_spread_combination_calendar_spread(self):
         dirname, filename = os.path.split(os.path.abspath(__file__))
         cl = pd.read_csv(os.path.join(dirname, 'test_cl.csv'), index_col=0, parse_dates=True, dayfirst=True)
-        contracts = cl.rename(columns={x: pd.to_datetime(forwards.convert_contract_to_date(x)) for x in cl.columns})
 
-        res = forwards.spread_combination(contracts, 'calendar spread')
+        res = forwards.spread_combination(cl, 'calendar spread')
         self.assertAlmostEqual(res['CAL 2020-2021']['2020-01-02'], 4.35, 2)
 
     def test_spread_combination_quarter(self):
         dirname, filename = os.path.split(os.path.abspath(__file__))
         cl = pd.read_csv(os.path.join(dirname, 'test_cl.csv'), index_col=0, parse_dates=True, dayfirst=True)
-        contracts = cl.rename(columns={x: pd.to_datetime(forwards.convert_contract_to_date(x)) for x in cl.columns})
+        contracts = cl
 
         res = forwards.spread_combination(contracts, 'q1')
         self.assertAlmostEqual(res['Q1 2020']['2019-01-02'], 49.88, 2)
@@ -141,44 +140,39 @@ class TestForwards(unittest.TestCase):
     def test_spread_combination_quarter_spread(self):
         dirname, filename = os.path.split(os.path.abspath(__file__))
         cl = pd.read_csv(os.path.join(dirname, 'test_cl.csv'), index_col=0, parse_dates=True, dayfirst=True)
-        contracts = cl.rename(columns={x: pd.to_datetime(forwards.convert_contract_to_date(x)) for x in cl.columns})
 
-        res = forwards.spread_combination(contracts, 'q1q2')
+        res = forwards.spread_combination(cl, 'q1q2')
         self.assertAlmostEqual(res['Q1Q2 2020']['2019-01-02'], -0.33, 2)
 
-        res = forwards.spread_combination(contracts, 'q1q3')
+        res = forwards.spread_combination(cl, 'q1q3')
         self.assertAlmostEqual(res['Q1Q3 2020']['2019-01-02'], -0.58, 2)
 
     def test_spread_combination_month(self):
         dirname, filename = os.path.split(os.path.abspath(__file__))
         cl = pd.read_csv(os.path.join(dirname, 'test_cl.csv'), index_col=0, parse_dates=True, dayfirst=True)
-        contracts = cl.rename(columns={x: pd.to_datetime(forwards.convert_contract_to_date(x)) for x in cl.columns})
 
-        res = forwards.spread_combination(contracts, 'jan')
+        res = forwards.spread_combination(cl, 'jan')
         self.assertAlmostEqual(res['Jan 2020']['2019-01-02'], 49.77, 2)
 
     def test_spread_combination_month_spread(self):
         dirname, filename = os.path.split(os.path.abspath(__file__))
         cl = pd.read_csv(os.path.join(dirname, 'test_cl.csv'), index_col=0, parse_dates=True, dayfirst=True)
-        contracts = cl.rename(columns={x: pd.to_datetime(forwards.convert_contract_to_date(x)) for x in cl.columns})
 
-        res = forwards.spread_combination(contracts, 'janfeb')
+        res = forwards.spread_combination(cl, 'janfeb')
         self.assertAlmostEqual(res['JanFeb 2020']['2019-01-02'], -0.11, 2)
 
     def test_spread_combination_month_fly(self):
         dirname, filename = os.path.split(os.path.abspath(__file__))
         cl = pd.read_csv(os.path.join(dirname, 'test_cl.csv'), index_col=0, parse_dates=True, dayfirst=True)
-        contracts = cl.rename(columns={x: pd.to_datetime(forwards.convert_contract_to_date(x)) for x in cl.columns})
 
-        res = forwards.spread_combination(contracts, 'janfebmar')
+        res = forwards.spread_combination(cl, 'janfebmar')
         self.assertAlmostEqual(res['JanFebMar 2020']['2019-01-02'], 0.0, 2)
 
     def test_spread_combination_quarter_fly(self):
         dirname, filename = os.path.split(os.path.abspath(__file__))
         cl = pd.read_csv(os.path.join(dirname, 'test_cl.csv'), index_col=0, parse_dates=True, dayfirst=True)
-        contracts = cl.rename(columns={x: pd.to_datetime(forwards.convert_contract_to_date(x)) for x in cl.columns})
 
-        res = forwards.spread_combination(contracts, 'q4q1q2')
+        res = forwards.spread_combination(cl, 'q4q1q2')
         self.assertAlmostEqual(res['Q4Q1Q2 2020']['2019-01-02'], -0.023, 3)
 
 
