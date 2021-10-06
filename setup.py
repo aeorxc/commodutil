@@ -1,9 +1,8 @@
 import setuptools
 
-
 setuptools.setup(
     name="commodutil",
-    version="1.1.2",
+    version="1.1.3",
     author="aeorxc",
     author_email="author@example.com",
     description="common commodity/oil analytics utils",
@@ -22,4 +21,3 @@ setuptools.setup(
     setup_requires=['pytest-runner'],
     tests_require=['pytest'],
 )
-

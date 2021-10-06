@@ -2,8 +2,10 @@
 Utility for forward contracts
 """
 import re
-import pandas as pd
 from calendar import month_abbr
+
+import pandas as pd
+
 from commodutil import dates
 
 futures_month_conv = {
@@ -355,7 +357,7 @@ def cal_spreads(q):
             calspr.append(r)
 
     if len(calspr) > 0:
-        res = pd.concat(calspr, 1, sort=True)
+        res = pd.concat(calspr, axis=1, sort=True)
         return res
 
 
@@ -426,7 +428,8 @@ def spread_combination(contracts, combination_type, verbose_columns=True):
             q_spreads = time_spreads_quarterly(contracts, combination_type[0:2], combination_type[2:4])
             if verbose_columns:
                 colmap = dates.find_year(q_spreads)
-                q_spreads = q_spreads.rename(columns={x: '%s %s' % (combination_type.upper(), colmap[x]) for x in q_spreads.columns})
+                q_spreads = q_spreads.rename(
+                    columns={x: '%s %s' % (combination_type.upper(), colmap[x]) for x in q_spreads.columns})
             return q_spreads
 
         m = re.search('q\d', combination_type)

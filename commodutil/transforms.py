@@ -1,9 +1,11 @@
-import pandas as pd
 from datetime import datetime
 from functools import reduce
+
+import dask
+import pandas as pd
+
 from commodutil import dates
 from commodutil import pandasutil
-import dask
 
 
 def seasonailse(df, fillna=True):
@@ -92,9 +94,9 @@ def reindex_year(df):
     dfs = dask.compute(*dfs)
     dfs = [x for x in dfs if x is not None]
     # merge all series into one dataframe, concat doesn't quite do the job
-    res = reduce(lambda left, right: pd.merge(left, right, left_index=True, right_index=True, how='outer'),dfs)
-    res = res.dropna(how='all') # drop uneeded columns out into future
-    res = pandasutil.fillna_downbet(res) # use this as above ffills incorrectly at end of timeseries
+    res = reduce(lambda left, right: pd.merge(left, right, left_index=True, right_index=True, how='outer'), dfs)
+    res = res.dropna(how='all')  # drop uneeded columns out into future
+    res = pandasutil.fillna_downbet(res)  # use this as above ffills incorrectly at end of timeseries
 
     return res
 

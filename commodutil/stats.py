@@ -1,7 +1,9 @@
-from commodutil import transforms
-from commodutil import dates
 import re
+
 import pandas as pd
+
+from commodutil import dates
+from commodutil import transforms
 
 
 def curve_seasonal_zscore(hist, fwd):
@@ -26,7 +28,7 @@ def reindex_zscore(df, range=10):
     df = transforms.reindex_year(df)
     df = df.rename(columns={x: int(re.findall('\d\d\d\d', str(x))[0]) for x in df.columns})  # turn columns into years
     d = df.loc[:, dates.curyear - range - 1:dates.curyear - 1]  # get subset of range years
-    d = d[:-10] # exclude last 10 rows to due to volatility close to expire
+    d = d[:-10]  # exclude last 10 rows to due to volatility close to expire
 
     dfs = []
     for year in df.loc[:, dates.curyear:df.columns[-1]]:

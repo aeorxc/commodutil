@@ -1,10 +1,12 @@
+import datetime
+import time
+from datetime import timedelta
 import re
-import datetime 
 
 curmon = datetime.datetime.now().month
 curyear = datetime.datetime.now().year
 curmonyear = datetime.datetime(curyear, curmon, 1)
-curmonyear_str = '%s-%s' % (curyear, curmon) # get pandas time filtering
+curmonyear_str = '%s-%s' % (curyear, curmon)  # get pandas time filtering
 
 nextyear = curyear + 1
 
