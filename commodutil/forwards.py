@@ -66,7 +66,7 @@ def time_spreads_monthly(contracts, m1, m2):
 
     for c1 in cf:
         year1, year2 = c1.year, c1.year
-        if m1 == m2:
+        if m2 <= m1:
             year2 = year1 + 1
         c2 = [x for x in contracts if x.month == m2 and x.year == year2]
         if len(c2) == 1:

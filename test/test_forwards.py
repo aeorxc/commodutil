@@ -154,12 +154,19 @@ class TestForwards(unittest.TestCase):
         res = forwards.spread_combination(cl, 'jan')
         self.assertAlmostEqual(res['Jan 2020']['2019-01-02'], 49.77, 2)
 
-    def test_spread_combination_month_spread(self):
+    def test_spread_combination_month_spread_janfeb(self):
         dirname, filename = os.path.split(os.path.abspath(__file__))
         cl = pd.read_csv(os.path.join(dirname, 'test_cl.csv'), index_col=0, parse_dates=True, dayfirst=True)
 
         res = forwards.spread_combination(cl, 'janfeb')
         self.assertAlmostEqual(res['JanFeb 2020']['2019-01-02'], -0.11, 2)
+
+    def test_spread_combination_month_spread_decjan(self):
+        dirname, filename = os.path.split(os.path.abspath(__file__))
+        cl = pd.read_csv(os.path.join(dirname, 'test_cl.csv'), index_col=0, parse_dates=True, dayfirst=True)
+
+        res = forwards.spread_combination(cl, 'decjan')
+        self.assertAlmostEqual(res['DecJan 2020']['2019-01-02'], -0.06, 2)
 
     def test_spread_combination_month_fly(self):
         dirname, filename = os.path.split(os.path.abspath(__file__))
