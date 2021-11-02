@@ -1,14 +1,21 @@
 import datetime
-import time
-from datetime import timedelta
 import re
+import time
+from datetime import datetime, date, timedelta
 
-curmon = datetime.datetime.now().month
-curyear = datetime.datetime.now().year
-curmonyear = datetime.datetime(curyear, curmon, 1)
+curmon = datetime.now().month
+curyear = datetime.now().year
+curmonyear = datetime(curyear, curmon, 1)
 curmonyear_str = '%s-%s' % (curyear, curmon)  # get pandas time filtering
 
+last_day_of_prev_month = date.today().replace(day=1) - timedelta(days=1)
+start_day_of_prev_month = date.today().replace(day=1) - timedelta(days=last_day_of_prev_month.day)
+
+prevmon = start_day_of_prev_month.month
+prevmon_str = '%s-%s' % (start_day_of_prev_month.year, start_day_of_prev_month.year)  # get pandas time filtering
+
 nextyear = curyear + 1
+prevyear = curyear - 1
 
 
 def find_year(df, use_delta=False):
