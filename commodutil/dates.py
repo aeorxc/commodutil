@@ -12,7 +12,7 @@ last_day_of_prev_month = date.today().replace(day=1) - timedelta(days=1)
 start_day_of_prev_month = date.today().replace(day=1) - timedelta(days=last_day_of_prev_month.day)
 
 prevmon = start_day_of_prev_month.month
-prevmon_str = '%s-%s' % (start_day_of_prev_month.year, start_day_of_prev_month.year)  # get pandas time filtering
+prevmon_str = '%s-%s' % (start_day_of_prev_month.year, start_day_of_prev_month.month)  # get pandas time filtering
 
 nextyear = curyear + 1
 prevyear = curyear - 1
