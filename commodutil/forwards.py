@@ -75,7 +75,7 @@ def time_spreads_monthly(contracts, m1, m2):
             s.name = year1
             dfs.append(s)
 
-    res = pd.concat(dfs, 1)
+    res = pd.concat(dfs, axis=1)
     res = res.dropna(how='all', axis='rows')
     return res
 
