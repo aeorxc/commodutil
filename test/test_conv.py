@@ -1,6 +1,8 @@
-from commodutil import convfactors
 import unittest
+
 import pandas as pd
+
+from commodutil import convfactors
 
 
 class TestUtils(unittest.TestCase):
@@ -33,7 +35,6 @@ class TestUtils(unittest.TestCase):
         self.assertAlmostEqual(res['2020-1'].iloc[0], 208.05, 2)
 
     def test_ec(self):
-
         diesel_kt = 1
         res = convfactors.convert(diesel_kt, 'diesel', 'kt', 'gj')
         self.assertAlmostEqual(res, 42.7, 2)

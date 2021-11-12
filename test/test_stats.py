@@ -1,8 +1,10 @@
-from commodutil import stats
-from commodutil import forwards
-import unittest
 import os
+import unittest
+
 import pandas as pd
+
+from commodutil import forwards
+from commodutil import stats
 
 
 class TestForwards(unittest.TestCase):

@@ -1,6 +1,8 @@
-from commodutil import dates
 import unittest
+
 import pandas as pd
+
+from commodutil import dates
 
 
 class TestDates(unittest.TestCase):

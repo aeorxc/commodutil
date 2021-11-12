@@ -1,7 +1,9 @@
-from commodutil import forwards
-import unittest
 import os
+import unittest
+
 import pandas as pd
+
+from commodutil import forwards
 
 
 class TestForwards(unittest.TestCase):

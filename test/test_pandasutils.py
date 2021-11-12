@@ -1,8 +1,10 @@
-import unittest
-import pandas as pd
-from commodutil import pandasutil
-from commodutil import forwards
 import os
+import unittest
+
+import pandas as pd
+
+from commodutil import forwards
+from commodutil import pandasutil
 
 
 class TestPandasUtils(unittest.TestCase):
@@ -17,7 +19,7 @@ class TestPandasUtils(unittest.TestCase):
         self.assertIn('Test2', res.columns)
 
     def test_sql_insert(self):
-        df = pd.DataFrame([[1,2,3], [4,'test\'ing',6], [7,8,9]], columns=['a', 'b', 'c'])
+        df = pd.DataFrame([[1, 2, 3], [4, 'test\'ing', 6], [7, 8, 9]], columns=['a', 'b', 'c'])
         res = pandasutil.sql_insert_statement_from_dataframe(df, 'table')
         exp = 'INSERT INTO table (a, b, c) VALUES (1, 2, 3)'
         self.assertEqual(res[0], exp)
@@ -27,5 +29,3 @@ class TestPandasUtils(unittest.TestCase):
 
 if __name__ == '__main__':
     unittest.main()
-
-

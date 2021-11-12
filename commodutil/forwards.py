@@ -467,8 +467,8 @@ def spread_combination(contracts, combination_type, verbose_columns=True):
             return c
 
 
-
 if __name__ == '__main__':
     from pylim import lim
+
     df = lim.series(['CL_2023Z', 'CL_2024F'])
     spread_combination(df, 'DecJan')
