@@ -66,6 +66,6 @@ def sql_insert_statement_from_dataframe(df, table_name, print_statemnt=False):
 
 
 def mergem(c):
-    "wrapper method to merge multiuple data frames"
+    "Wrapper method to merge multiple data frames"
     c = reduce(lambda left, right: pd.merge(left, right, left_index=True, right_index=True, how='outer'), c)
     return c
