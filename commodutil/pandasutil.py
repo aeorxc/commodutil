@@ -1,4 +1,5 @@
 import re
+from functools import reduce
 
 import numpy as np
 import pandas as pd
@@ -62,3 +63,9 @@ def sql_insert_statement_from_dataframe(df, table_name, print_statemnt=False):
         sql_texts.append(q)
 
     return sql_texts
+
+
+def mergem(c):
+    "wrapper method to merge multiuple data frames"
+    c = reduce(lambda left, right: pd.merge(left, right, left_index=True, right_index=True, how='outer'), c)
+    return c
