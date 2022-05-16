@@ -42,6 +42,6 @@ jobs:
         uses: psf/black@stable
 
       - name: Check type hints with mypy
-        run: |bla
+        run: |
           mypy commodutil || exit 0   
           mypy test || exit 0   
