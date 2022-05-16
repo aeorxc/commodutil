@@ -22,12 +22,11 @@ import pandas as pd
 
 # converts different names for commodities to standard used in this file
 commonnamemap = {
-    'dies': 'diesel',
-    'ulsd': 'diesel',
-    'go': 'diesel',
-    'gas': 'gasoline',  # tricky - could be NatGag
-    'etho': 'ethanol',
-
+    "dies": "diesel",
+    "ulsd": "diesel",
+    "go": "diesel",
+    "gas": "gasoline",  # tricky - could be NatGag
+    "etho": "ethanol",
 }
 
 # API
@@ -120,6 +119,7 @@ natgas_km3_gj = 26.137  # https://callmepower.ca/en/faq/gigajoule-cubic-metre-ga
 # print gasoline_gal_kt
 # print diesel_gal_kt
 
+
 def _stdcmmd(cmmdstring):
     global commonnamemap
     cmmdstring = cmmdstring.lower()
@@ -128,10 +128,10 @@ def _stdcmmd(cmmdstring):
 
 
 def _stdunits(unit):
-    if unit == 'mt':
-        return 'kt'
-    if unit == 'm3':
-        return 'km3'
+    if unit == "mt":
+        return "kt"
+    if unit == "m3":
+        return "km3"
 
     return unit
 
@@ -143,62 +143,70 @@ def convfactor(commodity, fromunit, tounit):
     fromunit = _stdunits(fromunit)
     tounit = _stdunits(tounit)
 
-    factor = '{}_{}_{}'.format(commodity, fromunit, tounit)
+    factor = "{}_{}_{}".format(commodity, fromunit, tounit)
     if factor in globals():
         return globals()[factor]
 
-    factor = '{}_{}_{}'.format(commodity, tounit, fromunit)
+    factor = "{}_{}_{}".format(commodity, tounit, fromunit)
     if factor in globals():
         res = globals()[factor]
         res = 1 / res
         return res
 
     # if af this point we don't have a conversion factor try to mix an match on kt/km3 combinations
-    if fromunit == 'kt':
-        int_cv = convfactor(commodity, 'km3', tounit)
-        kt_km3_cv = convfactor(commodity, 'kt', 'km3')
+    if fromunit == "kt":
+        int_cv = convfactor(commodity, "km3", tounit)
+        kt_km3_cv = convfactor(commodity, "kt", "km3")
         new_cv = int_cv * kt_km3_cv
         return new_cv
 
-    if tounit == 'kt':
-        int_cv = convfactor(commodity, 'km3', fromunit)
-        kt_km3_cv = convfactor(commodity, 'kt', 'km3')
+    if tounit == "kt":
+        int_cv = convfactor(commodity, "km3", fromunit)
+        kt_km3_cv = convfactor(commodity, "kt", "km3")
         new_cv = 1 / (int_cv * kt_km3_cv)
         return new_cv
 
-    raise ValueError('no conversion factor for {} from: {} to: {}'.format(commodity, fromunit, tounit))
+    raise ValueError(
+        "no conversion factor for {} from: {} to: {}".format(
+            commodity, fromunit, tounit
+        )
+    )
 
 
-def convert_days_in_month(s, transform='mul'):
+def convert_days_in_month(s, transform="mul"):
     m = pd.Series(s.index.days_in_month, index=s.index)
-    if transform == 'mul':
+    if transform == "mul":
         s = s.mul(m, 0)
-    elif transform == 'div':
+    elif transform == "div":
         s = s.div(m, 0)
     return s
 
 
 def convert(val, commodity, fromunit=None, tounit=None):
     if fromunit != tounit:
-        assert commodity is not None, 'need type of commodity to convert {} from {} to {}'.format(val, fromunit, tounit)
+        assert (
+            commodity is not None
+        ), "need type of commodity to convert {} from {} to {}".format(
+            val, fromunit, tounit
+        )
         fromunit_i, tounit_i = fromunit, tounit
-        if fromunit.endswith('/d'):
-            fromunit_i = fromunit_i.replace('/d', '')
-        if tounit.endswith('/d'):
-            tounit_i = tounit_i.replace('/d', '')
+        if fromunit.endswith("/d"):
+            fromunit_i = fromunit_i.replace("/d", "")
+        if tounit.endswith("/d"):
+            tounit_i = tounit_i.replace("/d", "")
         unitconvfactor = convfactor(commodity, fromunit_i, tounit_i)
 
-        if fromunit.endswith('/d'):
-            val = convert_days_in_month(val, 'mul')
+        if fromunit.endswith("/d"):
+            val = convert_days_in_month(val, "mul")
 
         val = val * unitconvfactor
 
-        if tounit.endswith('/d'):
-            val = convert_days_in_month(val, 'div')
+        if tounit.endswith("/d"):
+            val = convert_days_in_month(val, "div")
 
     return val
 
 
-if __name__ == '__main__':
-    a = convfactor('diesel', 'kt', 'km3')
+if __name__ == "__main__":
+    a = convfactor("diesel", "kt", "km3")
     print(a)

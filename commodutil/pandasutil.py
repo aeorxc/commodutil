@@ -5,7 +5,7 @@ import numpy as np
 import pandas as pd
 
 
-def mergets(left, right, leftl=None, rightl=None, how='left'):
+def mergets(left, right, leftl=None, rightl=None, how="left"):
     """
     Wrapper for pandas merge for working on merging timeseries
     """
@@ -19,10 +19,10 @@ def mergets(left, right, leftl=None, rightl=None, how='left'):
     rename = {}
     if leftl is not None:
         rename[left.columns[0]] = leftl
-        rename['{}_x'.format(left.columns[0])] = leftl
+        rename["{}_x".format(left.columns[0])] = leftl
     if rightl is not None:
         rename[right.columns[0]] = rightl
-        rename['{}_y'.format(right.columns[0])] = rightl
+        rename["{}_y".format(right.columns[0])] = rightl
 
     res = res.rename(columns=rename)
 
@@ -41,7 +41,7 @@ def fillna_downbet(df):
         non_nans = df[col][~df[col].apply(np.isnan)]
         if non_nans is not None and len(non_nans) > 1:
             start, end = non_nans.index[0], non_nans.index[-1]
-            df[col].loc[start:end] = df[col].loc[start:end].fillna(method='ffill')
+            df[col].loc[start:end] = df[col].loc[start:end].fillna(method="ffill")
     return df
 
 
@@ -55,9 +55,16 @@ def sql_insert_statement_from_dataframe(df, table_name, print_statemnt=False):
     """
     sql_texts = []
     for index, row in df.iterrows():
-        vals = [re.sub(r'\'', "", x) if isinstance(x, str) else x for x in row.values]
-        q = 'INSERT INTO ' + table_name + ' (' + str(', '.join(df.columns)) + ') VALUES ' + str(tuple(vals))
-        q = q.replace('nan', 'Null').replace('None', 'Null')
+        vals = [re.sub(r"\'", "", x) if isinstance(x, str) else x for x in row.values]
+        q = (
+            "INSERT INTO "
+            + table_name
+            + " ("
+            + str(", ".join(df.columns))
+            + ") VALUES "
+            + str(tuple(vals))
+        )
+        q = q.replace("nan", "Null").replace("None", "Null")
         if print_statemnt:
             print(q)
         sql_texts.append(q)
@@ -67,5 +74,10 @@ def sql_insert_statement_from_dataframe(df, table_name, print_statemnt=False):
 
 def mergem(c):
     "Wrapper method to merge multiple data frames"
-    c = reduce(lambda left, right: pd.merge(left, right, left_index=True, right_index=True, how='outer'), c)
+    c = reduce(
+        lambda left, right: pd.merge(
+            left, right, left_index=True, right_index=True, how="outer"
+        ),
+        c,
+    )
     return c

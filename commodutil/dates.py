@@ -6,13 +6,18 @@ from datetime import datetime, date, timedelta
 curmon = datetime.now().month
 curyear = datetime.now().year
 curmonyear = datetime(curyear, curmon, 1)
-curmonyear_str = '%s-%s' % (curyear, curmon)  # get pandas time filtering
+curmonyear_str = "%s-%s" % (curyear, curmon)  # get pandas time filtering
 
 last_day_of_prev_month = date.today().replace(day=1) - timedelta(days=1)
-start_day_of_prev_month = date.today().replace(day=1) - timedelta(days=last_day_of_prev_month.day)
+start_day_of_prev_month = date.today().replace(day=1) - timedelta(
+    days=last_day_of_prev_month.day
+)
 
 prevmon = start_day_of_prev_month.month
-prevmon_str = '%s-%s' % (start_day_of_prev_month.year, start_day_of_prev_month.month)  # get pandas time filtering
+prevmon_str = "%s-%s" % (
+    start_day_of_prev_month.year,
+    start_day_of_prev_month.month,
+)  # get pandas time filtering
 
 nextyear = curyear + 1
 prevyear = curyear - 1
@@ -25,7 +30,7 @@ def find_year(df, use_delta=False):
     """
     res = {}
     for colname in df:
-        colregex = re.findall('\d\d\d\d', str(colname))
+        colregex = re.findall("\d\d\d\d", str(colname))
         colyear = None
         if len(colregex) >= 1:
             colyear = int(colregex[0])
