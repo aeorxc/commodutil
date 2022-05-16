@@ -111,7 +111,7 @@ def time_spreads_quarterly(contracts, m1, m2):
             s.name = year1
             dfs.append(s)
 
-    res = pd.concat(dfs, 1)
+    res = pd.concat(dfs, axis=1)
     res = res.dropna(how="all", axis="rows")
     return res
 
@@ -141,7 +141,7 @@ def fly(contracts, m1, m2, m3):
             s.name = year1
             dfs.append(s)
 
-    res = pd.concat(dfs, 1)
+    res = pd.concat(dfs, axis=1)
     res = res.dropna(how="all", axis="rows")
     return res
 
@@ -176,7 +176,7 @@ def fly_quarterly(contracts, x, y, z):
             s.name = "Q%dQ%dQ%d %d" % (x, y, z, year1)
             dfs.append(s)
 
-    res = pd.concat(dfs, 1)
+    res = pd.concat(dfs, axis=1)
     res = res.dropna(how="all", axis="rows")
     return res
 
@@ -216,7 +216,7 @@ def quarterly_contracts(contracts):
             and c3 in contracts.columns
         ):
             s = (
-                pd.concat([contracts[c1], contracts[c2], contracts[c3]], 1)
+                pd.concat([contracts[c1], contracts[c2], contracts[c3]], axis=1)
                 .dropna(how="any")
                 .mean(axis=1)
             )
@@ -234,7 +234,7 @@ def quarterly_contracts(contracts):
             and c6 in contracts.columns
         ):
             s = (
-                pd.concat([contracts[c4], contracts[c5], contracts[c6]], 1, sort=True)
+                pd.concat([contracts[c4], contracts[c5], contracts[c6]], axis=1, sort=True)
                 .dropna(how="any")
                 .mean(axis=1)
             )
@@ -252,7 +252,7 @@ def quarterly_contracts(contracts):
             and c9 in contracts.columns
         ):
             s = (
-                pd.concat([contracts[c7], contracts[c8], contracts[c9]], 1)
+                pd.concat([contracts[c7], contracts[c8], contracts[c9]], axis=1)
                 .dropna(how="any")
                 .mean(axis=1)
             )
@@ -270,14 +270,14 @@ def quarterly_contracts(contracts):
             and c12 in contracts.columns
         ):
             s = (
-                pd.concat([contracts[c10], contracts[c11], contracts[c12]], 1)
+                pd.concat([contracts[c10], contracts[c11], contracts[c12]], axis=1)
                 .dropna(how="any")
                 .mean(axis=1)
             )
             s.name = "Q4 {}".format(year)
             dfs.append(s)
 
-    res = pd.concat(dfs, 1)
+    res = pd.concat(dfs, axis=1)
     # sort columns by years
     cols = list(res.columns)
     cols.sort(key=lambda s: s.split()[1])
@@ -311,7 +311,7 @@ def quarterly_spreads(q):
             r.name = "{}{} {}".format(colqx, colqy.split(" ")[0], colqxyr)
             qtrspr.append(r)
 
-    res = pd.concat(qtrspr, 1, sort=True)
+    res = pd.concat(qtrspr, axis=1, sort=True)
     return res
 
 
@@ -329,7 +329,7 @@ def quarterly_flys(q):
         s = fly_quarterly(contracts=q, x=flycombo[0], y=flycombo[1], z=flycombo[2])
         dfs.append(s)
 
-    res = pd.concat(dfs, 1, sort=True)
+    res = pd.concat(dfs, axis=1, sort=True)
     return res
 
 
@@ -384,7 +384,7 @@ def cal_contracts(contracts):
             s.name = "CAL {}".format(year)
             dfs.append(s)
 
-    res = pd.concat(dfs, 1)
+    res = pd.concat(dfs, axis=1)
     # sort columns by years
     cols = list(res.columns)
     cols.sort(key=lambda s: s.split()[1])
