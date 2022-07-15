@@ -14,6 +14,11 @@ def mergets(left, right, leftl=None, rightl=None, how="left"):
         left = pd.DataFrame(left)
     if isinstance(right, pd.Series):
         right = pd.DataFrame(right)
+    if len(left.columns) == 0:
+        right["left"] = pd.Series(dtype="float64")
+    if len(right.columns) == 0:
+        right["right"] = pd.Series(dtype="float64")
+
     res = pd.merge(left, right, left_index=True, right_index=True, how=how)
 
     rename = {}
