@@ -273,6 +273,74 @@ def half_year_contracts(contracts):
             )
             s.name = "H2 {}".format(year)
             dfs.append(s)
+        # Winter
+        c1, c2, c3, c10, c11, c12 = (
+            "{}-01-01".format(year + 1),
+            "{}-02-01".format(year + 1),
+            "{}-03-01".format(year + 1),
+            "{}-10-01".format(year),
+            "{}-11-01".format(year),
+            "{}-12-01".format(year),
+        )
+        if (
+            c1 in contracts.columns
+            and c2 in contracts.columns
+            and c3 in contracts.columns
+            and c10 in contracts.columns
+            and c11 in contracts.columns
+            and c12 in contracts.columns
+        ):
+            s = (
+                pd.concat(
+                    [
+                        contracts[c1],
+                        contracts[c2],
+                        contracts[c3],
+                        contracts[c10],
+                        contracts[c11],
+                        contracts[c12],
+                    ],
+                    axis=1,
+                )
+                .dropna(how="any")
+                .mean(axis=1)
+            )
+            s.name = "Winter {}".format(year)
+            dfs.append(s)
+            # Summer
+            c4, c5, c6, c7, c8, c9 = (
+                "{}-04-01".format(year),
+                "{}-05-01".format(year),
+                "{}-06-01".format(year),
+                "{}-07-01".format(year),
+                "{}-08-01".format(year),
+                "{}-09-01".format(year),
+            )
+            if (
+                c4 in contracts.columns
+                and c5 in contracts.columns
+                and c6 in contracts.columns
+                and c7 in contracts.columns
+                and c8 in contracts.columns
+                and c9 in contracts.columns
+            ):
+                s = (
+                    pd.concat(
+                        [
+                            contracts[c4],
+                            contracts[c5],
+                            contracts[c6],
+                            contracts[c7],
+                            contracts[c8],
+                            contracts[c9],
+                        ],
+                        axis=1,
+                    )
+                    .dropna(how="any")
+                    .mean(axis=1)
+                )
+                s.name = "Summer {}".format(year)
+                dfs.append(s)
 
     res = pd.concat(dfs, axis=1)
     # sort columns by years
@@ -409,7 +477,7 @@ def half_year_spreads(q):
     """
     Given a dataframe of half year values (eg Brent H115, Brent H215, Brent H116)
     with columns headings as 'H1 2015', 'H2 2015'
-    Return a dataframe of heaf year spreads (eg H1-H2 15, H2-H1 15)
+    Return a dataframe of half year spreads (eg H1-H2 15, H2-H1 15)
 
     """
 
@@ -424,6 +492,22 @@ def half_year_spreads(q):
             r = q[col] - q[colqy]
             r.name = "{}{} {}".format(colhx, colqy.split(" ")[0], col.split(" ")[1])
             half_year_spread.append(r)
+
+    for col in q.columns:
+        colhx = col.split(" ")[0]
+        colhxyr = col.split(" ")[1]
+        if colhx == "Summer":
+            colqy = f"Winter {colhxyr}"
+            if colqy in q.columns:
+                r = q[col] - q[colqy]
+                r.name = "{}{} {}".format(colhx, colqy.split(" ")[0], col.split(" ")[1])
+                half_year_spread.append(r)
+        if colhx == "Winter":
+            colqy = f"Summer {int(colhxyr) + 1}"
+            if colqy in q.columns:
+                r = q[col] - q[colqy]
+                r.name = "{}{} {}".format(colhx, colqy.split(" ")[0], col.split(" ")[1])
+                half_year_spread.append(r)
 
     res = pd.concat(half_year_spread, axis=1, sort=True)
     return res

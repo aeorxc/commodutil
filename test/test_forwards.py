@@ -116,12 +116,26 @@ class TestForwards(unittest.TestCase):
             res["H2 2019"].loc[pd.to_datetime("2018-06-20")], 61.21, 2
         )
 
+        self.assertAlmostEqual(
+            res["Summer 2019"].loc[pd.to_datetime("2018-03-20")], 57.666, 2
+        )
+        self.assertAlmostEqual(
+            res["Winter 2019"].loc[pd.to_datetime("2018-06-20")], 60.43, 2
+        )
+
         res_hs = forwards.half_year_spreads(res)
         self.assertAlmostEqual(
             res_hs["H1H2 2020"].loc[pd.to_datetime("2018-12-19")], -0.215, 2
         )
         self.assertAlmostEqual(
             res_hs["H2H1 2019"].loc[pd.to_datetime("2018-03-20")], 1.58, 2
+        )
+        res_hs = forwards.half_year_spreads(res)
+        self.assertAlmostEqual(
+            res_hs["SummerWinter 2020"].loc[pd.to_datetime("2018-12-19")], -0.2249, 2
+        )
+        self.assertAlmostEqual(
+            res_hs["WinterSummer 2019"].loc[pd.to_datetime("2018-03-20")], 1.505, 2
         )
 
     def test_timespreads(self):
