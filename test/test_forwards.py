@@ -55,7 +55,7 @@ class TestForwards(unittest.TestCase):
             res_qs["Q3Q4 2019"].loc[pd.to_datetime("2019-06-20")], 0.07, 2
         )
         self.assertAlmostEqual(
-            res_qs["Q4Q1 2020"].loc[pd.to_datetime("2019-09-20")], 1.12, 2
+            res_qs["Q4Q1 2020"].loc[pd.to_datetime("2019-09-20")], 0.61, 2
         )
 
         res_qf = forwards.quarterly_flys(res)
@@ -96,6 +96,32 @@ class TestForwards(unittest.TestCase):
         )
         self.assertAlmostEqual(
             res["CAL 2021-2022"].loc[pd.to_datetime("2019-03-20")], 1.77, 2
+        )
+
+    def test_half_year_contracts(self):
+        dirname, filename = os.path.split(os.path.abspath(__file__))
+        cl = pd.read_csv(
+            os.path.join(dirname, "test_cl.csv"),
+            index_col=0,
+            parse_dates=True,
+            dayfirst=True,
+        )
+        contracts = cl
+
+        res = forwards.half_year_contracts(contracts)
+        self.assertAlmostEqual(
+            res["H1 2019"].loc[pd.to_datetime("2018-03-20")], 58.82, 2
+        )
+        self.assertAlmostEqual(
+            res["H2 2019"].loc[pd.to_datetime("2018-06-20")], 61.21, 2
+        )
+
+        res_hs = forwards.half_year_spreads(res)
+        self.assertAlmostEqual(
+            res_hs["H1H2 2020"].loc[pd.to_datetime("2018-12-19")], -0.215, 2
+        )
+        self.assertAlmostEqual(
+            res_hs["H2H1 2019"].loc[pd.to_datetime("2018-03-20")], 1.58, 2
         )
 
     def test_timespreads(self):

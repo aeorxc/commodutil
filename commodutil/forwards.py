@@ -194,6 +194,94 @@ def time_spreads(contracts, m1, m2):
         return time_spreads_quarterly(contracts, m1, m2)
 
 
+def half_year_contracts(contracts):
+    """
+    Given a dataframe of daily values for monthly contracts (eg Brent Jan 15, Brent Feb 15, Brent Mar 15)
+    with columns headings as '2020-01-01', '2020-02-01'
+    Return a dataframe of half year values (eg H115)
+    :param contracts:
+    :return:
+    """
+    contracts = convert_columns_to_date(contracts)
+    years = list(set([x.year for x in contracts.columns]))
+
+    dfs = []
+    for year in years:
+        c1, c2, c3, c4, c5, c6 = (
+            "{}-01-01".format(year),
+            "{}-02-01".format(year),
+            "{}-03-01".format(year),
+            "{}-04-01".format(year),
+            "{}-05-01".format(year),
+            "{}-06-01".format(year),
+        )
+        if (
+            c1 in contracts.columns
+            and c2 in contracts.columns
+            and c3 in contracts.columns
+            and c4 in contracts.columns
+            and c5 in contracts.columns
+            and c6 in contracts.columns
+        ):
+            s = (
+                pd.concat(
+                    [
+                        contracts[c1],
+                        contracts[c2],
+                        contracts[c3],
+                        contracts[c4],
+                        contracts[c5],
+                        contracts[c6],
+                    ],
+                    axis=1,
+                )
+                .dropna(how="any")
+                .mean(axis=1)
+            )
+            s.name = "H1 {}".format(year)
+            dfs.append(s)
+        c7, c8, c9, c10, c11, c12 = (
+            "{}-07-01".format(year),
+            "{}-08-01".format(year),
+            "{}-09-01".format(year),
+            "{}-10-01".format(year),
+            "{}-11-01".format(year),
+            "{}-12-01".format(year),
+        )
+        if (
+            c7 in contracts.columns
+            and c8 in contracts.columns
+            and c9 in contracts.columns
+            and c10 in contracts.columns
+            and c11 in contracts.columns
+            and c12 in contracts.columns
+        ):
+            s = (
+                pd.concat(
+                    [
+                        contracts[c7],
+                        contracts[c8],
+                        contracts[c9],
+                        contracts[c10],
+                        contracts[c11],
+                        contracts[c12],
+                    ],
+                    axis=1,
+                )
+                .dropna(how="any")
+                .mean(axis=1)
+            )
+            s.name = "H2 {}".format(year)
+            dfs.append(s)
+
+    res = pd.concat(dfs, axis=1)
+    # sort columns by years
+    cols = list(res.columns)
+    cols.sort(key=lambda s: s.split()[1])
+    res = res[cols]
+    return res
+
+
 def quarterly_contracts(contracts):
     """
     Given a dataframe of daily values for monthly contracts (eg Brent Jan 15, Brent Feb 15, Brent Mar 15)
@@ -234,7 +322,9 @@ def quarterly_contracts(contracts):
             and c6 in contracts.columns
         ):
             s = (
-                pd.concat([contracts[c4], contracts[c5], contracts[c6]], axis=1, sort=True)
+                pd.concat(
+                    [contracts[c4], contracts[c5], contracts[c6]], axis=1, sort=True
+                )
                 .dropna(how="any")
                 .mean(axis=1)
             )
@@ -308,10 +398,34 @@ def quarterly_spreads(q):
         colqy = sprmap.get(colqx).format(colqxyr)
         if colqy in q.columns:
             r = q[col] - q[colqy]
-            r.name = "{}{} {}".format(colqx, colqy.split(" ")[0], colqxyr)
+            r.name = "{}{} {}".format(colqx, colqy.split(" ")[0], col.split(" ")[1])
             qtrspr.append(r)
 
     res = pd.concat(qtrspr, axis=1, sort=True)
+    return res
+
+
+def half_year_spreads(q):
+    """
+    Given a dataframe of half year values (eg Brent H115, Brent H215, Brent H116)
+    with columns headings as 'H1 2015', 'H2 2015'
+    Return a dataframe of heaf year spreads (eg H1-H2 15, H2-H1 15)
+
+    """
+
+    half_year_spread = []
+    for col in q.columns:
+        colhx = col.split(" ")[0]
+        colhxyr = col.split(" ")[1]
+        if colhx == "H2":
+            colhxyr = int(colhxyr) + 1
+        colqy = f"H2 {colhxyr}" if colhx == "H1" else f"H1 {colhxyr}"
+        if colqy in q.columns:
+            r = q[col] - q[colqy]
+            r.name = "{}{} {}".format(colhx, colqy.split(" ")[0], col.split(" ")[1])
+            half_year_spread.append(r)
+
+    res = pd.concat(half_year_spread, axis=1, sort=True)
     return res
 
 
@@ -423,6 +537,7 @@ def spread_combinations(contracts):
     output["Calendar"] = cal_contracts(contracts)
     output["Calendar Spread"] = cal_spreads(output["Calendar"])
     output["Quarterly"] = quarterly_contracts(contracts)
+    output["Half Year"] = half_year_contracts(contracts)
 
     q = output["Quarterly"]
     for qx in ["Q1", "Q2", "Q3", "Q4"]:
@@ -431,6 +546,8 @@ def spread_combinations(contracts):
     q = output["Quarterly Spread"]
     for qx in ["Q1-Q2", "Q2-Q3", "Q3-Q4", "Q4-Q1"]:
         output[qx] = q[[x for x in q if qx in x]]
+
+    output["Half Year Spread"] = half_year_spreads(output["Half Year"])
 
     contracts = convert_columns_to_date(contracts)
     for month in [1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12]:
