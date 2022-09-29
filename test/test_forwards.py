@@ -228,7 +228,7 @@ class TestForwards(unittest.TestCase):
 
         res = forwards.spread_combinations(cl)
         self.assertIn("Q1", res)
-        self.assertIn("Q1-Q2", res)
+        self.assertIn("Q1Q2", res)
         self.assertIn("Calendar", res)
         self.assertIn("JanFeb", res)
         self.assertIn("JanFebMar", res)

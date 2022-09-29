@@ -628,7 +628,7 @@ def spread_combinations(contracts):
         output[qx] = q[[x for x in q if qx in x]]
     output["Quarterly Spread"] = quarterly_spreads(q)
     q = output["Quarterly Spread"]
-    for qx in ["Q1-Q2", "Q2-Q3", "Q3-Q4", "Q4-Q1"]:
+    for qx in ["Q1Q2", "Q2Q3", "Q3Q4", "Q4Q1"]:
         output[qx] = q[[x for x in q if qx in x]]
 
     output["Half Year Spread"] = half_year_spreads(output["Half Year"])
