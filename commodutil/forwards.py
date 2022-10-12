@@ -705,6 +705,13 @@ def spread_combination(contracts, combination_type, verbose_columns=True):
                 columns={x: colmap[x] for x in c_contracts.columns}
             )
         return c_contracts
+    if combination_type == "half year":
+        c_contracts = half_year_contracts(contracts)
+        return c_contracts
+    if combination_type == "half year spread":
+        c_contracts = half_year_spreads(half_year_contracts(contracts))
+        return c_contracts
+
     if combination_type.startswith("q"):
         q_contracts = quarterly_contracts(contracts)
         m = re.search("q\dq\dq\d", combination_type)

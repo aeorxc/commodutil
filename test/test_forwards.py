@@ -258,6 +258,30 @@ class TestForwards(unittest.TestCase):
         res = forwards.spread_combination(cl, "calendar spread")
         self.assertAlmostEqual(res["CAL 2020-2021"]["2020-01-02"], 4.35, 2)
 
+    def test_spread_combination_half_year(self):
+        dirname, filename = os.path.split(os.path.abspath(__file__))
+        cl = pd.read_csv(
+            os.path.join(dirname, "test_cl.csv"),
+            index_col=0,
+            parse_dates=True,
+            dayfirst=True,
+        )
+
+        res = forwards.spread_combination(cl, "half year")
+        self.assertAlmostEqual(res["H1 2020"]["2019-01-02"], 50.04, 2)
+
+    def test_spread_combination_half_year_spread(self):
+        dirname, filename = os.path.split(os.path.abspath(__file__))
+        cl = pd.read_csv(
+            os.path.join(dirname, "test_cl.csv"),
+            index_col=0,
+            parse_dates=True,
+            dayfirst=True,
+        )
+
+        res = forwards.spread_combination(cl, "half year spread")
+        self.assertAlmostEqual(res["H1H2 2020"]["2019-01-02"], -0.578, 2)
+
     def test_spread_combination_quarter(self):
         dirname, filename = os.path.split(os.path.abspath(__file__))
         cl = pd.read_csv(

@@ -1,1 +1,2 @@
-pandasdask[delayed]
+pandas
+dask[delayed]
