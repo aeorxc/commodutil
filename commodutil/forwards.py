@@ -4,6 +4,7 @@ Utility for forward contracts
 import re
 from calendar import month_abbr
 
+import numpy as np
 import pandas as pd
 
 from commodutil import dates
@@ -97,7 +98,7 @@ def time_spreads_quarterly(contracts, m1, m2):
     for c1 in cf:
         year1, year2 = qtrcontracts_years[c1], qtrcontracts_years[c1]
         if int(m1[-1]) >= int(
-            m2[-1]
+                m2[-1]
         ):  # eg Q1-Q1 or Q4-Q1, then do Q419 - Q120 (year ahead)
             year2 = year1 + 1
         c2 = [
@@ -216,12 +217,12 @@ def half_year_contracts(contracts):
             "{}-06-01".format(year),
         )
         if (
-            c1 in contracts.columns
-            and c2 in contracts.columns
-            and c3 in contracts.columns
-            and c4 in contracts.columns
-            and c5 in contracts.columns
-            and c6 in contracts.columns
+                c1 in contracts.columns
+                and c2 in contracts.columns
+                and c3 in contracts.columns
+                and c4 in contracts.columns
+                and c5 in contracts.columns
+                and c6 in contracts.columns
         ):
             s = (
                 pd.concat(
@@ -249,12 +250,12 @@ def half_year_contracts(contracts):
             "{}-12-01".format(year),
         )
         if (
-            c7 in contracts.columns
-            and c8 in contracts.columns
-            and c9 in contracts.columns
-            and c10 in contracts.columns
-            and c11 in contracts.columns
-            and c12 in contracts.columns
+                c7 in contracts.columns
+                and c8 in contracts.columns
+                and c9 in contracts.columns
+                and c10 in contracts.columns
+                and c11 in contracts.columns
+                and c12 in contracts.columns
         ):
             s = (
                 pd.concat(
@@ -283,12 +284,12 @@ def half_year_contracts(contracts):
             "{}-12-01".format(year),
         )
         if (
-            c1 in contracts.columns
-            and c2 in contracts.columns
-            and c3 in contracts.columns
-            and c10 in contracts.columns
-            and c11 in contracts.columns
-            and c12 in contracts.columns
+                c1 in contracts.columns
+                and c2 in contracts.columns
+                and c3 in contracts.columns
+                and c10 in contracts.columns
+                and c11 in contracts.columns
+                and c12 in contracts.columns
         ):
             s = (
                 pd.concat(
@@ -317,12 +318,12 @@ def half_year_contracts(contracts):
                 "{}-09-01".format(year),
             )
             if (
-                c4 in contracts.columns
-                and c5 in contracts.columns
-                and c6 in contracts.columns
-                and c7 in contracts.columns
-                and c8 in contracts.columns
-                and c9 in contracts.columns
+                    c4 in contracts.columns
+                    and c5 in contracts.columns
+                    and c6 in contracts.columns
+                    and c7 in contracts.columns
+                    and c8 in contracts.columns
+                    and c9 in contracts.columns
             ):
                 s = (
                     pd.concat(
@@ -367,9 +368,9 @@ def quarterly_contracts(contracts):
             "{}-03-01".format(year),
         )
         if (
-            c1 in contracts.columns
-            and c2 in contracts.columns
-            and c3 in contracts.columns
+                c1 in contracts.columns
+                and c2 in contracts.columns
+                and c3 in contracts.columns
         ):
             s = (
                 pd.concat([contracts[c1], contracts[c2], contracts[c3]], axis=1)
@@ -385,9 +386,9 @@ def quarterly_contracts(contracts):
             "{}-06-01".format(year),
         )
         if (
-            c4 in contracts.columns
-            and c5 in contracts.columns
-            and c6 in contracts.columns
+                c4 in contracts.columns
+                and c5 in contracts.columns
+                and c6 in contracts.columns
         ):
             s = (
                 pd.concat(
@@ -405,9 +406,9 @@ def quarterly_contracts(contracts):
             "{}-09-01".format(year),
         )
         if (
-            c7 in contracts.columns
-            and c8 in contracts.columns
-            and c9 in contracts.columns
+                c7 in contracts.columns
+                and c8 in contracts.columns
+                and c9 in contracts.columns
         ):
             s = (
                 pd.concat([contracts[c7], contracts[c8], contracts[c9]], axis=1)
@@ -423,9 +424,9 @@ def quarterly_contracts(contracts):
             "{}-12-01".format(year),
         )
         if (
-            c10 in contracts.columns
-            and c11 in contracts.columns
-            and c12 in contracts.columns
+                c10 in contracts.columns
+                and c11 in contracts.columns
+                and c12 in contracts.columns
         ):
             s = (
                 pd.concat([contracts[c10], contracts[c11], contracts[c12]], axis=1)
@@ -576,7 +577,7 @@ def cal_contracts(contracts):
             s.name = "CAL {}".format(year)
             dfs.append(s)
         elif (
-            year == dates.curyear and len(s.columns) > 0
+                year == dates.curyear and len(s.columns) > 0
         ):  # sometimes current year passed in has less than 12 columns but should be included
             s = s.mean(axis=1)
             s.name = "CAL {}".format(year)
@@ -801,8 +802,11 @@ def spread_combination(contracts, combination_type, verbose_columns=True):
             return c
 
 
-if __name__ == "__main__":
-    from pylim import lim
+def reject_outliers(data, m=2):
+    return data[abs(data - np.mean(data)) < m * np.std(data)]
 
-    df = lim.series(["CL_2023Z", "CL_2024F"])
-    spread_combination(df, "DecJan")
+# if __name__ == "__main__":
+#     from pylim import lim
+#
+#     df = lim.series(["CL_2023Z", "CL_2024F"])
+#     spread_combination(df, "DecJan")
