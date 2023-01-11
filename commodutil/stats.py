@@ -24,7 +24,7 @@ def curve_seasonal_zscore(hist, fwd):
     return fwd
 
 
-def reindex_zscore(df, range=10):
+def reindex_zscore(df, range=10, calc_year_start:int=None):
     """
     Given a dataframe of contracts (or spreads), calculate z-score for current year onwards
     Essentially returns how far away the 'curve' is from historical trading range
@@ -39,10 +39,12 @@ def reindex_zscore(df, range=10):
     d = d[:-10]  # exclude last 10 rows to due to volatility close to expire
 
     dfs = []
-    for year in df.loc[:, dates.curyear : df.columns[-1]]:
+    if not calc_year_start:
+        calc_year_start = dates.curyear
+    for year in df.loc[:, calc_year_start : df.columns[-1]]:
         z = (d.mean(axis=1) - df.loc[:, year]) / d.std(axis=1)
         z.name = year
         dfs.append(z)
-    res = pd.concat(dfs, axis=1)
-
-    return res
+    if len(dfs) > 0:
+        res = pd.concat(dfs, axis=1)
+        return res

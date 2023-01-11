@@ -48,7 +48,7 @@ class TestForwards(unittest.TestCase):
         q = forwards.quarterly_contracts(contracts)
         q = q[[x for x in q.columns if "Q1" in x]]
 
-        res = stats.reindex_zscore(q)
+        res = stats.reindex_zscore(q, calc_year_start=2022)
         self.assertIsNotNone(res)
 
 
