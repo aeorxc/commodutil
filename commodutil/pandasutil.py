@@ -62,12 +62,12 @@ def sql_insert_statement_from_dataframe(df, table_name, print_statemnt=False):
     for index, row in df.iterrows():
         vals = [re.sub(r"\'", "", x) if isinstance(x, str) else x for x in row.values]
         q = (
-            "INSERT INTO "
-            + table_name
-            + " ("
-            + str(", ".join(df.columns))
-            + ") VALUES "
-            + str(tuple(vals))
+                "INSERT INTO "
+                + table_name
+                + " ("
+                + str(", ".join(df.columns))
+                + ") VALUES "
+                + str(tuple(vals))
         )
         q = q.replace("nan", "Null").replace("None", "Null")
         if print_statemnt:
@@ -86,3 +86,26 @@ def mergem(c):
         c,
     )
     return c
+
+
+def generate_lambda(expression, columns):
+    """
+    Convert a simple expression string into a lambda function suitable for DataFrame operations.
+    """
+    for col in columns:
+        expression = expression.replace(col, f"x['{col}']")
+    return lambda x: eval(expression)
+
+
+def apply_formula(df: pd.DataFrame, formula: str) -> pd.DataFrame:
+    """
+    Given a dataframe apply the formula to the columns in the dataframe
+    """
+
+    formula_l = generate_lambda(formula, df.columns)
+    dfr = df.apply(formula_l, axis=1)
+
+    if isinstance(dfr, pd.Series):
+        dfr = pd.DataFrame(dfr, columns=[formula])
+
+    return dfr

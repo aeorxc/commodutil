@@ -1,6 +1,6 @@
 import os
 import unittest
-
+import pytest
 import pandas as pd
 
 from commodutil import forwards
@@ -41,6 +41,16 @@ class TestPandasUtils(unittest.TestCase):
         self.assertEqual(res[0], exp)
         exp = "INSERT INTO table (a, b, c) VALUES (4, 'testing', 6)"
         self.assertEqual(res[1], exp)
+
+    def test_apply_formula(self):
+        data = {
+            'BRN': [85.14, 86.24, 85.34, 86.17, 87.55],
+            'G': [899.50, 903.50, 889.00, 888.75, 941.75]
+        }
+        df = pd.DataFrame(data)
+        res = pandasutil.apply_formula(df, "G/7.45-BRN")
+        self.assertEqual(res.iloc[0][0], pytest.approx(35.598, abs=0.01))
+        self.assertEqual(res.iloc[-1][0], pytest.approx(38.859, abs=0.01))
 
 
 if __name__ == "__main__":
