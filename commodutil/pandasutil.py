@@ -92,6 +92,8 @@ def generate_lambda(expression, columns):
     """
     Convert a simple expression string into a lambda function suitable for DataFrame operations.
     """
+    if isinstance(columns, pd.MultiIndex):
+        columns = columns.levels[0]
     for col in columns:
         expression = expression.replace(col, f"x['{col}']")
     return lambda x: eval(expression)
