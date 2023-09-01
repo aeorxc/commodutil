@@ -94,8 +94,14 @@ def generate_lambda(expression, columns):
     """
     if isinstance(columns, pd.MultiIndex):
         columns = columns.levels[0]
+
+    # Sort columns by length in descending order to handle substring issues
+    columns = sorted(columns, key=len, reverse=True)
+
     for col in columns:
-        expression = expression.replace(col, f"x['{col}']")
+        # Use regular expressions to replace whole word matches
+        expression = re.sub(rf'\b{re.escape(col)}\b', f"x['{col}']", expression)
+
     return lambda x: eval(expression)
 
 
