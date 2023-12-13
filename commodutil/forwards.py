@@ -806,80 +806,93 @@ def reject_outliers(data, m=2):
     return data[abs(data - np.mean(data)) < m * np.std(data)]
 
 
-def continuous_futures(
-    df, expiry_dates=None, roll_days=0, front_month=1
-) -> pd.DataFrame:
+def extract_expiry_date(contract, expiry_dates):
+    return expiry_dates.get(contract, contract + pd.offsets.MonthEnd(1))
+
+
+def determine_roll_date(df, expiry_date, roll_days):
+    cdf = df.copy().dropna(how="all", axis="rows") # remove non-trading days
+    if expiry_date in cdf.index:
+        idx_position = cdf.index.get_loc(expiry_date)
+        new_idx_position = idx_position - roll_days
+
+        if new_idx_position >= 0:
+            return cdf.index[new_idx_position]
+
+    return expiry_date
+
+
+def continuous_futures(df, expiry_dates=None, roll_days=0, front_month=1, back_adjust=False) -> pd.DataFrame:
     """
     Create a continuous future from individual contracts by stitching together contracts after they expire
+    with an option for back-adjustment.
 
-    :param df: DataFrame with individual contracts as columns. Column names should be dates eg Jan 22 Contract = '2022-01-01'
-    :param expiry_dates: Dictionary mapping contract dates to their respective expiry dates. If no expire dates passed assume expire is last day of month
+    :param df: DataFrame with individual contracts as columns.
+    :param expiry_dates: Dictionary mapping contract dates to their respective expiry dates.
     :param roll_days: Number of days before the expiry date to roll to the next contract.
-    :param front_month: return M1 by default otherwise M2, M3 etc
+    :param front_month: Determines which contract month to select.
+    :param back_adjust: If True, apply back-adjustment to the prices.
     :return: DataFrame representing the continuous future.
     """
-    mask = pd.DataFrame(index=df.index, columns=df.columns)
+    mask_switch = pd.DataFrame(index=df.index, columns=df.columns)
+    mask_adjust = pd.DataFrame(index=df.index, columns=df.columns)
 
     df.columns = [pd.to_datetime(x) for x in df.columns]
 
-    # Handle expiry_dates if provided
+    # Format expiry_dates if provided
     if expiry_dates:
         expiry_dates = {
             pd.to_datetime(x): pd.to_datetime(expiry_dates[x]) for x in expiry_dates
         }
 
     # Iterating over the columns (contracts)
-    for contract_date in df.columns:
+    for contract in df.columns:
+        prev_contract = contract - pd.offsets.MonthBegin(1)
+        next_contract = contract + pd.offsets.MonthBegin(1)
+
         # Determine expiry date for each contract
-        expiry_date = expiry_dates.get(
-            contract_date, contract_date + pd.offsets.MonthEnd(1)
-        )
-        prev_contract = contract_date - pd.offsets.MonthBegin(1)
-        prev_contract_expiry_date = expiry_dates.get(
-            prev_contract, prev_contract + pd.offsets.MonthEnd(1)
-        )
+        expiry_date = extract_expiry_date(contract, expiry_dates)
+        prev_contract_expiry_date = extract_expiry_date(prev_contract, expiry_dates)
 
         # Adjust expiry date based on roll_days
-        adjusted_expiry_date = expiry_date - pd.Timedelta(days=roll_days)
-        adjusted_prev_contract_expiry_date = prev_contract_expiry_date - pd.Timedelta(
-            days=roll_days
-        )
+        roll_date = determine_roll_date(df, expiry_date, roll_days)
+        prev_contract_roll_date = determine_roll_date(df, prev_contract_expiry_date, roll_days)
 
         # Set the cells to 1 where the index date is between the current contract date and the adjusted expiry date
-        mask.loc[
-            (mask.index > adjusted_prev_contract_expiry_date)
-            & (mask.index <= adjusted_expiry_date),
-            contract_date,
+        mask_switch.loc[
+            (mask_switch.index > pd.Timestamp(prev_contract_roll_date))
+            & (mask_switch.index <= pd.Timestamp(roll_date)),
+            contract,
         ] = 1
 
-    mask = mask.shift(front_month - 1, axis=1)  # handle front month eg M2, M3 etc
+        # Keep a track of difference between front and back contract on roll date
+        if roll_date in df.index and  contract in df.columns and next_contract in df.columns:
+            adj_value = df.at[roll_date, next_contract] - df.at[roll_date, contract]
+            mask_adjust.loc[
+                (mask_switch.index > prev_contract_roll_date)
+                & (mask_switch.index <= roll_date),
+                contract,
+            ] = adj_value
+
+    mask_switch = mask_switch.shift(front_month - 1, axis=1)  # handle front month eg M2, M3 etc
     # Multiply df with mask and sum along the rows
-    continuous_df = df.mul(mask, axis=1).sum(axis=1, skipna=True, min_count=1)
+    continuous_df = df.mul(mask_switch, axis=1).sum(axis=1, skipna=True, min_count=1)
     continuous_df = pd.DataFrame(continuous_df, columns=[f"M{front_month}"])
 
+    # Back-adjustment
+    if back_adjust:
+        mask_adjust_series = mask_adjust.fillna(method='bfill').sum(axis=1, skipna=True, min_count=1).fillna(0)
+        continuous_df = continuous_df.add(mask_adjust_series, axis=0)
+
     # Store mask in attributes for reference
-    continuous_df.attrs["mask"] = mask
+    continuous_df.attrs["mask_switch"] = mask_switch
+    continuous_df.attrs["mask_adjust"] = mask_adjust
 
     return continuous_df
 
 
-if __name__ == "__main__":
-    from pymarketplace import marketplace as mp
-    from qe import qe
-
-    df = mp.contracts("CL", fromDateTime="2020-08-01", startYear=2019, endYear=2021)[
-        "CL"
-    ]
-    expiry_dates = mp.contract_list("CL", startYear=2019, endYear=2021)
-    expiry_dates = (
-        expiry_dates[["deliveryStartDate", "expirationDate"]]
-        .set_index("deliveryStartDate")
-        .to_dict()["expirationDate"]
-    )
-    df = continuous_futures(df, expiry_dates=expiry_dates)
-    qe.qe(df)
-    qe.qe(df.attrs["mask"])
-#     from pylim import lim
+# if __name__ == "__main__":
+      # from pylim import lim
 #
 #     df = lim.series(["CL_2023Z", "CL_2024F"])
 #     spread_combination(df, "DecJan")

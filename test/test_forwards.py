@@ -435,6 +435,13 @@ class TestForwards(unittest.TestCase):
         self.assertAlmostEqual(res["M2"]["2020-11-20"], 42.64, 3)
         self.assertAlmostEqual(res["M2"]["2020-11-23"], 43.28, 3)
 
+        res = forwards.continuous_futures(
+            cl, expiry_dates=expiry_dates, front_month=1, back_adjust=True
+        )
+        self.assertAlmostEqual(res["M1"]["2020-11-19"], 42.01, 3)
+        self.assertAlmostEqual(res["M1"]["2020-11-20"], 42.42, 3)
+        self.assertAlmostEqual(res["M1"]["2020-11-23"], 43.06, 3)
+
 
 if __name__ == "__main__":
     unittest.main()
