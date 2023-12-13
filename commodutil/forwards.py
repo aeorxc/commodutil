@@ -98,7 +98,7 @@ def time_spreads_quarterly(contracts, m1, m2):
     for c1 in cf:
         year1, year2 = qtrcontracts_years[c1], qtrcontracts_years[c1]
         if int(m1[-1]) >= int(
-                m2[-1]
+            m2[-1]
         ):  # eg Q1-Q1 or Q4-Q1, then do Q419 - Q120 (year ahead)
             year2 = year1 + 1
         c2 = [
@@ -217,12 +217,12 @@ def half_year_contracts(contracts):
             "{}-06-01".format(year),
         )
         if (
-                c1 in contracts.columns
-                and c2 in contracts.columns
-                and c3 in contracts.columns
-                and c4 in contracts.columns
-                and c5 in contracts.columns
-                and c6 in contracts.columns
+            c1 in contracts.columns
+            and c2 in contracts.columns
+            and c3 in contracts.columns
+            and c4 in contracts.columns
+            and c5 in contracts.columns
+            and c6 in contracts.columns
         ):
             s = (
                 pd.concat(
@@ -250,12 +250,12 @@ def half_year_contracts(contracts):
             "{}-12-01".format(year),
         )
         if (
-                c7 in contracts.columns
-                and c8 in contracts.columns
-                and c9 in contracts.columns
-                and c10 in contracts.columns
-                and c11 in contracts.columns
-                and c12 in contracts.columns
+            c7 in contracts.columns
+            and c8 in contracts.columns
+            and c9 in contracts.columns
+            and c10 in contracts.columns
+            and c11 in contracts.columns
+            and c12 in contracts.columns
         ):
             s = (
                 pd.concat(
@@ -284,12 +284,12 @@ def half_year_contracts(contracts):
             "{}-12-01".format(year),
         )
         if (
-                c1 in contracts.columns
-                and c2 in contracts.columns
-                and c3 in contracts.columns
-                and c10 in contracts.columns
-                and c11 in contracts.columns
-                and c12 in contracts.columns
+            c1 in contracts.columns
+            and c2 in contracts.columns
+            and c3 in contracts.columns
+            and c10 in contracts.columns
+            and c11 in contracts.columns
+            and c12 in contracts.columns
         ):
             s = (
                 pd.concat(
@@ -318,12 +318,12 @@ def half_year_contracts(contracts):
                 "{}-09-01".format(year),
             )
             if (
-                    c4 in contracts.columns
-                    and c5 in contracts.columns
-                    and c6 in contracts.columns
-                    and c7 in contracts.columns
-                    and c8 in contracts.columns
-                    and c9 in contracts.columns
+                c4 in contracts.columns
+                and c5 in contracts.columns
+                and c6 in contracts.columns
+                and c7 in contracts.columns
+                and c8 in contracts.columns
+                and c9 in contracts.columns
             ):
                 s = (
                     pd.concat(
@@ -368,9 +368,9 @@ def quarterly_contracts(contracts):
             "{}-03-01".format(year),
         )
         if (
-                c1 in contracts.columns
-                and c2 in contracts.columns
-                and c3 in contracts.columns
+            c1 in contracts.columns
+            and c2 in contracts.columns
+            and c3 in contracts.columns
         ):
             s = (
                 pd.concat([contracts[c1], contracts[c2], contracts[c3]], axis=1)
@@ -386,9 +386,9 @@ def quarterly_contracts(contracts):
             "{}-06-01".format(year),
         )
         if (
-                c4 in contracts.columns
-                and c5 in contracts.columns
-                and c6 in contracts.columns
+            c4 in contracts.columns
+            and c5 in contracts.columns
+            and c6 in contracts.columns
         ):
             s = (
                 pd.concat(
@@ -406,9 +406,9 @@ def quarterly_contracts(contracts):
             "{}-09-01".format(year),
         )
         if (
-                c7 in contracts.columns
-                and c8 in contracts.columns
-                and c9 in contracts.columns
+            c7 in contracts.columns
+            and c8 in contracts.columns
+            and c9 in contracts.columns
         ):
             s = (
                 pd.concat([contracts[c7], contracts[c8], contracts[c9]], axis=1)
@@ -424,9 +424,9 @@ def quarterly_contracts(contracts):
             "{}-12-01".format(year),
         )
         if (
-                c10 in contracts.columns
-                and c11 in contracts.columns
-                and c12 in contracts.columns
+            c10 in contracts.columns
+            and c11 in contracts.columns
+            and c12 in contracts.columns
         ):
             s = (
                 pd.concat([contracts[c10], contracts[c11], contracts[c12]], axis=1)
@@ -577,7 +577,7 @@ def cal_contracts(contracts):
             s.name = "CAL {}".format(year)
             dfs.append(s)
         elif (
-                year == dates.curyear and len(s.columns) > 0
+            year == dates.curyear and len(s.columns) > 0
         ):  # sometimes current year passed in has less than 12 columns but should be included
             s = s.mean(axis=1)
             s.name = "CAL {}".format(year)
@@ -805,7 +805,80 @@ def spread_combination(contracts, combination_type, verbose_columns=True):
 def reject_outliers(data, m=2):
     return data[abs(data - np.mean(data)) < m * np.std(data)]
 
-# if __name__ == "__main__":
+
+def continuous_futures(
+    df, expiry_dates=None, roll_days=0, front_month=1
+) -> pd.DataFrame:
+    """
+    Create a continuous future from individual contracts by stitching together contracts after they expire
+
+    :param df: DataFrame with individual contracts as columns. Column names should be dates eg Jan 22 Contract = '2022-01-01'
+    :param expiry_dates: Dictionary mapping contract dates to their respective expiry dates. If no expire dates passed assume expire is last day of month
+    :param roll_days: Number of days before the expiry date to roll to the next contract.
+    :param front_month: return M1 by default otherwise M2, M3 etc
+    :return: DataFrame representing the continuous future.
+    """
+    mask = pd.DataFrame(index=df.index, columns=df.columns)
+
+    df.columns = [pd.to_datetime(x) for x in df.columns]
+
+    # Handle expiry_dates if provided
+    if expiry_dates:
+        expiry_dates = {
+            pd.to_datetime(x): pd.to_datetime(expiry_dates[x]) for x in expiry_dates
+        }
+
+    # Iterating over the columns (contracts)
+    for contract_date in df.columns:
+        # Determine expiry date for each contract
+        expiry_date = expiry_dates.get(
+            contract_date, contract_date + pd.offsets.MonthEnd(1)
+        )
+        prev_contract = contract_date - pd.offsets.MonthBegin(1)
+        prev_contract_expiry_date = expiry_dates.get(
+            prev_contract, prev_contract + pd.offsets.MonthEnd(1)
+        )
+
+        # Adjust expiry date based on roll_days
+        adjusted_expiry_date = expiry_date - pd.Timedelta(days=roll_days)
+        adjusted_prev_contract_expiry_date = prev_contract_expiry_date - pd.Timedelta(
+            days=roll_days
+        )
+
+        # Set the cells to 1 where the index date is between the current contract date and the adjusted expiry date
+        mask.loc[
+            (mask.index > adjusted_prev_contract_expiry_date)
+            & (mask.index <= adjusted_expiry_date),
+            contract_date,
+        ] = 1
+
+    mask = mask.shift(front_month - 1, axis=1)  # handle front month eg M2, M3 etc
+    # Multiply df with mask and sum along the rows
+    continuous_df = df.mul(mask, axis=1).sum(axis=1, skipna=True, min_count=1)
+    continuous_df = pd.DataFrame(continuous_df, columns=[f"M{front_month}"])
+
+    # Store mask in attributes for reference
+    continuous_df.attrs["mask"] = mask
+
+    return continuous_df
+
+
+if __name__ == "__main__":
+    from pymarketplace import marketplace as mp
+    from qe import qe
+
+    df = mp.contracts("CL", fromDateTime="2020-08-01", startYear=2019, endYear=2021)[
+        "CL"
+    ]
+    expiry_dates = mp.contract_list("CL", startYear=2019, endYear=2021)
+    expiry_dates = (
+        expiry_dates[["deliveryStartDate", "expirationDate"]]
+        .set_index("deliveryStartDate")
+        .to_dict()["expirationDate"]
+    )
+    df = continuous_futures(df, expiry_dates=expiry_dates)
+    qe.qe(df)
+    qe.qe(df.attrs["mask"])
 #     from pylim import lim
 #
 #     df = lim.series(["CL_2023Z", "CL_2024F"])

@@ -370,6 +370,71 @@ class TestForwards(unittest.TestCase):
         res = forwards.spread_combination(cl, "q4q1q2")
         self.assertAlmostEqual(res["Q4Q1Q2 2020"]["2019-01-02"], -0.023, 3)
 
+    def test_continuous_futures(self):
+        dirname, filename = os.path.split(os.path.abspath(__file__))
+        cl = pd.read_csv(
+            os.path.join(dirname, "test_cl.csv"),
+            index_col=0,
+            parse_dates=True,
+            dayfirst=True,
+        )
+
+        cl = cl.rename(
+            columns={
+                x: pd.to_datetime(forwards.convert_contract_to_date(x))
+                for x in cl.columns
+            }
+        )
+
+        expiry_dates = {
+            "2019-01-01": "2018-12-19",
+            "2019-02-01": "2019-01-22",
+            "2019-03-01": "2019-02-20",
+            "2019-04-01": "2019-03-20",
+            "2019-05-01": "2019-04-22",
+            "2019-06-01": "2019-05-21",
+            "2019-07-01": "2019-06-20",
+            "2019-08-01": "2019-07-22",
+            "2019-09-01": "2019-08-20",
+            "2019-10-01": "2019-09-20",
+            "2019-11-01": "2019-10-22",
+            "2019-12-01": "2019-11-20",
+            "2020-01-01": "2019-12-19",
+            "2020-02-01": "2020-01-21",
+            "2020-03-01": "2020-02-20",
+            "2020-04-01": "2020-03-20",
+            "2020-05-01": "2020-04-21",
+            "2020-06-01": "2020-05-19",
+            "2020-07-01": "2020-06-22",
+            "2020-08-01": "2020-07-21",
+            "2020-09-01": "2020-08-20",
+            "2020-10-01": "2020-09-22",
+            "2020-11-01": "2020-10-20",
+            "2020-12-01": "2020-11-20",
+            "2021-01-01": "2021-01-20",
+        }
+
+        res = forwards.continuous_futures(cl, expiry_dates=expiry_dates)
+        self.assertAlmostEqual(res["M1"]["2020-11-20"], 42.15, 3)
+        self.assertAlmostEqual(res["M1"]["2020-11-23"], 43.06, 3)
+
+        res = forwards.continuous_futures(cl, expiry_dates=expiry_dates, roll_days=1)
+        self.assertAlmostEqual(res["M1"]["2020-11-19"], 41.74, 3)
+        self.assertAlmostEqual(res["M1"]["2020-11-20"], 42.42, 3)
+        self.assertAlmostEqual(res["M1"]["2020-11-23"], 43.06, 3)
+
+        res = forwards.continuous_futures(cl, expiry_dates=expiry_dates, front_month=2)
+        self.assertAlmostEqual(res["M2"]["2020-11-19"], 41.90, 3)
+        self.assertAlmostEqual(res["M2"]["2020-11-20"], 42.42, 3)
+        self.assertAlmostEqual(res["M2"]["2020-11-23"], 43.28, 3)
+
+        res = forwards.continuous_futures(
+            cl, expiry_dates=expiry_dates, front_month=2, roll_days=1
+        )
+        self.assertAlmostEqual(res["M2"]["2020-11-19"], 41.90, 3)
+        self.assertAlmostEqual(res["M2"]["2020-11-20"], 42.64, 3)
+        self.assertAlmostEqual(res["M2"]["2020-11-23"], 43.28, 3)
+
 
 if __name__ == "__main__":
     unittest.main()
