@@ -24,7 +24,7 @@ def curve_seasonal_zscore(hist, fwd):
     return fwd
 
 
-def reindex_zscore(df, range=10, calc_year_start:int=None):
+def reindex_zscore(df, range=10, calc_year_start: int = None):
     """
     Given a dataframe of contracts (or spreads), calculate z-score for current year onwards
     Essentially returns how far away the 'curve' is from historical trading range

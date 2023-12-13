@@ -44,8 +44,8 @@ class TestPandasUtils(unittest.TestCase):
 
     def test_apply_formula(self):
         data = {
-            'BRN': [85.14, 86.24, 85.34, 86.17, 87.55],
-            'G': [899.50, 903.50, 889.00, 888.75, 941.75]
+            "BRN": [85.14, 86.24, 85.34, 86.17, 87.55],
+            "G": [899.50, 903.50, 889.00, 888.75, 941.75],
         }
         df = pd.DataFrame(data)
         res = pandasutil.apply_formula(df, "G/7.45-BRN")

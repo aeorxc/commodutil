@@ -62,12 +62,12 @@ def sql_insert_statement_from_dataframe(df, table_name, print_statemnt=False):
     for index, row in df.iterrows():
         vals = [re.sub(r"\'", "", x) if isinstance(x, str) else x for x in row.values]
         q = (
-                "INSERT INTO "
-                + table_name
-                + " ("
-                + str(", ".join(df.columns))
-                + ") VALUES "
-                + str(tuple(vals))
+            "INSERT INTO "
+            + table_name
+            + " ("
+            + str(", ".join(df.columns))
+            + ") VALUES "
+            + str(tuple(vals))
         )
         q = q.replace("nan", "Null").replace("None", "Null")
         if print_statemnt:
@@ -100,7 +100,7 @@ def generate_lambda(expression, columns):
 
     for col in columns:
         # Use regular expressions to replace whole word matches
-        expression = re.sub(rf'\b{re.escape(col)}\b', f"x['{col}']", expression)
+        expression = re.sub(rf"\b{re.escape(col)}\b", f"x['{col}']", expression)
 
     return lambda x: eval(expression)
 
