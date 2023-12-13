@@ -807,7 +807,10 @@ def reject_outliers(data, m=2):
 
 
 def extract_expiry_date(contract, expiry_dates):
-    return expiry_dates.get(contract, contract + pd.offsets.MonthEnd(1))
+    if expiry_dates:
+        return expiry_dates.get(contract, contract + pd.offsets.MonthEnd(1))
+
+    return contract + pd.offsets.MonthEnd(1)
 
 
 def determine_roll_date(df, expiry_date, roll_days):
