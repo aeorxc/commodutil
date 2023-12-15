@@ -414,19 +414,18 @@ class TestForwards(unittest.TestCase):
             "2021-01-01": "2021-01-20",
         }
 
-        res = forwards.continuous_futures(cl, expiry_dates=expiry_dates)
+        res = forwards.continuous_futures(cl, expiry_dates=expiry_dates, front_month=[1,2])
         self.assertAlmostEqual(res["M1"]["2020-11-20"], 42.15, 3)
         self.assertAlmostEqual(res["M1"]["2020-11-23"], 43.06, 3)
+        self.assertAlmostEqual(res["M2"]["2020-11-19"], 41.90, 3)
+        self.assertAlmostEqual(res["M2"]["2020-11-20"], 42.42, 3)
+        self.assertAlmostEqual(res["M2"]["2020-11-23"], 43.28, 3)
 
         res = forwards.continuous_futures(cl, expiry_dates=expiry_dates, roll_days=1)
         self.assertAlmostEqual(res["M1"]["2020-11-19"], 41.74, 3)
         self.assertAlmostEqual(res["M1"]["2020-11-20"], 42.42, 3)
         self.assertAlmostEqual(res["M1"]["2020-11-23"], 43.06, 3)
 
-        res = forwards.continuous_futures(cl, expiry_dates=expiry_dates, front_month=2)
-        self.assertAlmostEqual(res["M2"]["2020-11-19"], 41.90, 3)
-        self.assertAlmostEqual(res["M2"]["2020-11-20"], 42.42, 3)
-        self.assertAlmostEqual(res["M2"]["2020-11-23"], 43.28, 3)
 
         res = forwards.continuous_futures(
             cl, expiry_dates=expiry_dates, front_month=2, roll_days=1
