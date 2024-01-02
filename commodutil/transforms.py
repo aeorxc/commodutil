@@ -54,7 +54,7 @@ def seasonalise_weekly(df, freq="W"):
     # when converting back to date format, some years don't have week 53 so drop for now
     if (
         53 in df.index
-        and pd.to_datetime("%s-12-31" % dates.curyear).isocalendar()[1] == 52
+        and pd.to_datetime("%s-12-31" % dates.curyear).isocalendar()[1] in [52, 1]
     ):
         df = df.drop(53)
     df.index = df.index.map(
