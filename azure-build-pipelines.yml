@@ -25,8 +25,6 @@ pool: Self-Hosted-AWS
 stages:
   - stage: Validate
     displayName: "Run tests and checks"
-    variables:
-      - group: service-account
     jobs:
     - job: Test
       displayName: "Run unit tests"
