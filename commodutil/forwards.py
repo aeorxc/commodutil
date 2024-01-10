@@ -583,6 +583,9 @@ def cal_contracts(contracts):
             s.name = "CAL {}".format(year)
             dfs.append(s)
 
+    if not dfs:
+        return pd.DataFrame()
+
     res = pd.concat(dfs, axis=1)
     # sort columns by years
     cols = list(res.columns)
