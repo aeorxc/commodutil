@@ -39,7 +39,7 @@ def seasonailse(df, fillna=True):
     return seas
 
 
-def seasonalise_weekly(df, freq="W"):
+def seasonalise_weekly(df):
     """
     Edge case for handling weekly data - eg DOE where we need to tweak the standard
     seasonalise() method.
@@ -50,16 +50,22 @@ def seasonalise_weekly(df, freq="W"):
         df = pd.DataFrame(df)
 
     df = pd.merge(df, df.index.isocalendar(), left_index=True, right_index=True)
-    df = df.groupby([df.week, df.year]).mean()[df.columns[0]].unstack()
-    # when converting back to date format, some years don't have week 53 so drop for now
-    if (
-        53 in df.index
-        and pd.to_datetime("%s-12-31" % dates.curyear).isocalendar()[1] in [52, 1]
-    ):
-        df = df.drop(53)
-    df.index = df.index.map(
-        lambda x: datetime.fromisocalendar(datetime.now().year, x, 1)
-    )
+    df = df.groupby([df.year, df.week, df.index.dayofweek]).first()
+    dayofweek = df['day'].iloc[-1]
+
+    df = df[[df.columns[0]]].unstack().unstack()
+    first_level = df.columns.levels[0][0]  # Get the first level of the MultiIndex
+    df.columns = df.columns.set_levels([dates.curyear for x in df.columns.levels[0]], level=0)
+    df.columns = df.columns.set_levels([dayofweek for x in df.columns.levels[0]], level=1)
+
+    # drop week 53 if the current year has no week 53
+    last_day_of_year = datetime(dates.curyear, 12, 31)
+    if not last_day_of_year.weekday() >= 3 if dates.curyear % 4 == 0 else last_day_of_year.weekday() >= 2:
+        df = df.loc[:, df.columns.get_level_values(2) != 53]
+
+    # convert the columns to datetime
+    df.columns = df.columns.map(lambda x: datetime.fromisocalendar(x[0], x[2], x[1]))
+    df = df.T
     return df
 
 
