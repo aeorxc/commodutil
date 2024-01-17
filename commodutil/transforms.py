@@ -39,7 +39,7 @@ def seasonailse(df, fillna=True):
     return seas
 
 
-def seasonalise_weekly(df, freq="W"):
+def seasonalise_weekly(df):
     """
     Edge case for handling weekly data - eg DOE where we need to tweak the standard
     seasonalise() method.
