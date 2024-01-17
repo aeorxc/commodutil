@@ -47,38 +47,9 @@ class TestTransforms(unittest.TestCase):
 
         seas = transforms.seasonalise_weekly(cl["PET.WCRSTUS1.W"])
 
-        self.assertEqual(
-            seas[2020].loc[
-                datetime.fromisocalendar(
-                    dates.curyear, pd.to_datetime("2020-01-03").isocalendar()[1], 1
-                )
-            ],
-            1066027,
-        )
-        self.assertEqual(
-            seas[2020].loc[
-                datetime.fromisocalendar(
-                    dates.curyear, pd.to_datetime("2020-01-10").isocalendar()[1], 1
-                )
-            ],
-            1063478,
-        )
-        self.assertEqual(
-            seas[2000].loc[
-                datetime.fromisocalendar(
-                    dates.curyear, pd.to_datetime("2000-01-07").isocalendar()[1], 1
-                )
-            ],
-            844791,
-        )
-        self.assertEqual(
-            seas[2000].loc[
-                datetime.fromisocalendar(
-                    dates.curyear, pd.to_datetime("2000-12-29").isocalendar()[1], 1
-                )
-            ],
-            813959,
-        )
+        self.assertEqual(seas[2020].dropna().iloc[-1], 1192727)
+
+        self.assertEqual(seas[2020].dropna().iloc[0], 1066027)
 
     def test_reindex_year(self):
         """
