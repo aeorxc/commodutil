@@ -1,4 +1,4 @@
-from datetime import datetime
+from datetime import datetime, timedelta
 from functools import reduce
 
 import dask
@@ -39,6 +39,31 @@ def seasonailse(df, fillna=True):
     return seas
 
 
+def cleanup_weekly_data(df):
+    """
+    Processes the dates in a DataFrame according to the specified rules and fills missing weeks.
+
+    :param df: Pandas DataFrame to be processed.
+    :return: processed DataFrame.
+    """
+    intended_week_day = df['day'].mode()[0]
+    all_weeks = set(pd.MultiIndex.from_product([df['year'].unique(), range(1, 53)]))
+    weeks_with_intended_day = set(zip(df[df['day'] == intended_week_day]['year'], df[df['day'] == intended_week_day]['week']))
+    missing_weeks = all_weeks - weeks_with_intended_day
+
+    for week in missing_weeks:
+        week_records = df[(df['year'] == week[0]) & (df['week'] == week[1])]
+        if not week_records.empty:
+            last_record = week_records.tail(1)
+            last_record.index = last_record.index.map(lambda x: x + timedelta(days=int(intended_week_day - (x.dayofweek+1))))
+            last_record.day = intended_week_day
+            df = df.drop(week_records.index)
+            df = df.append(last_record)
+
+    df = df[df['day'] == intended_week_day]
+    return df.sort_index()
+
+
 def seasonalise_weekly(df):
     """
     Edge case for handling weekly data - eg DOE where we need to tweak the standard
@@ -50,6 +75,7 @@ def seasonalise_weekly(df):
         df = pd.DataFrame(df)
 
     df = pd.merge(df, df.index.isocalendar(), left_index=True, right_index=True)
+    df = cleanup_weekly_data(df)
     df = df.groupby([df.year, df.week, df.index.dayofweek]).first()
     dayofweek = df['day'].iloc[-1]
 
@@ -73,7 +99,7 @@ def forward_only(df):
     """
     Only take forward timeseries from cur month onwards (discarding the history)
     """
-    df = df[dates.curmonyear_str :]
+    df = df[dates.curmonyear_str:]
     return df
 
 
