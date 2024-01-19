@@ -61,7 +61,7 @@ def cleanup_weekly_data(df):
             df = df.append(last_record)
 
     df = df[df['day'] == intended_week_day]
-    return df.sort_values(by=df.index.name)
+    return df.sort_index()
 
 
 def seasonalise_weekly(df):
@@ -99,7 +99,7 @@ def forward_only(df):
     """
     Only take forward timeseries from cur month onwards (discarding the history)
     """
-    df = df[dates.curmonyear_str :]
+    df = df[dates.curmonyear_str:]
     return df
 
 
