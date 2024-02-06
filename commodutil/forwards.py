@@ -684,7 +684,7 @@ def spread_combinations(contracts):
     return output
 
 
-def spread_combination(contracts, combination_type, verbose_columns=True, exclude_price_month=True):
+def spread_combination(contracts, combination_type, verbose_columns=True, exclude_price_month=False):
     """
     Convenience method to access functionality in forwards using a combination_type keyword
     :param contracts:
