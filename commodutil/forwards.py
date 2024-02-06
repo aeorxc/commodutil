@@ -684,7 +684,7 @@ def spread_combinations(contracts):
     return output
 
 
-def spread_combination(contracts, combination_type, verbose_columns=True):
+def spread_combination(contracts, combination_type, verbose_columns=True, exclude_price_month=True):
     """
     Convenience method to access functionality in forwards using a combination_type keyword
     :param contracts:
@@ -693,6 +693,16 @@ def spread_combination(contracts, combination_type, verbose_columns=True):
     """
     combination_type = combination_type.lower()
     contracts = contracts.dropna(how="all", axis="rows")
+
+    if exclude_price_month:
+        def replace_last_month_with_nan(series):
+            # Find the last valid month
+            last_valid_month = series.dropna().index[-1].month
+            # Replace the data for this month with NaN
+            series[series.index.month == last_valid_month] = np.nan
+            return series
+
+        contracts = contracts.apply(replace_last_month_with_nan, axis=0)
 
     if combination_type == "calendar":
         c_contracts = cal_contracts(contracts)
