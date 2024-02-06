@@ -697,7 +697,10 @@ def spread_combination(contracts, combination_type, verbose_columns=True, exclud
     if exclude_price_month:
         def replace_last_month_with_nan(series):
             # Find the last valid month
-            last_valid_month = series.dropna().index[-1].month
+            series_dropped_na = series.dropna()
+            if series_dropped_na.empty:
+                return series
+            last_valid_month = series_dropped_na.index[-1].month
             # Replace the data for this month with NaN
             series[series.index.month == last_valid_month] = np.nan
             return series
