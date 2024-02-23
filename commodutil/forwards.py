@@ -2,7 +2,7 @@
 Utility for forward contracts
 """
 import re
-from calendar import month_abbr
+from calendar import month_abbr, monthrange
 
 import numpy as np
 import pandas as pd
@@ -684,6 +684,20 @@ def spread_combinations(contracts):
     return output
 
 
+def replace_last_month_with_nan(series):
+    # Find the last valid month
+    series_dropped_na = series.dropna()
+    if series_dropped_na.empty:
+        return series
+    last_month = pd.to_datetime(f"{series_dropped_na.index[-1].year}-{series_dropped_na.index[-1].month}-01")
+    _, last_day = monthrange(last_month.year, last_month.month)
+    last_valid_month_end = pd.to_datetime(f"{last_month.year}-{last_month.month}-{last_day}")
+    # Replace series with NaN for the last valid month
+    series[last_month:last_valid_month_end] = np.nan
+
+    return series
+
+
 def spread_combination(contracts, combination_type, verbose_columns=True, exclude_price_month=False):
     """
     Convenience method to access functionality in forwards using a combination_type keyword
@@ -693,19 +707,6 @@ def spread_combination(contracts, combination_type, verbose_columns=True, exclud
     """
     combination_type = combination_type.lower()
     contracts = contracts.dropna(how="all", axis="rows")
-
-    if exclude_price_month:
-        def replace_last_month_with_nan(series):
-            # Find the last valid month
-            series_dropped_na = series.dropna()
-            if series_dropped_na.empty:
-                return series
-            last_valid_month = series_dropped_na.index[-1].month
-            # Replace the data for this month with NaN
-            series[series.index.month == last_valid_month] = np.nan
-            return series
-
-        contracts = contracts.apply(replace_last_month_with_nan, axis=0)
 
     if combination_type == "calendar":
         c_contracts = cal_contracts(contracts)
@@ -744,6 +745,8 @@ def spread_combination(contracts, combination_type, verbose_columns=True, exclud
                 q_spreads = q_spreads.rename(
                     columns={x: colmap[x] for x in q_spreads.columns}
                 )
+            if exclude_price_month:
+                contracts = q_spreads.apply(replace_last_month_with_nan, axis=0)
             return q_spreads
         m = re.search("q\dq\d", combination_type)
         if m:
@@ -758,6 +761,8 @@ def spread_combination(contracts, combination_type, verbose_columns=True, exclud
                         for x in q_spreads.columns
                     }
                 )
+            if exclude_price_month:
+                contracts = q_spreads.apply(replace_last_month_with_nan, axis=0)
             return q_spreads
 
         m = re.search("q\d", combination_type)
@@ -791,7 +796,7 @@ def spread_combination(contracts, combination_type, verbose_columns=True, exclud
         else:
             c = c.rename(columns={x: x.year for x in c.columns})
         return c
-    if len(combination_type) == 6:
+    if len(combination_type) == 6: # spread
         m1, m2 = combination_type[0:3], combination_type[3:6]
         if m1 in months and m2 in months:
             c = time_spreads(contracts, month_abbr_inv[m1], month_abbr_inv[m2])
@@ -801,8 +806,12 @@ def spread_combination(contracts, combination_type, verbose_columns=True, exclud
                         x: "%s%s %s" % (m1.title(), m2.title(), x) for x in c.columns
                     }
                 )
+            if exclude_price_month:
+                contracts = c.apply(replace_last_month_with_nan, axis=0)
             return c
-    if len(combination_type) == 9:
+    if len(combination_type) == 9: # fly
+        if exclude_price_month:
+            contracts = contracts.apply(replace_last_month_with_nan, axis=0)
         m1, m2, m3 = combination_type[0:3], combination_type[3:6], combination_type[6:9]
         if m1 in months and m2 in months and m3 in months:
             c = fly(
@@ -815,6 +824,8 @@ def spread_combination(contracts, combination_type, verbose_columns=True, exclud
                         for x in c.columns
                     }
                 )
+            if exclude_price_month:
+                contracts = c.apply(replace_last_month_with_nan, axis=0)
             return c
 
 
