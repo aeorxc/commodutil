@@ -693,7 +693,8 @@ def replace_last_month_with_nan(series):
     _, last_day = monthrange(last_month.year, last_month.month)
     last_valid_month_end = pd.to_datetime(f"{last_month.year}-{last_month.month}-{last_day}")
     # Replace series with NaN for the last valid month
-    series[last_month:last_valid_month_end] = np.nan
+    if last_month.year < dates.curyear:
+        series[last_month:last_valid_month_end] = np.nan
 
     return series
 
