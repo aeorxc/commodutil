@@ -143,6 +143,12 @@ def convfactor(commodity, fromunit, tounit):
     fromunit = _stdunits(fromunit)
     tounit = _stdunits(tounit)
 
+    if fromunit == 'bbl' and tounit == 'gal':
+        return 42
+
+    if fromunit == 'gal' and tounit == 'bbl':
+        return 1/42
+
     factor = "{}_{}_{}".format(commodity, fromunit, tounit)
     if factor in globals():
         return globals()[factor]
