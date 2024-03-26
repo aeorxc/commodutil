@@ -3,7 +3,7 @@ Utility for forward contracts
 """
 import re
 from calendar import month_abbr, monthrange
-
+import datetime
 import numpy as np
 import pandas as pd
 
@@ -44,7 +44,10 @@ def convert_columns_to_date(contracts: pd.DataFrame) -> pd.DataFrame:
     remap = {}
     for col in contracts.columns:
         try:
-            remap[col] = pd.to_datetime(convert_contract_to_date(col))
+            if isinstance(col, datetime.date):
+                remap[col] = pd.to_datetime(col)
+            else:
+                remap[col] = pd.to_datetime(convert_contract_to_date(col))
         except IndexError as _:
             pass
         except TypeError as _:
