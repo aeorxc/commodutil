@@ -24,6 +24,42 @@ futures_month_conv = {
     12: "Z",
 }
 
+monthly_spread_combos = [
+        [1, 2],
+        [2, 3],
+        [3, 4],
+        [4, 5],
+        [5, 6],
+        [6, 7],
+        [7, 8],
+        [8, 9],
+        [9, 10],
+        [10, 11],
+        [11, 12],
+        [12, 1],
+        [6, 6],
+        [6, 12],
+        [12, 12],
+        [10, 12],
+        [4, 9],
+        [10, 3],
+    ]
+
+fly_combos = [
+        [1, 2, 3],
+        [2, 3, 4],
+        [3, 4, 5],
+        [4, 5, 6],
+        [5, 6, 7],
+        [6, 7, 8],
+        [7, 8, 9],
+        [8, 9, 10],
+        [9, 10, 11],
+        [10, 11, 12],
+        [11, 12, 1],
+        [12, 1, 2],
+    ]
+
 futures_month_conv_inv = {v: k for k, v in futures_month_conv.items()}
 
 
@@ -67,6 +103,7 @@ def time_spreads_monthly(contracts, m1, m2):
 
     cf = [x for x in contracts if x.month == m1]
     dfs = []
+    legmap = {}
 
     for c1 in cf:
         year1, year2 = c1.year, c1.year
@@ -76,11 +113,13 @@ def time_spreads_monthly(contracts, m1, m2):
         if len(c2) == 1:
             c2 = c2[0]
             s = contracts[c1] - contracts[c2]
-            s.name = year1
+            s.name = f"{month_abbr[m1]}{month_abbr[m2]} {year1}"
+            legmap[s.name] = [c1, c2]
             dfs.append(s)
 
     res = pd.concat(dfs, axis=1)
     res = res.dropna(how="all", axis="rows")
+    res.attrs = legmap
     return res
 
 
@@ -130,6 +169,7 @@ def fly(contracts, m1, m2, m3):
 
     cf = [x for x in contracts if x.month == m1]
     dfs = []
+    legmap = {}
     for c1 in cf:
         year1, year2, year3 = c1.year, c1.year, c1.year
         # year rollover
@@ -142,11 +182,13 @@ def fly(contracts, m1, m2, m3):
         if len(c2) == 1 and len(c3) == 1:
             c2, c3 = c2[0], c3[0]
             s = contracts[c1] + contracts[c3] - (2 * contracts[c2])
-            s.name = year1
+            s.name = f"{month_abbr[m1]}{month_abbr[m2]}{month_abbr[m3]} {year1}"
+            legmap[s.name] = [c1, c2, c3]
             dfs.append(s)
 
     res = pd.concat(dfs, axis=1)
     res = res.dropna(how="all", axis="rows")
+    res.attrs = legmap
     return res
 
 
@@ -623,7 +665,80 @@ def cal_spreads(q):
         return res
 
 
-def spread_combinations(contracts):
+def all_monthly_spreads(contracts, start_date=None, end_date=None, col_format=None):
+    dfs = []
+    for spread in monthly_spread_combos:
+        df = time_spreads(contracts, spread[0], spread[1])
+        dfs.append(df)
+
+    res = pd.concat(dfs, axis=1)
+    legmap = {}
+    for df in dfs:
+        legmap.update(df.attrs)
+    res.attrs['legmap'] = legmap
+
+    # Function to parse the starting month and year from the column name
+    def parse_date(col_name):
+        month_str, year = col_name.split()  # Splitting by space to separate month(s) and year
+        month_abbr = month_str[:3]  # Taking the first three letters as the month abbreviation
+        month = datetime.datetime.strptime(month_abbr, "%b").month  # Convert abbreviation to month number
+        return datetime.datetime(year=int(year), month=month, day=1)
+
+    columns = res.columns
+    if start_date is not None:
+        columns = [col for col in columns if parse_date(col).date() >= start_date]
+    if end_date is not None:
+        columns = [col for col in columns if parse_date(col).date() <= end_date]
+
+    res = res[columns]
+
+    if col_format is not None and 'legmap' in res.attrs:
+        col_mapping = {col: f"{leg[0].strftime(col_format)} - {leg[1].strftime(col_format)}" for col, leg in
+                       legmap.items()}
+        res = res.rename(columns = col_mapping)
+
+    return res
+
+
+def all_fly_spreads(contracts, start_date=None, end_date=None, col_format=None):
+    dfs = []
+    for flyx in fly_combos:
+        df = fly(contracts, flyx[0], flyx[1], flyx[2])
+        dfs.append(df)
+
+    res = pd.concat(dfs, axis=1)
+
+    legmap = {} # TODO move this to a function reduplicates
+    for df in dfs:
+        legmap.update(df.attrs)
+    res.attrs['legmap'] = legmap
+
+    def parse_date(col_name):
+        month_str, year = col_name.split()  # Splitting by space to separate month(s) and year
+        month_abbr = month_str[:3]  # Taking the first three letters as the month abbreviation
+        month = datetime.datetime.strptime(month_abbr, "%b").month  # Convert abbreviation to month number
+        return datetime.datetime(year=int(year), month=month, day=1)
+
+    columns = res.columns
+    if start_date is not None:
+        columns = [col for col in columns if parse_date(col).date() >= start_date]
+    if end_date is not None:
+        columns = [col for col in columns if parse_date(col).date() <= end_date]
+
+    res = res[columns]
+
+    if col_format is not None and 'legmap' in res.attrs: # TODO move this to a function reduplicates
+        if col_format == "%b%y":
+            col_mapping = {col: f"{leg[0].strftime(col_format)}{leg[1].strftime(col_format)}{leg[2].strftime(col_format)}" for col, leg in
+                           legmap.items()}
+        elif col_format == "%b%b%b %y":
+            col_mapping = {col: f"{leg[0].strftime('%b')}{leg[1].strftime('%b')}{leg[2].strftime('%b')} {leg[0].strftime('%y')}" for col, leg in legmap.items()}
+        res = res.rename(columns = col_mapping)
+
+    return res
+
+
+def all_spread_combinations(contracts):
     output = {}
     output["Calendar"] = cal_contracts(contracts)
     output["Calendar Spread"] = cal_spreads(output["Calendar"])
@@ -644,47 +759,38 @@ def spread_combinations(contracts):
     for month in [1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12]:
         output[month] = contracts[[x for x in contracts.columns if x.month == month]]
 
-    for spread in [
-        [1, 2],
-        [2, 3],
-        [3, 4],
-        [4, 5],
-        [5, 6],
-        [6, 7],
-        [7, 8],
-        [8, 9],
-        [9, 10],
-        [10, 11],
-        [11, 12],
-        [12, 1],
-        [6, 6],
-        [6, 12],
-        [12, 12],
-        [10, 12],
-        [4, 9],
-        [10, 3],
-    ]:
+    for spread in monthly_spread_combos:
         tag = "%s%s" % (month_abbr[spread[0]], month_abbr[spread[1]])
         output[tag] = time_spreads(contracts, spread[0], spread[1])
 
-    for flyx in [
-        [1, 2, 3],
-        [2, 3, 4],
-        [3, 4, 5],
-        [4, 5, 6],
-        [5, 6, 7],
-        [6, 7, 8],
-        [7, 8, 9],
-        [8, 9, 10],
-        [9, 10, 11],
-        [10, 11, 12],
-        [11, 12, 1],
-        [12, 1, 2],
-    ]:
+    for flyx in fly_combos:
         tag = "%s%s%s" % (month_abbr[flyx[0]], month_abbr[flyx[1]], month_abbr[flyx[2]])
         output[tag] = fly(contracts, flyx[0], flyx[1], flyx[2])
 
     return output
+
+
+def spread_combinations(contracts, combination_type=None, start_date=None, end_date=None, col_format=None):
+    if combination_type is None:
+        return all_spread_combinations(contracts)
+    if combination_type.lower() == "calendar":
+        return cal_contracts(contracts)
+    elif combination_type.lower() == "calendar spread":
+        return cal_spreads(cal_contracts(contracts))
+    elif combination_type.lower() == "month spread":
+        return all_monthly_spreads(contracts, start_date=start_date, end_date=end_date, col_format=col_format)
+    elif combination_type.lower() == "fly":
+        return all_fly_spreads(contracts, start_date=start_date, end_date=end_date, col_format=col_format)
+    elif combination_type.lower() == "quarterly":
+        return quarterly_contracts(contracts)
+    elif combination_type.lower() == "quarterly spread":
+        return quarterly_spreads(quarterly_contracts(df))
+    elif combination_type.lower() == "half year":
+        return half_year_contracts(contracts)
+    elif combination_type.lower() == "half year spread":
+        return half_year_spreads(half_year_contracts(contracts))
+    else:
+        raise ValueError("Invalid combination_type")
 
 
 def replace_last_month_with_nan(series):
@@ -804,12 +910,12 @@ def spread_combination(contracts, combination_type, verbose_columns=True, exclud
         m1, m2 = combination_type[0:3], combination_type[3:6]
         if m1 in months and m2 in months:
             c = time_spreads(contracts, month_abbr_inv[m1], month_abbr_inv[m2])
-            if verbose_columns:
-                c = c.rename(
-                    columns={
-                        x: "%s%s %s" % (m1.title(), m2.title(), x) for x in c.columns
-                    }
-                )
+            # if verbose_columns:
+                # c = c.rename(
+                #     columns={
+                #         x: "%s%s %s" % (m1.title(), m2.title(), x) for x in c.columns
+                #     }
+                # )
             if exclude_price_month:
                 contracts = c.apply(replace_last_month_with_nan, axis=0)
             return c
@@ -821,17 +927,16 @@ def spread_combination(contracts, combination_type, verbose_columns=True, exclud
             c = fly(
                 contracts, month_abbr_inv[m1], month_abbr_inv[m2], month_abbr_inv[m3]
             )
-            if verbose_columns:
-                c = c.rename(
-                    columns={
-                        x: "%s%s%s %s" % (m1.title(), m2.title(), m3.title(), x)
-                        for x in c.columns
-                    }
-                )
+            # if verbose_columns:
+            #     c = c.rename(
+            #         columns={
+            #             x: "%s%s%s %s" % (m1.title(), m2.title(), m3.title(), x)
+            #             for x in c.columns
+            #         }
+            #     )
             if exclude_price_month:
                 contracts = c.apply(replace_last_month_with_nan, axis=0)
             return c
-
 
 def reject_outliers(data, m=2):
     return data[abs(data - np.mean(data)) < m * np.std(data)]
