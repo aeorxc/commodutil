@@ -1,5 +1,5 @@
 import pandas as pd
-from commodutil.forwards.util import convert_columns_to_date
+from commodutil.forward.util import convert_columns_to_date
 
 
 def cal_contracts(contracts):
@@ -22,7 +22,7 @@ def cal_contracts(contracts):
             s.name = "CAL {}".format(year)
             dfs.append(s)
         elif (
-            year == dates.curyear and len(s.columns) > 0
+                year == dates.curyear and len(s.columns) > 0
         ):  # sometimes current year passed in has less than 12 columns but should be included
             s = s.mean(axis=1)
             s.name = "CAL {}".format(year)
@@ -87,12 +87,12 @@ def half_year_contracts(contracts):
             "{}-06-01".format(year),
         )
         if (
-            c1 in contracts.columns
-            and c2 in contracts.columns
-            and c3 in contracts.columns
-            and c4 in contracts.columns
-            and c5 in contracts.columns
-            and c6 in contracts.columns
+                c1 in contracts.columns
+                and c2 in contracts.columns
+                and c3 in contracts.columns
+                and c4 in contracts.columns
+                and c5 in contracts.columns
+                and c6 in contracts.columns
         ):
             s = (
                 pd.concat(
@@ -120,12 +120,12 @@ def half_year_contracts(contracts):
             "{}-12-01".format(year),
         )
         if (
-            c7 in contracts.columns
-            and c8 in contracts.columns
-            and c9 in contracts.columns
-            and c10 in contracts.columns
-            and c11 in contracts.columns
-            and c12 in contracts.columns
+                c7 in contracts.columns
+                and c8 in contracts.columns
+                and c9 in contracts.columns
+                and c10 in contracts.columns
+                and c11 in contracts.columns
+                and c12 in contracts.columns
         ):
             s = (
                 pd.concat(
@@ -154,12 +154,12 @@ def half_year_contracts(contracts):
             "{}-12-01".format(year),
         )
         if (
-            c1 in contracts.columns
-            and c2 in contracts.columns
-            and c3 in contracts.columns
-            and c10 in contracts.columns
-            and c11 in contracts.columns
-            and c12 in contracts.columns
+                c1 in contracts.columns
+                and c2 in contracts.columns
+                and c3 in contracts.columns
+                and c10 in contracts.columns
+                and c11 in contracts.columns
+                and c12 in contracts.columns
         ):
             s = (
                 pd.concat(
@@ -188,12 +188,12 @@ def half_year_contracts(contracts):
                 "{}-09-01".format(year),
             )
             if (
-                c4 in contracts.columns
-                and c5 in contracts.columns
-                and c6 in contracts.columns
-                and c7 in contracts.columns
-                and c8 in contracts.columns
-                and c9 in contracts.columns
+                    c4 in contracts.columns
+                    and c5 in contracts.columns
+                    and c6 in contracts.columns
+                    and c7 in contracts.columns
+                    and c8 in contracts.columns
+                    and c9 in contracts.columns
             ):
                 s = (
                     pd.concat(
