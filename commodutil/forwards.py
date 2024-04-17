@@ -3,7 +3,6 @@ Utility for forward contracts
 """
 import re
 from calendar import month_abbr, monthrange
-import datetime
 import numpy as np
 import pandas as pd
 
