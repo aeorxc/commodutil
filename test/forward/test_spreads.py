@@ -10,7 +10,7 @@ def test_timespreads(cl):
     assert res['JunDec 2019'].loc[pd.to_datetime("2019-01-02")] == pytest.approx(-1.51, abs=1e-2)
     assert res['JunDec 2019'].loc[pd.to_datetime("2019-05-21")] == pytest.approx(0.37, abs=1e-2)
 
-    res = spreads.time_spreads(contracts, m1=12, m2=12)
+    res = spreads.time_spreads_monthly(contracts, m1=12, m2=12)
     assert res['DecDec 2019'].loc[pd.to_datetime("2019-11-20")] == pytest.approx(3.56, abs=1e-2)
     assert res['DecDec 2020'].loc[pd.to_datetime("2019-03-20")] == pytest.approx(2.11, abs=1e-2)
 

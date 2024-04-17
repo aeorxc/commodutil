@@ -20,7 +20,7 @@ fly_combos = [
 ]
 
 
-def fly(contracts, m1, m2, m3):
+def fly(contracts, m1, m2, m3, col_format=None):
     """
     Given a dataframe of daily values for monthly contracts (eg Brent Jan 15, Brent Feb 15, Brent Mar 15)
     with columns headings as '2020-01-01', '2020-02-01'
@@ -43,7 +43,11 @@ def fly(contracts, m1, m2, m3):
         if len(c2) == 1 and len(c3) == 1:
             c2, c3 = c2[0], c3[0]
             s = contracts[c1] + contracts[c3] - (2 * contracts[c2])
-            s.name = f"{month_abbr[m1]}{month_abbr[m2]}{month_abbr[m3]} {year1}"
+            if col_format is not None:
+                if col_format == "%Y":
+                    s.name = year1
+            else:
+                s.name = f"{month_abbr[m1]}{month_abbr[m2]}{month_abbr[m3]} {year1}"
             legmap[s.name] = [c1, c2, c3]
             dfs.append(s)
 

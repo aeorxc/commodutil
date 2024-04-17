@@ -43,7 +43,7 @@ monthly_spread_combos_extended = [
     ]
 
 
-def time_spreads_monthly(contracts, m1, m2):
+def time_spreads_monthly(contracts, m1, m2, col_format=None):
     """
     Given a dataframe of daily values for monthly contracts (eg Brent Jan 15, Brent Feb 15, Brent Mar 15)
     with columns headings as '2020-01-01', '2020-02-01'
@@ -64,7 +64,11 @@ def time_spreads_monthly(contracts, m1, m2):
         if len(c2) == 1:
             c2 = c2[0]
             s = contracts[c1] - contracts[c2]
-            s.name = f"{month_abbr[m1]}{month_abbr[m2]} {year1}"
+            if col_format:
+                if col_format == "%Y":
+                    s.name = year1
+            else:
+                s.name = f"{month_abbr[m1]}{month_abbr[m2]} {year1}"
             legmap[s.name] = [c1, c2]
             dfs.append(s)
 
@@ -77,7 +81,7 @@ def time_spreads_monthly(contracts, m1, m2):
 def all_monthly_spreads(contracts, start_date=None, end_date=None, col_format=None):
     dfs = []
     for spread in monthly_spread_combos:
-        df = time_spreads_monthly(contracts, spread[0], spread[1])
+        df = time_spreads_monthly(contracts, spread[0], spread[1], col_format=col_format)
         dfs.append(df)
 
     res = pd.concat(dfs, axis=1)

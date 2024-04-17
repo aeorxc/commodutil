@@ -1,8 +1,12 @@
 import datetime
 import re
-
+from calendar import month_abbr, monthrange
 import pandas as pd
 
+
+month_abbr_inv = {
+        month.lower(): index for index, month in enumerate(month_abbr) if month
+    }
 
 
 def convert_contract_to_date(contract):

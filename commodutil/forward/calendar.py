@@ -1,8 +1,9 @@
 import pandas as pd
 from commodutil.forward.util import convert_columns_to_date
+from commodutil import dates
 
 
-def cal_contracts(contracts):
+def cal_contracts(contracts, col_format=None):
     """
     Given a dataframe of daily values for monthly contracts (eg Brent Jan 15, Brent Feb 15, Brent Mar 15)
     with columns headings as '2020-01-01', '2020-02-01'
@@ -19,13 +20,21 @@ def cal_contracts(contracts):
         )
         if len(s.columns) == 12:  # only do if we have full set of contracts
             s = s.mean(axis=1)
-            s.name = "CAL {}".format(year)
+            if col_format is not None:
+                if col_format == "%Y":
+                    s.name = year
+            else:
+                s.name = "CAL {}".format(year)
             dfs.append(s)
         elif (
                 year == dates.curyear and len(s.columns) > 0
         ):  # sometimes current year passed in has less than 12 columns but should be included
             s = s.mean(axis=1)
-            s.name = "CAL {}".format(year)
+            if col_format is not None:
+                if col_format == "%Y":
+                    s.name = year
+            else:
+                s.name = "CAL {}".format(year)
             dfs.append(s)
 
     if not dfs:
@@ -34,12 +43,12 @@ def cal_contracts(contracts):
     res = pd.concat(dfs, axis=1)
     # sort columns by years
     cols = list(res.columns)
-    cols.sort(key=lambda s: s.split()[1])
+    cols.sort(key=lambda s: int(s.split()[1]) if isinstance(s, str) else s)
     res = res[cols]
     return res
 
 
-def cal_spreads(q):
+def cal_spreads(q, col_format=None):
     """
     Given a dataframe of cal contract values (eg CAL 2015, CAL 2020)
     with columns headings as 'CAL 2015', 'CAL 2020'
@@ -57,7 +66,11 @@ def cal_spreads(q):
         colcalnextyr = "CAL %s" % (nextyear)
         if colcalnextyr in q.columns:
             r = q[col] - q[colcalnextyr]
-            r.name = "CAL {}-{}".format(curyear, nextyear)
+            if col_format:
+                if col_format == "%Y":
+                    r.name = curyear
+            else:
+                r.name = "CAL {}-{}".format(curyear, nextyear)
             calspr.append(r)
 
     if len(calspr) > 0:
