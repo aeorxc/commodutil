@@ -5,16 +5,8 @@ from commodutil import dates
 import pandas as pd
 
 
-def test_quarterly_contracts():
-    dirname, filename = os.path.split(os.path.abspath(__file__))
-    cl = pd.read_csv(
-        os.path.join(dirname, "../test_cl.csv"),
-        index_col=0,
-        parse_dates=True,
-        dayfirst=True,
-    )
+def test_quarterly_contracts(cl):
     contracts = cl
-
     res = quarterly.quarterly_contracts(contracts)
     assert res["Q2 2019"].loc[pd.to_datetime("2019-03-20")] == pytest.approx(60.18, abs=1e-2)
     assert res["Q3 2019"].loc[pd.to_datetime("2019-06-20")] == pytest.approx(56.95, abs=1e-2)
@@ -35,15 +27,7 @@ def test_quarterly_contracts():
     assert res_qf["Q4Q1Q2 2020"].loc[pd.to_datetime("2019-09-20")] == pytest.approx(0.21, abs=1e-2)
 
 
-def test_time_spreads_quarterly():
-    dirname, filename = os.path.split(os.path.abspath(__file__))
-    cl = pd.read_csv(
-        os.path.join(dirname, "../test_cl.csv"),
-        index_col=0,
-        parse_dates=True,
-        dayfirst=True,
-    )
-
+def test_time_spreads_quarterly(cl):
     res = quarterly.time_spreads_quarterly(cl, m1="Q1", m2="Q2")
     assert res[2020].loc[pd.to_datetime("2019-01-02")] == pytest.approx(-0.33, abs=1e-2)
     assert res[2020].loc[pd.to_datetime("2019-05-21")] == pytest.approx(1.05, abs=1e-2)
@@ -53,14 +37,7 @@ def test_time_spreads_quarterly():
     assert res[2020].loc[pd.to_datetime("2019-05-21")] == pytest.approx(0.91, abs=1e-2)
 
 
-def test_fly_quarterly():
-    dirname, filename = os.path.split(os.path.abspath(__file__))
-    cl = pd.read_csv(
-        os.path.join(dirname, "../test_cl.csv"),
-        index_col=0,
-        parse_dates=True,
-        dayfirst=True,
-    )
+def test_fly_quarterly(cl):
     contracts = cl
     contracts = quarterly.quarterly_contracts(contracts)
     res = quarterly.fly_quarterly(contracts, x=1, y=2, z=3)
