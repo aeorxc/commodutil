@@ -2,7 +2,8 @@ import datetime
 from calendar import month_abbr
 
 import pandas as pd
-from commodutil.forwards import convert_columns_to_date, time_spreads
+from commodutil.forward.util import convert_columns_to_date
+
 
 monthly_spread_combos = [
         [1, 2],
@@ -76,7 +77,7 @@ def time_spreads_monthly(contracts, m1, m2):
 def all_monthly_spreads(contracts, start_date=None, end_date=None, col_format=None):
     dfs = []
     for spread in monthly_spread_combos:
-        df = time_spreads(contracts, spread[0], spread[1])
+        df = time_spreads_monthly(contracts, spread[0], spread[1])
         dfs.append(df)
 
     res = pd.concat(dfs, axis=1)
