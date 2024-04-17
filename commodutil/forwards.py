@@ -197,6 +197,11 @@ def spread_combination(contracts, combination_type, verbose_columns=True, exclud
             col_format = "%b%b %y"
         return all_monthly_spreads(contracts, col_format=col_format)
 
+    if combination_type.startswith("fly"):
+        if col_format is None:
+            col_format = "%b%b%b %y"
+        return all_fly_spreads(contracts, col_format=col_format)
+
     if combination_type.startswith("quarterly roll"):
         if col_format is None:
             col_format = "%q%q %y"

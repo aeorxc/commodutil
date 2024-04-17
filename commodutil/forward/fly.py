@@ -46,6 +46,8 @@ def fly(contracts, m1, m2, m3, col_format=None):
             if col_format is not None:
                 if col_format == "%Y":
                     s.name = year1
+                if col_format == "%b%b%b %y":
+                    s.name = f"{month_abbr[m1]}{month_abbr[m2]}{month_abbr[m3]} {str(year1)[-2:]}"
             else:
                 s.name = f"{month_abbr[m1]}{month_abbr[m2]}{month_abbr[m3]} {year1}"
             legmap[s.name] = [c1, c2, c3]
@@ -57,10 +59,10 @@ def fly(contracts, m1, m2, m3, col_format=None):
     return res
 
 
-def all_fly_spreads(contracts, start_date=None, end_date=None, col_format=None):
+def all_fly_spreads(contracts, col_format=None):
     dfs = []
     for flyx in fly_combos:
-        df = fly(contracts, flyx[0], flyx[1], flyx[2])
+        df = fly(contracts, flyx[0], flyx[1], flyx[2], col_format=col_format)
         dfs.append(df)
 
     res = pd.concat(dfs, axis=1)
@@ -69,31 +71,5 @@ def all_fly_spreads(contracts, start_date=None, end_date=None, col_format=None):
     for df in dfs:
         legmap.update(df.attrs)
     res.attrs['legmap'] = legmap
-
-    def parse_date(col_name):
-        month_str, year = col_name.split()  # Splitting by space to separate month(s) and year
-        month_abbr = month_str[:3]  # Taking the first three letters as the month abbreviation
-        month = datetime.datetime.strptime(month_abbr, "%b").month  # Convert abbreviation to month number
-        return datetime.datetime(year=int(year), month=month, day=1)
-
-    columns = res.columns
-    if start_date is not None:
-        columns = [col for col in columns if parse_date(col).date() >= start_date]
-    if end_date is not None:
-        columns = [col for col in columns if parse_date(col).date() <= end_date]
-
-    res = res[columns]
-
-    if col_format is not None and 'legmap' in res.attrs:  # TODO move this to a function reduplicates
-        if col_format == "%b%y":
-            col_mapping = {
-                col: f"{leg[0].strftime(col_format)}{leg[1].strftime(col_format)}{leg[2].strftime(col_format)}" for
-                col, leg in
-                legmap.items()}
-        elif col_format == "%b%b%b %y":
-            col_mapping = {
-                col: f"{leg[0].strftime('%b')}{leg[1].strftime('%b')}{leg[2].strftime('%b')} {leg[0].strftime('%y')}"
-                for col, leg in legmap.items()}
-        res = res.rename(columns=col_mapping)
 
     return res

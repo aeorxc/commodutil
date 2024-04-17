@@ -88,6 +88,14 @@ def test_spread_combination_quaterly_roll(contracts):
     assert res["Q4Q1 21"].loc[pd.to_datetime("2020-01-02")] == pytest.approx(0.61, abs=0.01)
 
 
+def test_spread_combination_fly(contracts):
+    res = forwards.spread_combination(contracts, "fly")
+
+    assert res["JanFebMar 21"].loc[pd.to_datetime("2019-01-02")] == pytest.approx(0.009, abs=0.01)
+    assert res["DecJanFeb 21"].loc[pd.to_datetime("2020-01-02")] == pytest.approx(0.0199, abs=0.01)
+
+
+
 def test_spread_combination_quaterly_fly(contracts):
     res = forwards.spread_combination(contracts, "quarterly fly")
 
