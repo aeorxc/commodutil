@@ -67,47 +67,33 @@ def time_spreads_monthly(contracts, m1, m2, col_format=None):
             if col_format:
                 if col_format == "%Y":
                     s.name = year1
+                if col_format == "%b%b %Y":
+                    s.name = f"{month_abbr[m1]}{month_abbr[m2]} {year1}"
+                if col_format == "%b%b %y":
+                    s.name = f"{month_abbr[m1]}{month_abbr[m2]} {str(year1)[-2:]}"
             else:
                 s.name = f"{month_abbr[m1]}{month_abbr[m2]} {year1}"
             legmap[s.name] = [c1, c2]
             dfs.append(s)
 
-    res = pd.concat(dfs, axis=1)
-    res = res.dropna(how="all", axis="rows")
-    res.attrs = legmap
-    return res
+    if len(dfs) > 0:
+        res = pd.concat(dfs, axis=1)
+        res = res.dropna(how="all", axis="rows")
+        res.attrs = legmap
+        return res
 
 
-def all_monthly_spreads(contracts, start_date=None, end_date=None, col_format=None):
+def all_monthly_spreads(contracts, col_format=None):
     dfs = []
     for spread in monthly_spread_combos:
         df = time_spreads_monthly(contracts, spread[0], spread[1], col_format=col_format)
-        dfs.append(df)
+        if df is not None:
+            dfs.append(df)
 
     res = pd.concat(dfs, axis=1)
     legmap = {}
     for df in dfs:
         legmap.update(df.attrs)
     res.attrs['legmap'] = legmap
-
-    # Function to parse the starting month and year from the column name
-    def parse_date(col_name):
-        month_str, year = col_name.split()  # Splitting by space to separate month(s) and year
-        month_abbr = month_str[:3]  # Taking the first three letters as the month abbreviation
-        month = datetime.datetime.strptime(month_abbr, "%b").month  # Convert abbreviation to month number
-        return datetime.datetime(year=int(year), month=month, day=1)
-
-    columns = res.columns
-    if start_date is not None:
-        columns = [col for col in columns if parse_date(col).date() >= start_date]
-    if end_date is not None:
-        columns = [col for col in columns if parse_date(col).date() <= end_date]
-
-    res = res[columns]
-
-    if col_format is not None and 'legmap' in res.attrs:
-        col_mapping = {col: f"{leg[0].strftime(col_format)} - {leg[1].strftime(col_format)}" for col, leg in
-                       legmap.items()}
-        res = res.rename(columns = col_mapping)
 
     return res

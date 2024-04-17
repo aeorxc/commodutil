@@ -16,8 +16,7 @@ def test_timespreads(cl):
 
 
 def test_all_monthly_spreads(cl):
-    res = spreads.all_monthly_spreads(cl, start_date=pd.to_datetime("2020-01-01"),
-                                      end_date=pd.to_datetime("2023-12-31"))
+    res = spreads.all_monthly_spreads(cl)
 
     # Add your assertions here based on what you expect the output to be
     # For example:

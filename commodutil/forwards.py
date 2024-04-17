@@ -7,10 +7,10 @@ import numpy as np
 import pandas as pd
 
 from commodutil.forward.calendar import cal_contracts, cal_spreads, half_year_contracts, half_year_spreads
-from commodutil.forward.fly import fly, all_fly_spreads
+from commodutil.forward.fly import fly, all_fly_spreads, fly_combos
 from commodutil.forward.quarterly import quarterly_contracts, all_quarterly_spreads, time_spreads_quarterly, \
     fly_quarterly, all_quarterly_flys
-from commodutil.forward.spreads import time_spreads_monthly, all_monthly_spreads
+from commodutil.forward.spreads import time_spreads_monthly, all_monthly_spreads, monthly_spread_combos_extended
 from commodutil.forward.util import convert_contract_to_date, convert_columns_to_date, month_abbr_inv
 
 from commodutil import dates
@@ -50,70 +50,15 @@ def all_spread_combinations(contracts):
     for month in [1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12]:
         output[month] = contracts[[x for x in contracts.columns if x.month == month]]
 
-    for spread in [
-        [1, 2],
-        [2, 3],
-        [3, 4],
-        [4, 5],
-        [5, 6],
-        [6, 7],
-        [7, 8],
-        [8, 9],
-        [9, 10],
-        [10, 11],
-        [11, 12],
-        [12, 1],
-        [6, 6],
-        [6, 12],
-        [12, 12],
-        [10, 12],
-        [4, 9],
-        [10, 3],
-    ]:
+    for spread in monthly_spread_combos_extended:
         tag = "%s%s" % (month_abbr[spread[0]], month_abbr[spread[1]])
         output[tag] = time_spreads(contracts, spread[0], spread[1])
 
-    for flyx in [
-        [1, 2, 3],
-        [2, 3, 4],
-        [3, 4, 5],
-        [4, 5, 6],
-        [5, 6, 7],
-        [6, 7, 8],
-        [7, 8, 9],
-        [8, 9, 10],
-        [9, 10, 11],
-        [10, 11, 12],
-        [11, 12, 1],
-        [12, 1, 2],
-    ]:
+    for flyx in fly_combos:
         tag = "%s%s%s" % (month_abbr[flyx[0]], month_abbr[flyx[1]], month_abbr[flyx[2]])
         output[tag] = fly(contracts, flyx[0], flyx[1], flyx[2])
 
     return output
-
-
-def spread_combinations(contracts, combination_type=None, start_date=None, end_date=None, col_format=None):
-    if combination_type is None:
-        return all_spread_combinations(contracts)
-    if combination_type.lower() == "calendar":
-        return cal_contracts(contracts)
-    elif combination_type.lower() == "calendar spread":
-        return cal_spreads(cal_contracts(contracts))
-    elif combination_type.lower() == "month spread":
-        return all_monthly_spreads(contracts, start_date=start_date, end_date=end_date, col_format=col_format)
-    elif combination_type.lower() == "fly":
-        return all_fly_spreads(contracts, start_date=start_date, end_date=end_date, col_format=col_format)
-    elif combination_type.lower() == "quarterly":
-        return quarterly_contracts(contracts)
-    elif combination_type.lower() == "quarterly spread":
-        return all_quarterly_spreads(quarterly_contracts(contracts))
-    elif combination_type.lower() == "half year":
-        return half_year_contracts(contracts)
-    elif combination_type.lower() == "half year spread":
-        return half_year_spreads(half_year_contracts(contracts))
-    else:
-        raise ValueError("Invalid combination_type")
 
 
 def replace_last_month_with_nan(series):
@@ -250,6 +195,12 @@ def spread_combination(contracts, combination_type, verbose_columns=True, exclud
     if combination_type.startswith("q"):
         return spread_combination_quarter(contracts, combination_type=combination_type, verbose_columns=verbose_columns,
                                           exclude_price_month=exclude_price_month, col_format=col_format)
+
+    if combination_type.startswith("monthly"):
+        if col_format is None:
+            col_format = "%b%b %y"
+        return all_monthly_spreads(contracts, col_format=col_format)
+
 
     # handle monthly, spread and fly inputs
     contracts = convert_columns_to_date(contracts)
