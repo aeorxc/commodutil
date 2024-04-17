@@ -101,7 +101,8 @@ def quarterly_contracts(contracts, col_format=None):
         res = res[cols]
         return res
 
-def all_quarterly_spreads(q):
+
+def all_quarterly_rolls(q, col_format=None):
     """
     Given a dataframe of quarterly contract values (eg Brent Q115, Brent Q215, Brent Q315)
     with columns headings as 'Q1 2015', 'Q2 2015'
@@ -124,14 +125,18 @@ def all_quarterly_spreads(q):
         colqy = sprmap.get(colqx).format(colqxyr)
         if colqy in q.columns:
             r = q[col] - q[colqy]
-            r.name = "{}{} {}".format(colqx, colqy.split(" ")[0], col.split(" ")[1])
+            if col_format is not None:
+                if col_format == "%q%q %y":
+                    r.name = "{}{} {}".format(colqx, colqy.split(" ")[0], col.split(" ")[1][-2:])
+            else:
+                r.name = "{}{} {}".format(colqx, colqy.split(" ")[0], col.split(" ")[1])
             qtrspr.append(r)
 
     res = pd.concat(qtrspr, axis=1, sort=True)
     return res
 
 
-def fly_quarterly(contracts, x, y, z):
+def fly_quarterly(contracts, x, y, z, col_format=None):
     """
     Given a dataframe of quarterly contract values (eg Brent Q115, Brent Q215, Brent Q315)
     with columns headings as 'Q1 2015', 'Q2 2015'
@@ -158,7 +163,11 @@ def fly_quarterly(contracts, x, y, z):
         if len(c2) == 1 and len(c3) == 1:
             c2, c3 = c2[0], c3[0]
             s = contracts[c1] + contracts[c3] - (2 * contracts[c2])
-            s.name = "Q%dQ%dQ%d %d" % (x, y, z, year1)
+            if col_format is not None:
+                if col_format == "%q%q%q %y":
+                    s.name = "Q%dQ%dQ%d %s" % (x, y, z, str(year1)[-2:])
+            else:
+                s.name = "Q%dQ%dQ%d %d" % (x, y, z, year1)
             dfs.append(s)
 
     res = pd.concat(dfs, axis=1)
@@ -166,7 +175,7 @@ def fly_quarterly(contracts, x, y, z):
     return res
 
 
-def all_quarterly_flys(q):
+def all_quarterly_flys(q, col_format=None):
     """
     Given a dataframe of quarterly contract values (eg Brent Q115, Brent Q215, Brent Q315)
     with columns headings as 'Q1 2015', 'Q2 2015'
@@ -177,7 +186,7 @@ def all_quarterly_flys(q):
 
     dfs = []
     for flycombo in flycombos:
-        s = fly_quarterly(contracts=q, x=flycombo[0], y=flycombo[1], z=flycombo[2])
+        s = fly_quarterly(contracts=q, x=flycombo[0], y=flycombo[1], z=flycombo[2], col_format=col_format)
         dfs.append(s)
 
     res = pd.concat(dfs, axis=1, sort=True)

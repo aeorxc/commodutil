@@ -8,7 +8,7 @@ import pandas as pd
 
 from commodutil.forward.calendar import cal_contracts, cal_spreads, half_year_contracts, half_year_spreads
 from commodutil.forward.fly import fly, all_fly_spreads, fly_combos
-from commodutil.forward.quarterly import quarterly_contracts, all_quarterly_spreads, time_spreads_quarterly, \
+from commodutil.forward.quarterly import quarterly_contracts, all_quarterly_rolls, time_spreads_quarterly, \
     fly_quarterly, all_quarterly_flys
 from commodutil.forward.spreads import time_spreads_monthly, all_monthly_spreads, monthly_spread_combos_extended
 from commodutil.forward.util import convert_contract_to_date, convert_columns_to_date, month_abbr_inv
@@ -39,7 +39,7 @@ def all_spread_combinations(contracts):
     q = output["Quarterly"]
     for qx in ["Q1", "Q2", "Q3", "Q4"]:
         output[qx] = q[[x for x in q if qx in x]]
-    output["Quarterly Spread"] = all_quarterly_spreads(q)
+    output["Quarterly Spread"] = all_quarterly_rolls(q)
     q = output["Quarterly Spread"]
     for qx in ["Q1Q2", "Q2Q3", "Q3Q4", "Q4Q1"]:
         output[qx] = q[[x for x in q if qx in x]]
@@ -192,11 +192,20 @@ def spread_combination(contracts, combination_type, verbose_columns=True, exclud
         c_contracts = half_year_spreads(half_year_contracts(contracts))
         return c_contracts
 
-
     if combination_type.startswith("monthly"):
         if col_format is None:
             col_format = "%b%b %y"
         return all_monthly_spreads(contracts, col_format=col_format)
+
+    if combination_type.startswith("quarterly roll"):
+        if col_format is None:
+            col_format = "%q%q %y"
+        return all_quarterly_rolls(quarterly_contracts(contracts), col_format=col_format)
+
+    if combination_type.startswith("quarterly fly"):
+        if col_format is None:
+            col_format = "%q%q%q %y"
+        return all_quarterly_flys(quarterly_contracts(contracts), col_format=col_format)
 
     if combination_type.startswith("quarterly"):
         if col_format is None:
@@ -206,7 +215,6 @@ def spread_combination(contracts, combination_type, verbose_columns=True, exclud
     if combination_type.startswith("q"):
         return spread_combination_quarter(contracts, combination_type=combination_type, verbose_columns=verbose_columns,
                                           exclude_price_month=exclude_price_month, col_format=col_format)
-
 
     # handle monthly, spread and fly inputs
     contracts = convert_columns_to_date(contracts)

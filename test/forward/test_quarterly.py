@@ -14,7 +14,7 @@ def test_quarterly_contracts(cl):
     assert res["Q1 2020"].loc[pd.to_datetime("2019-12-19")] == pytest.approx(61.09, abs=1e-2)
     assert res["Q2 2020"].loc[pd.to_datetime("2020-03-20")] == pytest.approx(23.14, abs=1e-2)
 
-    res_qs = quarterly.all_quarterly_spreads(res)
+    res_qs = quarterly.all_quarterly_rolls(res)
     assert res_qs["Q1Q2 2020"].loc[pd.to_datetime("2019-12-19")] == pytest.approx(1.14, abs=1e-2)
     assert res_qs["Q2Q3 2019"].loc[pd.to_datetime("2019-03-20")] == pytest.approx(-0.73, abs=1e-2)
     assert res_qs["Q3Q4 2019"].loc[pd.to_datetime("2019-06-20")] == pytest.approx(0.07, abs=1e-2)
