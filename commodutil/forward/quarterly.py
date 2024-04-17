@@ -1,5 +1,6 @@
 import pandas as pd
 from commodutil.forward.util import convert_columns_to_date
+from commodutil import dates
 
 
 def relevant_qtr_contract(qx):
@@ -156,7 +157,7 @@ def quarterly_contracts(contracts):
     return res
 
 
-def quarterly_spreads(q):
+def all_quarterly_spreads(q):
     """
     Given a dataframe of quarterly contract values (eg Brent Q115, Brent Q215, Brent Q315)
     with columns headings as 'Q1 2015', 'Q2 2015'
@@ -221,7 +222,7 @@ def fly_quarterly(contracts, x, y, z):
     return res
 
 
-def quarterly_flys(q):
+def all_quarterly_flys(q):
     """
     Given a dataframe of quarterly contract values (eg Brent Q115, Brent Q215, Brent Q315)
     with columns headings as 'Q1 2015', 'Q2 2015'
