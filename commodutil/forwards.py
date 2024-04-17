@@ -192,14 +192,20 @@ def spread_combination(contracts, combination_type, verbose_columns=True, exclud
         c_contracts = half_year_spreads(half_year_contracts(contracts))
         return c_contracts
 
-    if combination_type.startswith("q"):
-        return spread_combination_quarter(contracts, combination_type=combination_type, verbose_columns=verbose_columns,
-                                          exclude_price_month=exclude_price_month, col_format=col_format)
 
     if combination_type.startswith("monthly"):
         if col_format is None:
             col_format = "%b%b %y"
         return all_monthly_spreads(contracts, col_format=col_format)
+
+    if combination_type.startswith("quarterly"):
+        if col_format is None:
+            col_format = "%q %y"
+        return quarterly_contracts(contracts, col_format=col_format)
+
+    if combination_type.startswith("q"):
+        return spread_combination_quarter(contracts, combination_type=combination_type, verbose_columns=verbose_columns,
+                                          exclude_price_month=exclude_price_month, col_format=col_format)
 
 
     # handle monthly, spread and fly inputs

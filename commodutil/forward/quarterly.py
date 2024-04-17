@@ -64,7 +64,19 @@ def time_spreads_quarterly(contracts, m1, m2):
     return res
 
 
-def quarterly_contracts(contracts):
+def calculate_quarter(contracts, year, months, col_format=None):
+    month_cols = [f"{year}-{month:02d}-01" for month in months]
+    if all(col in contracts.columns for col in month_cols):
+        s = contracts[month_cols].dropna(how="any").mean(axis=1)
+        if col_format is not None:
+            if col_format == "%q %y":
+                s.name = f"Q{months[0]//3 + 1} {str(year)[-2:]}"
+        else:
+            s.name = f"Q{months[0]//3 + 1} {year}"
+        return s
+
+
+def quarterly_contracts(contracts, col_format=None):
     """
     Given a dataframe of daily values for monthly contracts (eg Brent Jan 15, Brent Feb 15, Brent Mar 15)
     with columns headings as '2020-01-01', '2020-02-01'
@@ -75,87 +87,19 @@ def quarterly_contracts(contracts):
 
     dfs = []
     for year in years:
-        c1, c2, c3 = (
-            "{}-01-01".format(year),
-            "{}-02-01".format(year),
-            "{}-03-01".format(year),
-        )
-        if (
-                c1 in contracts.columns
-                and c2 in contracts.columns
-                and c3 in contracts.columns
-        ):
-            s = (
-                pd.concat([contracts[c1], contracts[c2], contracts[c3]], axis=1)
-                .dropna(how="any")
-                .mean(axis=1)
-            )
-            s.name = "Q1 {}".format(year)
-            dfs.append(s)
+        for quarter in range(4):
+            months = range(quarter * 3 + 1, quarter * 3 + 4)
+            s = calculate_quarter(contracts, year, months, col_format=col_format)
+            if s is not None:
+                dfs.append(s)
 
-        c4, c5, c6 = (
-            "{}-04-01".format(year),
-            "{}-05-01".format(year),
-            "{}-06-01".format(year),
-        )
-        if (
-                c4 in contracts.columns
-                and c5 in contracts.columns
-                and c6 in contracts.columns
-        ):
-            s = (
-                pd.concat(
-                    [contracts[c4], contracts[c5], contracts[c6]], axis=1, sort=True
-                )
-                .dropna(how="any")
-                .mean(axis=1)
-            )
-            s.name = "Q2 {}".format(year)
-            dfs.append(s)
-
-        c7, c8, c9 = (
-            "{}-07-01".format(year),
-            "{}-08-01".format(year),
-            "{}-09-01".format(year),
-        )
-        if (
-                c7 in contracts.columns
-                and c8 in contracts.columns
-                and c9 in contracts.columns
-        ):
-            s = (
-                pd.concat([contracts[c7], contracts[c8], contracts[c9]], axis=1)
-                .dropna(how="any")
-                .mean(axis=1)
-            )
-            s.name = "Q3 {}".format(year)
-            dfs.append(s)
-
-        c10, c11, c12 = (
-            "{}-10-01".format(year),
-            "{}-11-01".format(year),
-            "{}-12-01".format(year),
-        )
-        if (
-                c10 in contracts.columns
-                and c11 in contracts.columns
-                and c12 in contracts.columns
-        ):
-            s = (
-                pd.concat([contracts[c10], contracts[c11], contracts[c12]], axis=1)
-                .dropna(how="any")
-                .mean(axis=1)
-            )
-            s.name = "Q4 {}".format(year)
-            dfs.append(s)
-
-    res = pd.concat(dfs, axis=1)
-    # sort columns by years
-    cols = list(res.columns)
-    cols.sort(key=lambda s: s.split()[1])
-    res = res[cols]
-    return res
-
+    if len(dfs) > 0:
+        res = pd.concat(dfs, axis=1)
+        # sort columns by years
+        cols = list(res.columns)
+        cols.sort(key=lambda s: s.split()[1])
+        res = res[cols]
+        return res
 
 def all_quarterly_spreads(q):
     """

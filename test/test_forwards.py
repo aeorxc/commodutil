@@ -74,6 +74,12 @@ def test_spread_combination_monthly(contracts):
     assert res["FebMar 21"].loc[pd.to_datetime("2020-01-02")] == pytest.approx(0.35, abs=0.01)
 
 
+def test_spread_combination_quaterly(contracts):
+    res = forwards.spread_combination(contracts, "quarterly")
+
+    assert res["Q1 20"].loc[pd.to_datetime("2019-01-02")] == pytest.approx(49.88, abs=0.01)
+    assert res["Q2 21"].loc[pd.to_datetime("2020-01-02")] == pytest.approx(55.16, abs=0.01)
+
 def test_spread_combination_month(contracts):
     res = forwards.spread_combination(contracts, "jan")
     assert res["Jan 2020"].loc[pd.to_datetime("2019-01-02")] == pytest.approx(49.77, abs=0.01)
