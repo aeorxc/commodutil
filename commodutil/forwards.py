@@ -176,19 +176,19 @@ def spread_combination(contracts, combination_type, verbose_columns=True, exclud
     :param combination_type:
     :return:
     """
-    combination_type = combination_type.lower()
+    combination_type = combination_type.lower().replace(" ", "")
     contracts = contracts.dropna(how="all", axis="rows")
 
     if combination_type == "calendar":
         c_contracts = cal_contracts(contracts, col_format="%Y")
         return c_contracts
-    if combination_type == "calendar spread":
+    if combination_type == "calendarspread":
         c_contracts = cal_spreads(cal_contracts(contracts), col_format=col_format)
         return c_contracts
-    if combination_type == "half year":
+    if combination_type == "halfyear":
         c_contracts = half_year_contracts(contracts)
         return c_contracts
-    if combination_type == "half year spread":
+    if combination_type == "halfyearspread":
         c_contracts = half_year_spreads(half_year_contracts(contracts))
         return c_contracts
 
@@ -202,12 +202,12 @@ def spread_combination(contracts, combination_type, verbose_columns=True, exclud
             col_format = "%b%b%b %y"
         return all_fly_spreads(contracts, col_format=col_format)
 
-    if combination_type.startswith("quarterly roll"):
+    if combination_type.startswith("quarterlyroll"):
         if col_format is None:
             col_format = "%q%q %y"
         return all_quarterly_rolls(quarterly_contracts(contracts), col_format=col_format)
 
-    if combination_type.startswith("quarterly fly"):
+    if combination_type.startswith("quarterlyfly"):
         if col_format is None:
             col_format = "%q%q%q %y"
         return all_quarterly_flys(quarterly_contracts(contracts), col_format=col_format)

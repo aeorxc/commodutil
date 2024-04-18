@@ -53,23 +53,26 @@ def fly(contracts, m1, m2, m3, col_format=None):
             legmap[s.name] = [c1, c2, c3]
             dfs.append(s)
 
-    res = pd.concat(dfs, axis=1)
-    res = res.dropna(how="all", axis="rows")
-    res.attrs = legmap
-    return res
+    if len(dfs) > 0:
+        res = pd.concat(dfs, axis=1)
+        res = res.dropna(how="all", axis="rows")
+        res.attrs = legmap
+        return res
 
 
 def all_fly_spreads(contracts, col_format=None):
     dfs = []
     for flyx in fly_combos:
         df = fly(contracts, flyx[0], flyx[1], flyx[2], col_format=col_format)
-        dfs.append(df)
+        if df is not None:
+            dfs.append(df)
 
-    res = pd.concat(dfs, axis=1)
+    if len(dfs) > 0:
+        res = pd.concat(dfs, axis=1)
 
-    legmap = {}  # TODO move this to a function reduplicates
-    for df in dfs:
-        legmap.update(df.attrs)
-    res.attrs['legmap'] = legmap
+        legmap = {}  # TODO move this to a function reduplicates
+        for df in dfs:
+            legmap.update(df.attrs)
+        res.attrs['legmap'] = legmap
 
-    return res
+        return res

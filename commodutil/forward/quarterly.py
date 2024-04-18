@@ -170,9 +170,10 @@ def fly_quarterly(contracts, x, y, z, col_format=None):
                 s.name = "Q%dQ%dQ%d %d" % (x, y, z, year1)
             dfs.append(s)
 
-    res = pd.concat(dfs, axis=1)
-    res = res.dropna(how="all", axis="rows")
-    return res
+    if len(dfs) > 0:
+        res = pd.concat(dfs, axis=1)
+        res = res.dropna(how="all", axis="rows")
+        return res
 
 
 def all_quarterly_flys(q, col_format=None):
