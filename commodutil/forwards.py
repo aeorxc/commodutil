@@ -11,7 +11,7 @@ from commodutil.forward.fly import fly, all_fly_spreads, fly_combos
 from commodutil.forward.quarterly import quarterly_contracts, all_quarterly_rolls, time_spreads_quarterly, \
     fly_quarterly, all_quarterly_flys
 from commodutil.forward.spreads import time_spreads_monthly, all_monthly_spreads, monthly_spread_combos_extended
-from commodutil.forward.util import convert_contract_to_date, convert_columns_to_date, month_abbr_inv
+from commodutil.forward.util import convert_contract_to_date, convert_columns_to_date, month_abbr_inv, futures_month_conv
 
 from commodutil import dates
 
