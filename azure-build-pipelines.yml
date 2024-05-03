@@ -72,7 +72,7 @@ stages:
         inputs:
           testResultsFiles: "**/test-results.xml"
           testRunTitle: "Test results for Python$(python.version)"
-      - task: PublishCodeCoverageResults@1
+      - task: PublishCodeCoverageResults@2
         displayName: "Publish coverage results for Python$(python.version)"
         condition: succeededOrFailed()
         inputs:
