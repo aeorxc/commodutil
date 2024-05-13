@@ -42,6 +42,8 @@ gal_ltr = 3.78541178
 # Light Ends
 naphtha_kt_bbl = 8.9
 
+propane_kt_bbl = 12.4
+
 gasoline_density_kg_l = 0.745
 gasoline_kt_bbl = 8.33
 gasoline_kt_km3 = 1 / gasoline_density_kg_l  # 1.342281879
