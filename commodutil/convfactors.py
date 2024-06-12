@@ -102,6 +102,8 @@ hvo_km3_gj = 34
 vgo_kt_bbl = 6.9
 sr_fo_kt_bbl = 6.65
 fo_kt_bbl = 6.35
+fueloil_kt_bbl = 6.35
+vlsfo_kt_bbl = 6.9
 
 # Crude
 
