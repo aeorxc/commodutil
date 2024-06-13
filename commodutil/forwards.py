@@ -5,13 +5,16 @@ import re
 from calendar import month_abbr, monthrange
 import numpy as np
 import pandas as pd
+from datetime import datetime
+from dateutil.relativedelta import relativedelta
 
 from commodutil.forward.calendar import cal_contracts, cal_spreads, half_year_contracts, half_year_spreads
 from commodutil.forward.fly import fly, all_fly_spreads, fly_combos
 from commodutil.forward.quarterly import quarterly_contracts, all_quarterly_rolls, time_spreads_quarterly, \
     fly_quarterly, all_quarterly_flys
 from commodutil.forward.spreads import time_spreads_monthly, all_monthly_spreads, monthly_spread_combos_extended
-from commodutil.forward.util import convert_contract_to_date, convert_columns_to_date, month_abbr_inv, futures_month_conv
+from commodutil.forward.util import convert_contract_to_date, convert_columns_to_date, month_abbr_inv, \
+    futures_month_conv
 
 from commodutil import dates
 
@@ -242,6 +245,69 @@ def spread_combination(contracts, combination_type, verbose_columns=True, exclud
     if len(combination_type) == 9:  # fly
         return spread_combination_fly(contracts, combination_type, verbose_columns=verbose_columns,
                                       exclude_price_month=exclude_price_month, col_format=col_format)
+
+
+def filter_columns_by_date(contract_data, start_date, end_date):
+    if isinstance(start_date, pd.Timestamp):
+        start_date = start_date.date()
+    if isinstance(end_date, pd.Timestamp):
+        end_date = end_date.date()
+    # return [col for col in contract_data.columns if start_date <= col.to_pydatetime().date() <= end_date]
+    return [col for col in contract_data.columns
+            if start_date <= (col.date() if isinstance(col, pd.Timestamp) else col) <= end_date]
+
+
+def recent_spreads(contracts: pd.DataFrame, combination_type: str):
+    """Given a list of contracts, filter the contracts to the list of most recent relevant contracts"""
+    if contracts is None:
+        return None
+
+    contracts = convert_columns_to_date(contracts)
+    current_date = datetime.now().date()  # Convert to datetime.date
+    start_date = current_date - relativedelta(months=3)  # Approximating a month as 30 days
+    end_date = current_date + relativedelta(months=6)  # Approximating a month as 30 days
+    filtered_columns = filter_columns_by_date(contracts, start_date, end_date)
+
+    start_date_qtr = current_date - relativedelta(months=5)
+    end_date_qtr = current_date + relativedelta(months=13)
+    end_date_qtr2 = current_date + relativedelta(months=16)
+    filtered_columns_qtr = filter_columns_by_date(contracts, start_date_qtr, end_date_qtr)
+    filtered_columns_qtr2 = filter_columns_by_date(contracts, start_date_qtr, end_date_qtr2)
+
+    if combination_type == "contracts":
+        month_df = contracts[filtered_columns]
+        month_df.columns = [f"{col.strftime('%b%y').lower()}" for col in month_df.columns]
+        return month_df
+    elif combination_type in ['monthly']:
+        spread_df = spread_combination(contracts[filtered_columns], combination_type="monthly",
+                                                col_format="%b%b %y")
+
+        return spread_df
+
+    elif combination_type in ['quarterly']:
+        spread_df = spread_combination(contracts=contracts[filtered_columns_qtr],
+                                                combination_type="quarterly",
+                                                col_format="%q %y")
+
+        return spread_df
+
+    elif combination_type in ['quarterly roll']:
+        spread_df = spread_combination(contracts=contracts[filtered_columns_qtr],
+                                                combination_type="quarterly roll",
+                                                col_format="%q%q %y")
+
+        return spread_df
+    elif combination_type in ['quarterly fly']:
+        spread_df = spread_combination(contracts=contracts[filtered_columns_qtr2],
+                                                combination_type="quarterly fly",
+                                                col_format="%q%q%q %y")
+
+        return spread_df
+
+    elif combination_type in ['fly']:
+        spread_df = spread_combination(contracts=contracts[filtered_columns], combination_type="fly",
+                                                col_format="%b%b%b %y")
+        return spread_df
 
 
 def reject_outliers(data, m=2):

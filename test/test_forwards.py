@@ -17,11 +17,11 @@ def test_timespreads(contracts):
 def test_timespreads_quaterly(contracts):
     res = forwards.time_spreads(contracts, m1="Q1", m2="Q2")
     assert res[2020].loc[pd.to_datetime("2019-01-02")] == pytest.approx(-0.33, abs=0.01)
-    assert res[2020].loc[pd.to_datetime("2019-05-21")] == pytest.approx(1.05,abs=0.01)
+    assert res[2020].loc[pd.to_datetime("2019-05-21")] == pytest.approx(1.05, abs=0.01)
 
     res = forwards.time_spreads(contracts, m1="Q4", m2="Q1")
-    assert res[2020].loc[pd.to_datetime("2019-01-02")] == pytest.approx(-0.25,abs=0.01)
-    assert res[2020].loc[pd.to_datetime("2019-05-21")] == pytest.approx(0.91,abs=0.01)
+    assert res[2020].loc[pd.to_datetime("2019-01-02")] == pytest.approx(-0.25, abs=0.01)
+    assert res[2020].loc[pd.to_datetime("2019-05-21")] == pytest.approx(0.91, abs=0.01)
 
 
 def test_all_spread_combinations(contracts):
@@ -36,7 +36,7 @@ def test_all_spread_combinations(contracts):
 def test_spread_combination_calendar(contracts):
     res = forwards.spread_combination(contracts, "calendar")
     assert res is not None
-    assert res[2020].loc[pd.to_datetime("2020-01-02")] == pytest.approx(59.174,abs=0.01)
+    assert res[2020].loc[pd.to_datetime("2020-01-02")] == pytest.approx(59.174, abs=0.01)
 
 
 def test_spread_combination_calendar_spread(contracts):
@@ -46,7 +46,7 @@ def test_spread_combination_calendar_spread(contracts):
 
 def test_spread_combination_half_year(contracts):
     res = forwards.spread_combination(contracts, "half year")
-    assert res["H1 2020"].loc[pd.to_datetime("2019-01-02")] == pytest.approx(50.04,abs=0.01)
+    assert res["H1 2020"].loc[pd.to_datetime("2019-01-02")] == pytest.approx(50.04, abs=0.01)
 
 
 def test_spread_combination_half_year_spread(contracts):
@@ -61,7 +61,7 @@ def test_spread_combination_quarter(contracts):
 
 def test_spread_combination_quarter_spread(contracts):
     res = forwards.spread_combination(contracts, "q1q2")
-    assert res["Q1Q2 2020"].loc[pd.to_datetime("2019-01-02")] == pytest.approx(-0.33,abs=0.01)
+    assert res["Q1Q2 2020"].loc[pd.to_datetime("2019-01-02")] == pytest.approx(-0.33, abs=0.01)
 
     res = forwards.spread_combination(contracts, "q1q3")
     assert res["Q1Q3 2020"].loc[pd.to_datetime("2019-01-02")] == pytest.approx(-0.58, abs=0.01)
@@ -95,7 +95,6 @@ def test_spread_combination_fly(contracts):
     assert res["DecJanFeb 21"].loc[pd.to_datetime("2020-01-02")] == pytest.approx(0.0199, abs=0.01)
 
 
-
 def test_spread_combination_quaterly_fly(contracts):
     res = forwards.spread_combination(contracts, "quarterly fly")
 
@@ -120,12 +119,17 @@ def test_spread_combination_month_spread_decjan(contracts):
 
 def test_spread_combination_month_fly(contracts):
     res = forwards.spread_combination(contracts, "janfebmar")
-    assert res["JanFebMar 2020"].loc[pd.to_datetime("2019-01-02")] == pytest.approx(0.0,abs=0.01)
+    assert res["JanFebMar 2020"].loc[pd.to_datetime("2019-01-02")] == pytest.approx(0.0, abs=0.01)
 
 
 def test_spread_combination_quarter_fly(contracts):
     res = forwards.spread_combination(contracts, "q4q1q2")
     assert res["Q4Q1Q2 2020"].loc[pd.to_datetime("2019-01-02")] == pytest.approx(-0.023, abs=0.01)
+
+
+def test_recent_spreads(contracts):
+    res = forwards.recent_spreads(contracts, combination_type="contracts")
+    assert res is not None
 
 
 def test_continuous_futures(contracts):
@@ -164,7 +168,7 @@ def test_continuous_futures(contracts):
         "2021-01-01": "2021-01-20",
     }
 
-    res = forwards.continuous_futures(cl, expiry_dates=expiry_dates, front_month=[1,2])
+    res = forwards.continuous_futures(cl, expiry_dates=expiry_dates, front_month=[1, 2])
     assert res["M1"].loc[pd.to_datetime("2020-11-20")] == pytest.approx(42.15, abs=0.01)
     assert res["M1"].loc[pd.to_datetime("2020-11-23")] == pytest.approx(43.06, abs=0.01)
     assert res["M2"].loc[pd.to_datetime("2020-11-19")] == pytest.approx(41.90, abs=0.01)
