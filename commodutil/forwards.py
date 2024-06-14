@@ -10,7 +10,8 @@ from dateutil.relativedelta import relativedelta
 from typing import List
 
 from commodutil.forward.calendar import cal_contracts, cal_spreads, half_year_contracts, half_year_spreads
-from commodutil.forward.continuous import generate_series
+from commodutil.forward.structure import generate_structure_series
+from commodutil.forward.continuous import generate_multiple_continuous_series
 from commodutil.forward.fly import fly, all_fly_spreads, fly_combos
 from commodutil.forward.quarterly import quarterly_contracts, all_quarterly_rolls, time_spreads_quarterly, \
     fly_quarterly, all_quarterly_flys
@@ -272,23 +273,14 @@ def recent_structure(contracts: pd.DataFrame, structure_combo: List[List[int]] =
 
     # Flatten and unique structure_combo using list comprehension
     structure_months = list(set(month for sublist in structure_combo for month in sublist))
+    df = generate_multiple_continuous_series(contracts, months=structure_months, roll_days=roll_days)
 
     dfs = []
-    for st in structure_months:
-        s = generate_series(contracts, front_month=st, roll_days=roll_days)
-        s = s.rename(columns={x: f"M{st}" for x in s.columns})
-        s.attrs = {}
+    for st in structure_combo:
+        s = generate_structure_series(contracts, mx= st[0], my=st[1], mx_df=df[f"M{st[0]}"], my_df=df[f"M{st[1]}"], roll_days=roll_days)
         dfs.append(s)
 
     df = pd.concat(dfs, axis=1)
-
-    # Calculate M1-M2, M1-M3, M1-M6
-    for st in structure_combo:
-        df[f"M{st[0]}-M{st[1]}"] = df[f"M{st[0]}"].sub(df[f"M{st[1]}"]).dropna()
-
-    drop_columns = {x for x in df.columns if x not in [f"M{st[0]}-M{st[1]}" for st in structure_combo]}
-    df = df.drop(columns=drop_columns)
-
     df = df.dropna(how="all", axis="rows")
 
     return df

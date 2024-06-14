@@ -1,3 +1,6 @@
+from typing import List
+
+import dask
 import pandas as pd
 
 from commodutil.forward.util import extract_expiry_date, determine_roll_date, extract_expiry_dates_from_contracts
@@ -89,3 +92,15 @@ def generate_series(df, expiry_dates=None, roll_days=0, front_month=1, back_adju
     final_df.attrs["mask_adjust"] = mask_adjust
 
     return final_df
+
+
+def generate_multiple_continuous_series(contracts: pd.DataFrame, months: List = [1, 2],
+                                        roll_days: int = 0) -> pd.DataFrame:
+    dfs = []
+    for month in months:
+        dfs.append(dask.delayed(generate_series(contracts, front_month=month, roll_days=roll_days)))
+    dfs = dask.compute(*dfs)
+    for df in dfs:
+        df.attrs = {}
+    df = pd.concat(dfs, axis=1)
+    return df
