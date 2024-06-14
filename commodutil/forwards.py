@@ -286,8 +286,6 @@ def recent_structure(contracts: pd.DataFrame, structure_combo: List[List[int]] =
     for st in structure_combo:
         df[f"M{st[0]}-M{st[1]}"] = df[f"M{st[0]}"].sub(df[f"M{st[1]}"]).dropna()
 
-    # Remove the columns which are not subtractions by identifying the columns which are not in structure_combo
-    # Use set comprehension to create the set of column names to drop
     drop_columns = {x for x in df.columns if x not in [f"M{st[0]}-M{st[1]}" for st in structure_combo]}
     df = df.drop(columns=drop_columns)
 
