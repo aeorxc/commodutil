@@ -314,9 +314,15 @@ def reject_outliers(data, m=2):
     return data[abs(data - np.mean(data)) < m * np.std(data)]
 
 
-def extract_expiry_date(contract, expiry_dates):
+def extract_expiry_date(contract, expiry_dates, contract_df=None):
     if expiry_dates:
         return expiry_dates.get(contract, contract + pd.offsets.MonthEnd(1))
+
+    # if no expiry_dates is provided, use the last value date in the contract
+    if contract_df is not None:
+        last_value_date_in_contract = contract_df.dropna().index[-1]
+        if last_value_date_in_contract < contract + pd.offsets.MonthEnd(1):
+            return last_value_date_in_contract
 
     return contract + pd.offsets.MonthEnd(1)
 
@@ -368,8 +374,8 @@ def continuous_futures(df, expiry_dates=None, roll_days=0, front_month=1, back_a
             next_contract = contract + pd.offsets.MonthBegin(1)
 
             # Determine expiry date for each contract
-            expiry_date = extract_expiry_date(contract, expiry_dates)
-            prev_contract_expiry_date = extract_expiry_date(prev_contract, expiry_dates)
+            expiry_date = extract_expiry_date(contract, expiry_dates, contract_df=df[contract])
+            prev_contract_expiry_date = extract_expiry_date(prev_contract, expiry_dates, contract_df=df[prev_contract] if prev_contract in df.columns else None)
 
             # Adjust expiry date based on roll_days
             roll_date = determine_roll_date(df, expiry_date, roll_days)
