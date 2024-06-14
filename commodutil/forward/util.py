@@ -1,12 +1,11 @@
 import datetime
 import re
-from calendar import month_abbr, monthrange
+from calendar import month_abbr
 import pandas as pd
 
-
 month_abbr_inv = {
-        month.lower(): index for index, month in enumerate(month_abbr) if month
-    }
+    month.lower(): index for index, month in enumerate(month_abbr) if month
+}
 
 
 def convert_contract_to_date(contract):
@@ -53,3 +52,40 @@ futures_month_conv = {
     12: "Z",
 }
 futures_month_conv_inv = {v: k for k, v in futures_month_conv.items()}
+
+
+def extract_expiry_date(contract, expiry_dates):
+    if expiry_dates:
+        return expiry_dates.get(contract, contract + pd.offsets.MonthEnd(1))
+
+    return contract + pd.offsets.MonthEnd(1)
+
+
+def determine_roll_date(df, expiry_date, roll_days):
+    cdf = df.copy().dropna(how="all", axis="rows")  # remove non-trading days
+    if expiry_date in cdf.index:
+        idx_position = cdf.index.get_loc(expiry_date)
+        new_idx_position = idx_position - roll_days
+
+        if new_idx_position >= 0:
+            return cdf.index[new_idx_position]
+
+    return expiry_date
+
+
+def extract_expiry_dates_from_contracts(contracts):
+    "Given a dataframe of contracts use the value of the last date in each given contract as the expiry date"
+    "This is used when we don't have an explicit map of contracts to expiry dates"
+    expiry_dates = {}
+    unique_expiry_dates = {}
+    for contract in contracts.columns:
+        # Find the last non-null date for the contract
+        last_date = contracts[contract].dropna()
+        if len(last_date) > 0:
+            last_date = last_date.index[-1]
+            expiry_dates[contract] = last_date
+            # Check if the expiry date is already in the unique_expiry_dates values
+            if last_date not in unique_expiry_dates.values():
+                unique_expiry_dates[contract] = last_date
+
+    return unique_expiry_dates

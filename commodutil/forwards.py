@@ -7,14 +7,15 @@ import numpy as np
 import pandas as pd
 from datetime import datetime
 from dateutil.relativedelta import relativedelta
+from typing import List
 
 from commodutil.forward.calendar import cal_contracts, cal_spreads, half_year_contracts, half_year_spreads
+from commodutil.forward.continuous import generate_series
 from commodutil.forward.fly import fly, all_fly_spreads, fly_combos
 from commodutil.forward.quarterly import quarterly_contracts, all_quarterly_rolls, time_spreads_quarterly, \
     fly_quarterly, all_quarterly_flys
 from commodutil.forward.spreads import time_spreads_monthly, all_monthly_spreads, monthly_spread_combos_extended
-from commodutil.forward.util import convert_contract_to_date, convert_columns_to_date, month_abbr_inv, \
-    futures_month_conv
+from commodutil.forward.util import convert_columns_to_date, month_abbr_inv
 
 from commodutil import dates
 
@@ -257,10 +258,51 @@ def filter_columns_by_date(contract_data, start_date, end_date):
             if start_date <= (col.date() if isinstance(col, pd.Timestamp) else col) <= end_date]
 
 
-def recent_spreads(contracts: pd.DataFrame, combination_type: str):
+def recent_structure(contracts: pd.DataFrame, structure_combo: List[List[int]] = [[1, 2], [1, 3], [1, 6], [1, 12]],
+                     roll_days: int = 0) -> pd.DataFrame:
+    """
+    Given a list of contracts, calculate structure.
+
+    :param contracts: DataFrame with individual contracts as columns.
+    :param structure_combo: List of lists where each sublist represents a structure to calculate.
+    :param roll_days: Number of days before the expiry date to roll to the next contract.
+    :return: DataFrame representing the calculated structure for each structure combo.
+    """
+    contracts = convert_columns_to_date(contracts)
+
+    # Flatten and unique structure_combo using list comprehension
+    structure_months = list(set(month for sublist in structure_combo for month in sublist))
+
+    dfs = []
+    for st in structure_months:
+        s = generate_series(contracts, front_month=st, roll_days=roll_days)
+        s = s.rename(columns={x: f"M{st}" for x in s.columns})
+        s.attrs = {}
+        dfs.append(s)
+
+    df = pd.concat(dfs, axis=1)
+
+    # Calculate M1-M2, M1-M3, M1-M6
+    for st in structure_combo:
+        df[f"M{st[0]}-M{st[1]}"] = df[f"M{st[0]}"].sub(df[f"M{st[1]}"]).dropna()
+
+    # Remove the columns which are not subtractions by identifying the columns which are not in structure_combo
+    # Use set comprehension to create the set of column names to drop
+    drop_columns = {x for x in df.columns if x not in [f"M{st[0]}-M{st[1]}" for st in structure_combo]}
+    df = df.drop(columns=drop_columns)
+
+    df = df.dropna(how="all", axis="rows")
+
+    return df
+
+
+def recent_spreads(contracts: pd.DataFrame, combination_type: str, **kwargs):
     """Given a list of contracts, filter the contracts to the list of most recent relevant contracts"""
     if contracts is None:
         return None
+
+    if combination_type == 'structure':
+        return recent_structure(contracts, **kwargs)
 
     contracts = convert_columns_to_date(contracts)
     current_date = datetime.now().date()  # Convert to datetime.date
@@ -280,143 +322,38 @@ def recent_spreads(contracts: pd.DataFrame, combination_type: str):
         return month_df
     elif combination_type in ['monthly']:
         spread_df = spread_combination(contracts[filtered_columns], combination_type="monthly",
-                                                col_format="%b%b %y")
+                                       col_format="%b%b %y")
 
         return spread_df
 
     elif combination_type in ['quarterly']:
         spread_df = spread_combination(contracts=contracts[filtered_columns_qtr],
-                                                combination_type="quarterly",
-                                                col_format="%q %y")
+                                       combination_type="quarterly",
+                                       col_format="%q %y")
 
         return spread_df
 
     elif combination_type in ['quarterly roll']:
         spread_df = spread_combination(contracts=contracts[filtered_columns_qtr],
-                                                combination_type="quarterly roll",
-                                                col_format="%q%q %y")
+                                       combination_type="quarterly roll",
+                                       col_format="%q%q %y")
 
         return spread_df
     elif combination_type in ['quarterly fly']:
         spread_df = spread_combination(contracts=contracts[filtered_columns_qtr2],
-                                                combination_type="quarterly fly",
-                                                col_format="%q%q%q %y")
+                                       combination_type="quarterly fly",
+                                       col_format="%q%q%q %y")
 
         return spread_df
 
     elif combination_type in ['fly']:
         spread_df = spread_combination(contracts=contracts[filtered_columns], combination_type="fly",
-                                                col_format="%b%b%b %y")
+                                       col_format="%b%b%b %y")
         return spread_df
 
 
 def reject_outliers(data, m=2):
     return data[abs(data - np.mean(data)) < m * np.std(data)]
-
-
-def extract_expiry_date(contract, expiry_dates, contract_df=None):
-    if expiry_dates:
-        return expiry_dates.get(contract, contract + pd.offsets.MonthEnd(1))
-
-    # if no expiry_dates is provided, use the last value date in the contract
-    if contract_df is not None:
-        last_value_date_in_contract = contract_df.dropna().index[-1]
-        if last_value_date_in_contract < contract + pd.offsets.MonthEnd(1):
-            return last_value_date_in_contract
-
-    return contract + pd.offsets.MonthEnd(1)
-
-
-def determine_roll_date(df, expiry_date, roll_days):
-    cdf = df.copy().dropna(how="all", axis="rows")  # remove non-trading days
-    if expiry_date in cdf.index:
-        idx_position = cdf.index.get_loc(expiry_date)
-        new_idx_position = idx_position - roll_days
-
-        if new_idx_position >= 0:
-            return cdf.index[new_idx_position]
-
-    return expiry_date
-
-
-def continuous_futures(df, expiry_dates=None, roll_days=0, front_month=1, back_adjust=False) -> pd.DataFrame:
-    """
-    Create a continuous future from individual contracts by stitching together contracts after they expire
-    with an option for back-adjustment.
-
-    :param df: DataFrame with individual contracts as columns.
-    :param expiry_dates: Dictionary mapping contract dates to their respective expiry dates.
-    :param roll_days: Number of days before the expiry date to roll to the next contract.
-    :param front_month: Determines which contract month(s) to select. Can be an int or list of ints.
-    :param back_adjust: If True, apply back-adjustment to the prices.
-    :return: DataFrame representing the continuous future for each front month.
-    """
-    if isinstance(front_month, int):
-        front_month = [front_month]  # convert to list if it's a single integer
-
-    df.columns = [pd.to_datetime(x) for x in df.columns]
-
-    # Format expiry_dates if provided
-    if expiry_dates:
-        expiry_dates = {
-            pd.to_datetime(x): pd.to_datetime(expiry_dates[x]) for x in expiry_dates
-        }
-
-    continuous_dfs = []
-
-    for front_month_x in front_month:
-        mask_switch = pd.DataFrame(index=df.index, columns=df.columns)
-        mask_adjust = pd.DataFrame(index=df.index, columns=df.columns)
-
-        # Iterating over the columns (contracts)
-        for contract in df.columns:
-            prev_contract = contract - pd.offsets.MonthBegin(1)
-            next_contract = contract + pd.offsets.MonthBegin(1)
-
-            # Determine expiry date for each contract
-            expiry_date = extract_expiry_date(contract, expiry_dates, contract_df=df[contract])
-            prev_contract_expiry_date = extract_expiry_date(prev_contract, expiry_dates, contract_df=df[prev_contract] if prev_contract in df.columns else None)
-
-            # Adjust expiry date based on roll_days
-            roll_date = determine_roll_date(df, expiry_date, roll_days)
-            prev_contract_roll_date = determine_roll_date(df, prev_contract_expiry_date, roll_days)
-
-            # Set the cells to 1 where the index date is between the current contract date and the adjusted expiry date
-            mask_switch.loc[
-                (mask_switch.index > pd.Timestamp(prev_contract_roll_date))
-                & (mask_switch.index <= pd.Timestamp(roll_date)),
-                contract,
-            ] = 1
-
-            # Keep a track of difference between front and back contract on roll date
-            if roll_date in df.index and contract in df.columns and next_contract in df.columns:
-                adj_value = df.at[roll_date, next_contract] - df.at[roll_date, contract]
-                mask_adjust.loc[
-                    (mask_switch.index > prev_contract_roll_date)
-                    & (mask_switch.index <= roll_date),
-                    contract,
-                ] = adj_value
-
-        mask_switch = mask_switch.shift(front_month_x - 1, axis=1)  # handle front month eg M2, M3 etc
-        # Multiply df with mask and sum along the rows
-        continuous_df = df.mul(mask_switch, axis=1).sum(axis=1, skipna=True, min_count=1)
-        continuous_df = pd.DataFrame(continuous_df, columns=[f"M{front_month_x}"])
-
-        # Back-adjustment
-        if back_adjust:
-            mask_adjust_series = mask_adjust.fillna(method='bfill').sum(axis=1, skipna=True, min_count=1).fillna(0)
-            continuous_df = continuous_df.add(mask_adjust_series, axis=0)
-
-        continuous_dfs.append(continuous_df)
-
-    # Concatenate all dataframes for each front month
-    final_df = pd.concat(continuous_dfs, axis=1).dropna(how="all", axis="rows")
-
-    # Store mask in attributes for reference
-    final_df.attrs["mask_switch"] = mask_switch
-    final_df.attrs["mask_adjust"] = mask_adjust
-
-    return final_df
 
 # if __name__ == "__main__":
 # from pylim import lim
