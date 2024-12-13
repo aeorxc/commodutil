@@ -2,6 +2,7 @@ from datetime import datetime, timedelta
 from functools import reduce
 
 import dask
+from dask import delayed
 import pandas as pd
 
 from commodutil import dates
@@ -122,37 +123,46 @@ def _reindex_col(df, colname, colyearmap):
     colyear = colyearmap[colname]
     delta = dates.curyear - colyear
     w = df[[colname]]
+
     if delta == 0:
         return w
-    else:  # reindex
-        winew = [x + pd.DateOffset(years=delta) for x in w.index]
-        w.index = winew
+    else:
+        # Use vectorized date shifting rather than a list comprehension
+        w = w.copy()
+        w.index = w.index + pd.DateOffset(years=delta)
         return w
+
 
 
 def reindex_year(df):
     """
     Reindex a dataframe containing prices to the current year.
-    eg dataframe with brent Jan 19, Jan 18, Jan 17   so that 18 is shifted +1 year and 17 is shifted +2 years
+    e.g. a dataframe with brent Jan 19, Jan 18, Jan 17 so that 18 is shifted +1 year and 17 is shifted +2 years
     """
+    colyearmap = dates.find_year(df)  # Ensure dates.find_year is defined somewhere
     dfs = []
-    colyearmap = dates.find_year(df)
-    for colname in df.columns:
-        dfs.append(dask.delayed(_reindex_col(df, colname, colyearmap)))
 
+    # Proper usage of delayed: pass the function and arguments separately
+    for colname in df.columns:
+        dfs.append(delayed(_reindex_col)(df, colname, colyearmap))
+
+    # Compute all delayed tasks once the graph is built
     dfs = dask.compute(*dfs)
+
+    # Filter out None results
     dfs = [x for x in dfs if x is not None]
-    # merge all series into one dataframe, concat doesn't quite do the job
+
+    # Merge all series into one dataframe (original approach)
     res = reduce(
         lambda left, right: pd.merge(
             left, right, left_index=True, right_index=True, how="outer"
         ),
         dfs,
     )
-    res = res.dropna(how="all")  # drop uneeded columns out into future
-    res = pandasutil.fillna_downbet(
-        res
-    )  # use this as above ffills incorrectly at end of timeseries
+
+    # Drop rows with all NaNs and perform custom fill operation
+    res = res.dropna(how="all")
+    res = pandasutil.fillna_downbet(res)  # Ensure pandasutil and fillna_downbet are defined
 
     return res
 
