@@ -1,6 +1,6 @@
 # Unit-Test framework and extensions.
-pytest==6.2.*
-pytest-mock==3.6.*
+pytest
+pytest-mock
 
 # Additional packages for pytest to run in CI and calculate code coverage.
 pytest-azurepipelines
