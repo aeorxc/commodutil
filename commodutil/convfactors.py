@@ -42,6 +42,8 @@ gal_ltr = 3.78541178
 # Light Ends
 naphtha_kt_bbl = 8.9
 
+propane_kt_bbl = 12.4
+
 gasoline_density_kg_l = 0.745
 gasoline_kt_bbl = 8.33
 gasoline_kt_km3 = 1 / gasoline_density_kg_l  # 1.342281879
@@ -100,6 +102,8 @@ hvo_km3_gj = 34
 vgo_kt_bbl = 6.9
 sr_fo_kt_bbl = 6.65
 fo_kt_bbl = 6.35
+fueloil_kt_bbl = 6.35
+vlsfo_kt_bbl = 6.9
 
 # Crude
 
@@ -142,6 +146,12 @@ def convfactor(commodity, fromunit, tounit):
     # TODO - move to mt/m3 convetion rather than kt/km3
     fromunit = _stdunits(fromunit)
     tounit = _stdunits(tounit)
+
+    if fromunit == 'bbl' and tounit == 'gal':
+        return 42
+
+    if fromunit == 'gal' and tounit == 'bbl':
+        return 1/42
 
     factor = "{}_{}_{}".format(commodity, fromunit, tounit)
     if factor in globals():

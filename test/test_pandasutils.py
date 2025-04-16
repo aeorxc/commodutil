@@ -5,6 +5,7 @@ import pandas as pd
 
 from commodutil import forwards
 from commodutil import pandasutil
+from commodutil.forward.util import convert_contract_to_date
 
 
 class TestPandasUtils(unittest.TestCase):
@@ -18,7 +19,7 @@ class TestPandasUtils(unittest.TestCase):
         )
         contracts = cl.rename(
             columns={
-                x: pd.to_datetime(forwards.convert_contract_to_date(x))
+                x: pd.to_datetime(convert_contract_to_date(x))
                 for x in cl.columns
             }
         )

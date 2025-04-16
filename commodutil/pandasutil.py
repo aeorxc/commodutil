@@ -36,17 +36,16 @@ def mergets(left, right, leftl=None, rightl=None, how="left"):
 
 def fillna_downbet(df):
     """
-    Fill weekends/holidays in timeseries but dont extend to NaNs at end of the timeseries
-    https://stackoverflow.com/questions/28136663/using-pandas-to-fill-gaps-only-and-not-nans-on-the-ends
-    :param df:
-    :return:
+    Fill weekends/holidays in timeseries but don't extend values beyond the last non-NaN entry.
     """
     df = df.copy()
     for col in df.columns:
-        non_nans = df[col][~df[col].apply(np.isnan)]
-        if non_nans is not None and len(non_nans) > 1:
+        # Drop all NaNs at once, vectorized and fast
+        non_nans = df[col].dropna()
+        if len(non_nans) > 1:
             start, end = non_nans.index[0], non_nans.index[-1]
-            df[col].loc[start:end] = df[col].loc[start:end].fillna(method="ffill")
+            # Perform ffill only on the portion that has data
+            df.loc[start:end, col] = df.loc[start:end, col].ffill()
     return df
 
 
