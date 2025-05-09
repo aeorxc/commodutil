@@ -82,6 +82,10 @@ def quarterly_contracts(contracts, col_format=None):
     with columns headings as '2020-01-01', '2020-02-01'
     Return a dataframe of quarterly values (eg Q115)
     """
+    # remove attrs as they cause issues in pandas 2
+    if hasattr(contracts, 'attrs'):
+        contracts.attrs = {}
+
     contracts = convert_columns_to_date(contracts)
     years = list(set([x.year for x in contracts.columns]))
 
