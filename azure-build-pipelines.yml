@@ -138,7 +138,7 @@ stages:
       - Validate
       - Build
     pool:
-      vmImage: "ubuntu-20.04"
+      vmImage: "ubuntu-latest"
     jobs:
       - deployment: Azure
         displayName: "Publish to Azure"
