@@ -142,7 +142,7 @@ def format_fwd(df, last_index=None):
     """
     df = df.resample("D").mean().ffill()
     if last_index is not None:
-        df = df[last_index:]
+        df = df.loc[last_index:]
     return df
 
 
