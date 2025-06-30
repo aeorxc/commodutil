@@ -2,7 +2,7 @@ import setuptools
 
 setuptools.setup(
     name="commodutil",
-    version="2.3.9",
+    version="2.3.10",
     author="aeorxc",
     author_email="author@example.com",
     description="common commodity/oil analytics utils",
@@ -17,7 +17,7 @@ setuptools.setup(
         "Operating System :: OS Independent",
     ],
     install_requires=["pandas", "dask[delayed]"],
-    python_requires=">=3.6",
+    python_requires=">=3.9",
     setup_requires=["pytest-runner"],
     tests_require=["pytest"],
 )
