@@ -1,184 +1,22 @@
-trigger:
-  branches:
-    include:
-      - master
-  tags:
-    include:
-      - "*"
+resources:
+  repositories:
+    - repository: pipeline-templates
+      type: git
+      name: Oil/pipeline-templates
+      ref: refs/heads/main
 
-variables:
-  # Python package name.
-  - name: PACKAGE_NAME
-    value: "commodutil"
-  # Python version used by the application.
-  - name: PYTHON_VERSION
-    value: "3.9"
-  # Is this pipeline triggered by a git tag.
-  - name: IS_TAGGED
-    value: $[startsWith(variables['build.sourceBranch'], 'refs/tags/')]
-  # Cache directories.
-  - name: PIP_CACHE_DIR
-    value: $(Pipeline.Workspace)/.pip
+extends:
+  template: templates/python-packages-pipeline.yml@pipeline-templates
+  parameters:
+    packageName: 'commodutil'
+    createRefinitivConfig: false
 
 pool: Self-Hosted-AWS
 
-stages:
-  - stage: Validate
-    displayName: "Run tests and checks"
-    jobs:
-    - job: Test
-      displayName: "Run unit tests"
-      dependsOn: []
-      strategy:
-        maxParallel: 2
-        matrix:
-          # Current version of Python used by the application.
-          Python:
-            python.version: $(PYTHON_VERSION)
-      steps:
-      - task: UsePythonVersion@0
-        displayName: "Use Python$(python.version)"
-        inputs:
-          versionSpec: "$(python.version)"
-      - task: Cache@2
-        displayName: "Cache CI and application packages"
-        inputs:
-          key: 'python-app | "$(Agent.OS)" | "$(python.version)" | requirements.txt | requirements-test.txt'
-          restoreKeys: |
-            python-app | "$(Agent.OS)" | "$(python.version)"
-            python-app | "$(Agent.OS)"
-          path: $(PIP_CACHE_DIR)
-      - script: pip install --upgrade --requirement requirements-test.txt
-        displayName: "Install CI and application packages"
-      - script: |
-          set -eux
-          # Run unit tests using pytest runner.
-          # Output results in JUnit format and code coverage results in Cobertura XML and HTML formats.
-          # Detailed configuration in .coveragerc file.
-          pytest --junitxml=junit/test-results.xml \
-                --cov-config=.coveragerc \
-                --cov-report xml \
-                --cov-report html \
-                --cov=$(PACKAGE_NAME) \
-                test/
-        displayName: "Run pytest"
-        env:
-          # Set CI env var to skip certain tests.
-          CI: true
-        condition: succeededOrFailed()
-      - task: PublishTestResults@2
-        displayName: "Publish test results for Python$(python.version)"
-        condition: succeededOrFailed()
-        inputs:
-          testResultsFiles: "**/test-results.xml"
-          testRunTitle: "Test results for Python$(python.version)"
-      - task: PublishCodeCoverageResults@2
-        displayName: "Publish coverage results for Python$(python.version)"
-        condition: succeededOrFailed()
-        inputs:
-          codeCoverageTool: Cobertura
-          summaryFileLocation: "$(System.DefaultWorkingDirectory)/**/coverage.xml"
-
-  - stage: Build
-    displayName: "Build wheel"
-    dependsOn: []
-    jobs:
-      - job: Build
-        strategy:
-          maxParallel: 3
-          matrix:
-            Python38:
-              python.version: 3.8
-            Python39:
-              python.version: 3.9
-            Python310:
-              python.version: 3.10
-        steps:
-          - task: UsePythonVersion@0
-            inputs:
-              versionSpec: "$(python.version)"
-            displayName: "Use Python $(python.version)"
-          - task: Cache@2
-            displayName: "Cache CI and library packages"
-            inputs:
-              key: 'python | "$(Agent.OS)" | "$(python.version)" | requirements.txt'
-              restoreKeys: |
-                python | "$(Agent.OS)" | "$(python.version)"
-                python | "$(Agent.OS)"
-              path: $(PIP_CACHE_DIR)
-          - script: |
-              pip install wheel
-              pip install --upgrade --requirement requirements.txt
-            displayName: "Install CI and library packages"
-          - script: |
-              set -eu
-              version_file="./setup.cfg"
-              if [ "${IS_TAGGED,,}" = "true" ]; then
-                version="$(Build.SourceBranchName)"
-                echo "Embedding git tag (${version}) as package version"
-              else
-                version="$(Build.BuildNumber)"
-                echo "Embedding build number (${version}) as version"
-              fi
-              # Replace version string in the source code.
-              sed -i "/version = /c\version = ${version}" $version_file
-            displayName: "Bump package version"
-          - script: python setup.py bdist_wheel
-            displayName: Build wheel
-          - task: PublishPipelineArtifact@1
-            displayName: "Publish wheel"
-            inputs:
-              artifact: "$(PACKAGE_NAME)-py$(python.version)"
-              targetPath: "./dist"
-
-  - stage: Publish
-    displayName: "Publish Artifacts"
-    condition: and(succeeded(), eq(variables.IS_TAGGED, true))
-    dependsOn:
-      - Validate
-      - Build
-    pool:
-      vmImage: "ubuntu-latest"
-    jobs:
-      - deployment: Azure
-        displayName: "Publish to Azure"
-        environment: "shared"
-        dependsOn: []
-        strategy:
-          runOnce:
-            deploy:
-              steps:
-                - script: pip install twine
-                - task: TwineAuthenticate@1
-                  displayName: "Authenticate with Azure Feed"
-                  inputs:
-                    artifactFeed: Oil_Feed
-                - script: |
-                    python -m twine upload \
-                      --non-interactive \
-                      --repository Oil_Feed \
-                      --config-file $(PYPIRC_PATH) \
-                      --skip-existing \
-                      "$(Pipeline.Workspace)/**/*.whl"
-                  displayName: "Upload to Azure Feed"
-      - deployment: Artifactory
-        displayName: "Publish to Artifactory"
-        environment: "shared"
-        dependsOn: []
-        strategy:
-          runOnce:
-            deploy:
-              steps:
-                - script: pip install twine
-                - task: TwineAuthenticate@1
-                  displayName: "Authenticate with jFrog Artifactory"
-                  inputs:
-                    pythonUploadServiceConnection: "jfrog-gte-pypi"
-                - script: |
-                    python -m twine upload \
-                      --non-interactive \
-                      --repository jfrog-gte-pypi \
-                      --config-file $(PYPIRC_PATH) \
-                      --skip-existing \
-                      "$(Pipeline.Workspace)/**/*.whl"
-                  displayName: "Upload to jFrog Artifactory"
+trigger:
+  branches:
+    include:
+      - main
+  tags:
+    include:
+      - "*"

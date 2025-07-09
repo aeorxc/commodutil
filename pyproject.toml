@@ -1,0 +1,36 @@
+[build-system]
+requires = ["setuptools>=80.9.0", "wheel==0.45.1"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "commodutil"
+version = "2.3.10"
+description = "common commodity/oil analytics utils"
+authors = [
+    {name = "aeorxc", email = "author@example.com"}
+]
+requires-python = ">=3.9"
+classifiers = [
+    "Programming Language :: Python :: 3",
+    "License :: OSI Approved :: MIT License",
+    "Operating System :: OS Independent",
+]
+dependencies = [
+    "pandas",
+    "dask[delayed]",
+]
+
+[project.urls]
+Homepage = "https://github.com/aeorxc/commodutil"
+Source = "https://github.com/aeorxc/commodutil"
+
+[project.optional-dependencies]
+test = [
+    "pytest",
+    "pytest-runner",
+]
+
+[tool.setuptools.packages.find]
+where = ["."]
+include = ["commodutil*"]
+exclude = ["tests*", "*.tests*", "tests.*"]
