@@ -128,6 +128,8 @@ def seasonalise_weekly(df):
     df_unstacked.columns = df_unstacked.columns.map(
         lambda x: datetime.fromisocalendar(x[0], x[2], x[1])
     )
+    # convert int32 into int for index
+    df_unstacked.index = df_unstacked.index.astype(int)
 
     df_result = df_unstacked.T
     return df_result
