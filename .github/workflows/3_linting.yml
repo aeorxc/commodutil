@@ -44,4 +44,4 @@ jobs:
       - name: Check type hints with mypy
         run: |
           mypy commodutil || exit 0   
-          mypy test || exit 0   
+          mypy tests || exit 0   
