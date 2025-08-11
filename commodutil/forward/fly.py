@@ -51,8 +51,11 @@ def fly(contracts, m1, m2, m3, col_format=None):
             else:
                 s.name = f"{month_abbr[m1]}{month_abbr[m2]}{month_abbr[m3]} {year1}"
             legmap[s.name] = [c1, c2, c3]
+<<<<<<< HEAD
             if hasattr(s, 'attrs'):
                 s.attrs = {}
+=======
+>>>>>>> d9ef3134d47a1ce0673780b87c50d0db65a4c9b0
             dfs.append(s)
 
     if len(dfs) > 0:

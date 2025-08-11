@@ -49,7 +49,11 @@ def cleanup_weekly_data(df):
     Processes dates in a DataFrame to ensure that the intended weekday data is present for each week.
     Fills missing weeks by carrying forward the last record of those weeks adjusted to the intended weekday.
     """
+<<<<<<< HEAD
     intended_week_day = int(df['day'].mode()[0])
+=======
+    intended_week_day = df['day'].mode()[0]
+>>>>>>> d9ef3134d47a1ce0673780b87c50d0db65a4c9b0
 
     # Find all possible year-week combinations and those that have the intended weekday
     all_weeks = set(pd.MultiIndex.from_product([df['year'].unique(), range(1, 53)]))
@@ -67,7 +71,11 @@ def cleanup_weekly_data(df):
             last_record = week_records.tail(1).copy()
             offset_days = int(intended_week_day - (last_record.index[0].dayofweek + 1))
             last_record.index = last_record.index + pd.Timedelta(days=offset_days)
+<<<<<<< HEAD
             last_record['day'] = int(intended_week_day)
+=======
+            last_record['day'] = intended_week_day
+>>>>>>> d9ef3134d47a1ce0673780b87c50d0db65a4c9b0
 
             drop_indices.extend(week_records.index)
             new_records.append(last_record)
@@ -100,8 +108,12 @@ def seasonalise_weekly(df):
 
     # Adjust columns to current year
     # Day of week is fixed from the data. Just pick the last day's info:
+<<<<<<< HEAD
     # Convert to int to avoid uint32 overflow issues
     dayofweek = int(grouped['day'].iloc[-1])
+=======
+    dayofweek = grouped['day'].iloc[-1]
+>>>>>>> d9ef3134d47a1ce0673780b87c50d0db65a4c9b0
     df_unstacked.columns = df_unstacked.columns.set_levels([dates.curyear], level=0)
     df_unstacked.columns = df_unstacked.columns.set_levels([dayofweek], level=1)
 
@@ -143,7 +155,11 @@ def format_fwd(df, last_index=None):
     """
     df = df.resample("D").mean().ffill()
     if last_index is not None:
+<<<<<<< HEAD
         df = df.loc[last_index:]
+=======
+        df = df[last_index:]
+>>>>>>> d9ef3134d47a1ce0673780b87c50d0db65a4c9b0
     return df
 
 
