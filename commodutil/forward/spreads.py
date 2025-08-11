@@ -74,18 +74,14 @@ def time_spreads_monthly(contracts, m1, m2, col_format=None):
             else:
                 s.name = f"{month_abbr[m1]}{month_abbr[m2]} {year1}"
             legmap[s.name] = [c1, c2]
-<<<<<<< HEAD
+
             if hasattr(s, 'attrs'):
                 s.attrs = {}
             dfs.append(s)
 
     if len(dfs) > 0:
 
-=======
-            dfs.append(s)
 
-    if len(dfs) > 0:
->>>>>>> d9ef3134d47a1ce0673780b87c50d0db65a4c9b0
         res = pd.concat(dfs, axis=1)
         res = res.dropna(how="all", axis="rows")
         res.attrs = legmap

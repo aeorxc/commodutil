@@ -78,7 +78,6 @@ def replace_last_month_with_nan(series):
     series[last_month:last_valid_month_end] = np.nan
 
     return series
-<<<<<<< HEAD
 
 
 def spread_combination_quarter(contracts, combination_type, verbose_columns=True, exclude_price_month=False,
@@ -87,12 +86,6 @@ def spread_combination_quarter(contracts, combination_type, verbose_columns=True
     # remove attrs as they cause issues in pandas 2
     if hasattr(contracts, 'attrs'):
         contracts.attrs = {}
-=======
->>>>>>> d9ef3134d47a1ce0673780b87c50d0db65a4c9b0
-
-
-def spread_combination_quarter(contracts, combination_type, verbose_columns=True, exclude_price_month=False,
-                               col_format=None):
     if combination_type.startswith("q"):
         q_contracts = quarterly_contracts(contracts)
         m = re.search("q\dq\dq\d", combination_type)
