@@ -36,6 +36,10 @@ class Commodity:
 
 # Define commodities with their properties and correct industry factors
 COMMODITIES = {
+    # Crude oil (BP approximate conversion factors)
+    # 1 mt ≈ 7.33 bbl and ≈ 1.165 kL => density ≈ 0.85809 kg/L
+    'crude': Commodity('crude', 0.85809151 * ureg.kg/ureg.L, None),
+
     # Light ends - tuned to match kbbl/kt figures exactly
     'gasoline': Commodity('gasoline', 0.755079324 * ureg.kg/ureg.L, 32 * ureg.GJ/ureg.m**3),  # 8.33 kbbl/kt
     'naphtha': Commodity('naphtha', 0.706720311 * ureg.kg/ureg.L, None),  # 8.90 kbbl/kt
