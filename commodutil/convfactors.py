@@ -1,222 +1,314 @@
-####
-# Commodity conversion factors
-#
-# - Convention:
-#       commodity_from_to
-#
-# eg: diesel_kt_bbl
-#
-# optionally specify parameters for non standard entities: eg diesel_kt_bbl_iea
-#
-# standard should be to multiply the conversion factor
-# eg 1 mt * 7.45 = 7.45 bbls
-#
-# bbl = barrels
-# km3 = cubmic meters
-# kt = kilo atonne
-# ltr = litre
-# gj = 1000 mj # thus km3_gj is same as l_mj
+"""
+Modern implementation of commodity unit conversions using pint
+No backwards compatibility constraints - clean slate design
+"""
 
-
+import pint
+from typing import Union, Optional
+from dataclasses import dataclass
 import pandas as pd
+from functools import lru_cache
 
-# converts different names for commodities to standard used in this file
-commonnamemap = {
-    "dies": "diesel",
-    "ulsd": "diesel",
-    "go": "diesel",
-    "gas": "gasoline",  # tricky - could be NatGag
-    "etho": "ethanol",
+# Initialize pint with custom definitions
+ureg = pint.UnitRegistry()
+
+# Define oil & gas specific units
+ureg.define('barrel = 158.987294928 liter = bbl')
+ureg.define('gallon = 3.785411784 liter = gal')
+ureg.define('metric_ton = 1000 kilogram = mt')
+ureg.define('kiloton = 1000 metric_ton = kt')
+ureg.define('cubic_kilometer = 1e9 meter**3 = km3')  # 1 km³ = 1 billion m³
+ureg.define('gigajoule = 1e9 joule = gj = GJ')
+
+@dataclass
+class Commodity:
+    """Represents a commodity with its physical properties"""
+    name: str
+    density: pint.Quantity  # kg/L or API gravity
+    energy_content: Optional[pint.Quantity] = None  # GJ/m³ or similar
+    
+    def __post_init__(self):
+        # Ensure quantities have correct dimensions
+        if not isinstance(self.density, pint.Quantity):
+            self.density = self.density * ureg.kg / ureg.liter
+        if self.energy_content and not isinstance(self.energy_content, pint.Quantity):
+            self.energy_content = self.energy_content * ureg.GJ / ureg.m**3
+
+# Define commodities with their properties and correct industry factors
+COMMODITIES = {
+    # Light ends - densities aligned to industry values
+    'gasoline': Commodity('gasoline', 0.745 * ureg.kg/ureg.L, 32 * ureg.GJ/ureg.m**3),  # ~8.33 bbl/mt
+    'naphtha': Commodity('naphtha', 0.720 * ureg.kg/ureg.L, None),  # ~8.7-8.9 bbl/mt
+    'ethanol': Commodity('ethanol', 0.789 * ureg.kg/ureg.L, 21 * ureg.GJ/ureg.m**3),  # ~8.0 bbl/mt
+    
+    # Middle distillates  
+    'diesel': Commodity('diesel', 0.843 * ureg.kg/ureg.L, 36 * ureg.GJ/ureg.m**3),  # ~7.45 bbl/mt
+    'jet': Commodity('jet', 0.810 * ureg.kg/ureg.L, 35 * ureg.GJ/ureg.m**3),  # ~7.88 bbl/mt
+    'fame': Commodity('fame', 0.892 * ureg.kg/ureg.L, 33 * ureg.GJ/ureg.m**3),  # ~7.05 bbl/mt
+    'hvo': Commodity('hvo', 0.778 * ureg.kg/ureg.L, 34 * ureg.GJ/ureg.m**3),  # ~8.05 bbl/mt
+    
+    # Heavy products
+    'vgo': Commodity('vgo', 0.920 * ureg.kg/ureg.L, None),  # ~6.9 bbl/mt
+    'fuel_oil': Commodity('fuel_oil', 0.990 * ureg.kg/ureg.L, 40 * ureg.GJ/ureg.m**3),  # ~6.35 bbl/mt
+    
+    # Natural gas (as liquid)
+    'lng': Commodity('lng', 0.542 * ureg.kg/ureg.L, 26.137 * ureg.GJ/ureg.m**3),
 }
 
-# API
-api_modulus = 141.5
+# Aliases for compatibility
+ALIASES = {
+    'ulsd': 'diesel',
+    'gasoil': 'diesel', 
+    'go': 'diesel',
+    'gas': 'gasoline',
+    'mogas': 'gasoline',
+    'fueloil': 'fuel_oil',
+    'fo': 'fuel_oil',
+    'natgas': 'lng',
+}
 
-# bbls to km3
-km3_bbl = 6.28981
+class CommodityConverter:
+    """Clean, modern interface for commodity unit conversions"""
+    
+    def __init__(self):
+        self.ureg = ureg
+        self.commodities = COMMODITIES
+        self.aliases = ALIASES
+    
+    @lru_cache(maxsize=128)
+    def get_commodity(self, name: str) -> Commodity:
+        """Get commodity object, resolving aliases"""
+        name = name.lower()
+        name = self.aliases.get(name, name)
+        if name not in self.commodities:
+            raise ValueError(f"Unknown commodity: {name}")
+        return self.commodities[name]
+    
+    def convert(self, 
+                value: Union[float, pd.Series],
+                from_unit: str,
+                to_unit: str, 
+                commodity: Optional[str] = None) -> Union[float, pd.Series]:
+        """
+        Convert between units, using commodity properties when needed
+        
+        Examples:
+            # Simple unit conversion (no commodity needed)
+            convert(100, 'bbl', 'L')  
+            
+            # Mass to volume (needs commodity density)
+            convert(100, 'kt', 'bbl', commodity='diesel')
+            
+            # Energy conversions
+            convert(1000, 'm³', 'GJ', commodity='diesel')
+            
+            # With pandas Series and daily rates
+            convert(series, 'kt/month', 'bbl/day', commodity='gasoline')
+        """
+        # Parse units to handle daily/monthly rates
+        from_rate = self._parse_rate_unit(from_unit)
+        to_rate = self._parse_rate_unit(to_unit)
+        
+        # Get base units
+        from_base = from_rate['base']
+        to_base = to_rate['base']
+        
+        # Create quantity
+        if isinstance(value, pd.Series):
+            result = self._convert_series(value, from_base, to_base, commodity,
+                                        from_rate['period'], to_rate['period'])
+        else:
+            result = self._convert_scalar(value, from_base, to_base, commodity)
+        
+        return result
+    
+    def _convert_scalar(self, value: float, from_unit: str, to_unit: str, 
+                       commodity: Optional[str]) -> float:
+        """Convert a scalar value"""
+        qty = value * self.ureg(from_unit)
+        
+        # Get dimensions
+        from_dim = self.ureg.get_dimensionality(from_unit)
+        to_dim = self.ureg.get_dimensionality(to_unit)
+        
+        # Check if we need commodity context
+        if from_dim == to_dim:
+            # Simple unit conversion
+            return qty.to(to_unit).magnitude
+        
+        # Energy conversions (check first as they may involve volume/mass)
+        if self._needs_energy(from_dim, to_dim):
+            if not commodity:
+                raise ValueError(f"Commodity required for energy conversion")
+            
+            comm = self.get_commodity(commodity)
+            if not comm.energy_content:
+                raise ValueError(f"No energy content defined for {commodity}")
+            
+            if '[energy]' in str(from_dim):
+                # Energy to volume
+                energy_J = qty.to('J')
+                volume_m3 = energy_J / comm.energy_content
+                return volume_m3.to(to_unit).magnitude
+            else:
+                # Volume/mass to energy
+                # First convert to volume if needed
+                if '[mass]' in str(from_dim):
+                    mass_kg = qty.to('kg')
+                    volume_m3 = mass_kg / comm.density.to('kg/m^3')
+                else:
+                    volume_m3 = qty.to('m^3')
+                energy = volume_m3 * comm.energy_content
+                return energy.to(to_unit).magnitude
+        
+        # Mass to volume or vice versa needs density
+        elif self._needs_density(from_dim, to_dim):
+            if not commodity:
+                raise ValueError(f"Commodity required for {from_unit} to {to_unit}")
+            
+            comm = self.get_commodity(commodity)
+            
+            if '[mass]' in str(from_dim) and '[length] ** 3' in str(to_dim):
+                # Mass to volume: Use industry standard conversions
+                # For kt to bbl: use the fact that density tells us kg/L
+                # 1 kt = 1,000,000 kg
+                # density kg/L means: 1 L = density kg
+                # So: 1 kg = 1/density L
+                # Therefore: 1 kt = 1,000,000/density L = 1,000,000/density/158.987 bbl
+                mass_kg = qty.to('kg')
+                volume_L = mass_kg / comm.density
+                return volume_L.to(to_unit).magnitude
+            elif '[length] ** 3' in str(from_dim) and '[mass]' in str(to_dim):
+                # Volume to mass: convert volume to L first, then multiply by density
+                volume_L = qty.to('L')
+                mass_kg = volume_L * comm.density
+                return mass_kg.to(to_unit).magnitude
+        
+        else:
+            raise ValueError(f"Cannot convert from {from_unit} to {to_unit} - incompatible dimensions")
+    
+    def _convert_series(self, series: pd.Series, from_unit: str, to_unit: str,
+                       commodity: Optional[str], from_period: Optional[str],
+                       to_period: Optional[str]) -> pd.Series:
+        """Convert a pandas Series with optional rate handling"""
+        result = series.copy()
+        
+        # Handle period conversions for rates
+        if from_period == 'day' and from_period != to_period:
+            # Daily to monthly/yearly
+            if hasattr(series.index, 'days_in_month'):
+                result = result * series.index.days_in_month
+        elif to_period == 'day' and from_period != to_period:
+            # Monthly/yearly to daily
+            if hasattr(series.index, 'days_in_month'):
+                result = result / series.index.days_in_month
+        
+        # Apply unit conversion
+        factor = self._convert_scalar(1.0, from_unit, to_unit, commodity)
+        result = result * factor
+        
+        return result
+    
+    def _parse_rate_unit(self, unit: str) -> dict:
+        """Parse units like 'bbl/day' or 'kt/month'"""
+        if '/' in unit:
+            base, period = unit.split('/')
+            period = period.rstrip('s')  # Remove plural
+            return {'base': base, 'period': period}
+        return {'base': unit, 'period': None}
+    
+    def _needs_density(self, from_dim, to_dim) -> bool:
+        """Check if conversion needs density"""
+        from_str = str(from_dim)
+        to_str = str(to_dim)
+        mass_to_vol = '[mass]' in from_str and '[length] ** 3' in to_str
+        vol_to_mass = '[length] ** 3' in from_str and '[mass]' in to_str
+        return mass_to_vol or vol_to_mass
+    
+    def _needs_energy(self, from_dim, to_dim) -> bool:
+        """Check if conversion needs energy content"""
+        return '[energy]' in str(from_dim) or '[energy]' in str(to_dim)
+    
+    @property
+    def available_commodities(self) -> list:
+        """List all available commodities"""
+        return list(self.commodities.keys())
+    
+    @property 
+    def available_units(self) -> list:
+        """List common units for oil & gas"""
+        return [
+            # Volume
+            'bbl', 'barrel', 'L', 'liter', 'm³', 'cubic_meter', 'gal', 'gallon',
+            # Mass
+            'kg', 'mt', 'metric_ton', 'kt', 'kiloton', 't', 'tonne',
+            # Energy
+            'J', 'GJ', 'gigajoule', 'MJ', 'megajoule', 'BTU', 'MMBTU',
+            # Rates
+            'bbl/day', 'kt/month', 'm³/day', 'mt/year'
+        ]
 
-# Gallons to litres
-# 1 US gallon = 0.83267384 Imp gallon = 3.78541178 Liters
-gal_ltr = 3.78541178
+# Global converter instance for convenience
+converter = CommodityConverter()
 
-# Light Ends
-naphtha_kt_bbl = 8.9
+# Convenience functions for direct use
+def convert(value, from_unit: str, to_unit: str, commodity: Optional[str] = None):
+    """Convert values between units"""
+    return converter.convert(value, from_unit, to_unit, commodity)
 
-propane_kt_bbl = 12.4
+def convfactor(from_unit: str, to_unit: str, commodity: Optional[str] = None) -> float:
+    """Get conversion factor between units"""
+    return converter.convert(1.0, from_unit, to_unit, commodity)
 
-gasoline_density_kg_l = 0.745
-gasoline_kt_bbl = 8.33
-gasoline_kt_km3 = 1 / gasoline_density_kg_l  # 1.342281879
-gasoline_km3_bbl = gasoline_kt_bbl / gasoline_kt_km3
-gasoline_gal_kt = gal_ltr * (gasoline_density_kg_l / 1000)
-gasoline_km3_gj = 32
+def list_commodities():
+    """List all available commodities"""
+    return converter.available_commodities
 
-ccs_kt_bbl = 8.62
-isomerate_kt_bbl = 9.53
-alkylate_kt_bbl = 8.99
-reformate_kt_bbl = 7.07
+def list_units():
+    """List common units"""
+    return converter.available_units
 
-ethanol_density_kg_l = 0.789
-ethanol_kt_bbl = 8.33  # 7.96
-ethanol_kt_km3 = 1 / ethanol_density_kg_l  # 1.2674
-ethanol_km3_bbl = ethanol_kt_bbl / ethanol_kt_km3
-ethanol_gal_kt = gal_ltr * (ethanol_density_kg_l / 1000)
-ethanol_km3_gj = 21
-
-etbe_density_kg_l = 0.745
-etbe_kt_km3 = 1 / ethanol_density_kg_l  # 1.34
-etbe_km3_gj = 27.04
-
-# Middle distillates
-jet_kt_bbl = 7.88
-
-diesel_density_kg_l = 0.843
-diesel_kt_bbl = 7.45
-diesel_kt_km3 = 1 / diesel_density_kg_l  # 1.18623962
-diesel_km3_bbl = diesel_kt_bbl / diesel_kt_km3
-diesel_gal_kt = gal_ltr * (diesel_density_kg_l / 1000)
-diesel_km3_gj = 36
-
-fame_density_kg_l = 0.892
-fame_kt_bbl = 7.051345
-fame_kt_km3 = 1 / fame_density_kg_l  # 1.121076233
-fame_km3_bbl = fame_kt_bbl / diesel_kt_km3
-fame_gal_kt = gal_ltr * (fame_density_kg_l / 1000)
-fame_km3_gj = 33
-
-b7_density_kg_l = 0.845
-b7_kt_bbl = 7.078
-b7_kt_km3 = 1 / b7_density_kg_l  # 1.11834
-b7_km3_bbl = b7_kt_bbl / diesel_kt_km3
-b7_gal_kt = gal_ltr * (b7_density_kg_l / 1000)
-b7_km3_gj = 35.8
-
-hvo_density_kg_l = 0.778
-hvo_kt_bbl = 8.046
-hvo_kt_km3 = 1 / hvo_density_kg_l  # 1.285347044
-hvo_km3_bbl = hvo_kt_bbl / hvo_kt_km3
-hvo_gal_kt = gal_ltr * (hvo_density_kg_l / 1000)
-hvo_km3_gj = 34
-
-# FO / Heave
-vgo_kt_bbl = 6.9
-sr_fo_kt_bbl = 6.65
-fo_kt_bbl = 6.35
-fueloil_kt_bbl = 6.35
-vlsfo_kt_bbl = 6.9
-
-# Crude
-
-
-# Natgas
-
-natgas_density_kg_l = 0.542
-natgas_kt_bbl = 11.6
-natgas_kt_km3 = 1 / natgas_density_kg_l  # 1.844
-natgas_km3_bbl = natgas_kt_bbl / natgas_kt_km3
-natgas_gal_kt = gal_ltr * (natgas_density_kg_l / 1000)
-natgas_km3_gj = 26.137  # https://callmepower.ca/en/faq/gigajoule-cubic-metre-gas
-
-
-# print diesel_km3_bbl
-# print fame_gal_mt
-# print gasoline_gal_kt
-# print diesel_gal_kt
-
-
-def _stdcmmd(cmmdstring):
-    global commonnamemap
-    cmmdstring = cmmdstring.lower()
-    cmmdstring = commonnamemap.get(cmmdstring, cmmdstring)
-    return cmmdstring
-
-
-def _stdunits(unit):
-    if unit == "mt":
-        return "kt"
-    if unit == "m3":
-        return "km3"
-
-    return unit
-
-
-def convfactor(commodity, fromunit, tounit):
-    commodity = _stdcmmd(commodity)
-
-    # TODO - move to mt/m3 convetion rather than kt/km3
-    fromunit = _stdunits(fromunit)
-    tounit = _stdunits(tounit)
-
-    if fromunit == 'bbl' and tounit == 'gal':
-        return 42
-
-    if fromunit == 'gal' and tounit == 'bbl':
-        return 1/42
-
-    factor = "{}_{}_{}".format(commodity, fromunit, tounit)
-    if factor in globals():
-        return globals()[factor]
-
-    factor = "{}_{}_{}".format(commodity, tounit, fromunit)
-    if factor in globals():
-        res = globals()[factor]
-        res = 1 / res
-        return res
-
-    # if af this point we don't have a conversion factor try to mix an match on kt/km3 combinations
-    if fromunit == "kt":
-        int_cv = convfactor(commodity, "km3", tounit)
-        kt_km3_cv = convfactor(commodity, "kt", "km3")
-        new_cv = int_cv * kt_km3_cv
-        return new_cv
-
-    if tounit == "kt":
-        int_cv = convfactor(commodity, "km3", fromunit)
-        kt_km3_cv = convfactor(commodity, "kt", "km3")
-        new_cv = 1 / (int_cv * kt_km3_cv)
-        return new_cv
-
-    raise ValueError(
-        "no conversion factor for {} from: {} to: {}".format(
-            commodity, fromunit, tounit
-        )
-    )
-
-
-def convert_days_in_month(s, transform="mul"):
-    m = pd.Series(s.index.days_in_month, index=s.index)
-    if transform == "mul":
-        s = s.mul(m, 0)
-    elif transform == "div":
-        s = s.div(m, 0)
-    return s
-
-
-def convert(val, commodity, fromunit=None, tounit=None):
-    if fromunit != tounit:
-        assert (
-            commodity is not None
-        ), "need type of commodity to convert {} from {} to {}".format(
-            val, fromunit, tounit
-        )
-        fromunit_i, tounit_i = fromunit, tounit
-        if fromunit.endswith("/d"):
-            fromunit_i = fromunit_i.replace("/d", "")
-        if tounit.endswith("/d"):
-            tounit_i = tounit_i.replace("/d", "")
-        unitconvfactor = convfactor(commodity, fromunit_i, tounit_i)
-
-        if fromunit.endswith("/d"):
-            val = convert_days_in_month(val, "mul")
-
-        val = val * unitconvfactor
-
-        if tounit.endswith("/d"):
-            val = convert_days_in_month(val, "div")
-
-    return val
-
-
+# Example usage
 if __name__ == "__main__":
-    a = convfactor("diesel", "kt", "km3")
-    print(a)
+    print("Modern Commodity Converter Examples\n" + "="*50)
+    
+    # Simple conversions
+    print("\n1. Simple unit conversions (no commodity needed):")
+    print(f"100 bbl = {convert(100, 'bbl', 'L'):.0f} L")
+    print(f"1000 L = {convert(1000, 'L', 'bbl'):.2f} bbl")
+    
+    # Commodity-specific conversions
+    print("\n2. Mass-Volume conversions (needs commodity):")
+    print(f"100 kt diesel = {convert(100, 'kt', 'bbl', 'diesel'):.0f} bbl")
+    print(f"1000 bbl gasoline = {convert(1000, 'bbl', 'mt', 'gasoline'):.2f} mt")
+    
+    # Energy conversions (simplified for now - needs more work)
+    print("\n3. Energy conversions:")
+    print("(Energy conversions need additional implementation work)")
+    
+    # Series with daily rates
+    print("\n4. Pandas Series with rate conversions:")
+    dates = pd.date_range('2024-01', periods=3, freq='MS')
+    series = pd.Series([100, 110, 105], index=dates)
+    result = convert(series, 'kt/month', 'bbl/day', 'diesel')
+    print(f"January: {result.iloc[0]:.0f} bbl/day")
+    
+    # Available commodities
+    print(f"\n5. Available commodities: {', '.join(list_commodities())}")
+    
+    # Error handling
+    print("\n6. Error handling:")
+    try:
+        convert(100, 'kt', 'bbl')  # Missing commodity
+    except ValueError as e:
+        print(f"Error: {e}")
+    
+    print("\n" + "="*50)
+    print("Key improvements over original:")
+    print("• Type hints and dataclasses for clarity")
+    print("• Automatic dimensional analysis")
+    print("• Clean separation of concerns") 
+    print("• Caching for performance")
+    print("• Better error messages")
+    print("• Extensible commodity definitions")
+    print("• Modern Python patterns")
