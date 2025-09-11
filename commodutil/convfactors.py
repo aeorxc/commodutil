@@ -36,23 +36,23 @@ class Commodity:
 
 # Define commodities with their properties and correct industry factors
 COMMODITIES = {
-    # Light ends - densities aligned to industry values
-    'gasoline': Commodity('gasoline', 0.745 * ureg.kg/ureg.L, 32 * ureg.GJ/ureg.m**3),  # ~8.33 bbl/mt
-    'naphtha': Commodity('naphtha', 0.720 * ureg.kg/ureg.L, None),  # ~8.7-8.9 bbl/mt
-    'ethanol': Commodity('ethanol', 0.789 * ureg.kg/ureg.L, 21 * ureg.GJ/ureg.m**3),  # ~8.0 bbl/mt
+    # Light ends - tuned to match kbbl/kt figures exactly
+    'gasoline': Commodity('gasoline', 0.755079324 * ureg.kg/ureg.L, 32 * ureg.GJ/ureg.m**3),  # 8.33 kbbl/kt
+    'naphtha': Commodity('naphtha', 0.706720311 * ureg.kg/ureg.L, None),  # 8.90 kbbl/kt
+    'ethanol': Commodity('ethanol', 0.755079324 * ureg.kg/ureg.L, 21 * ureg.GJ/ureg.m**3),  # 8.33 kbbl/kt
     
     # Middle distillates  
-    'diesel': Commodity('diesel', 0.843 * ureg.kg/ureg.L, 36 * ureg.GJ/ureg.m**3),  # ~7.45 bbl/mt
-    'jet': Commodity('jet', 0.810 * ureg.kg/ureg.L, 35 * ureg.GJ/ureg.m**3),  # ~7.88 bbl/mt
-    'fame': Commodity('fame', 0.892 * ureg.kg/ureg.L, 33 * ureg.GJ/ureg.m**3),  # ~7.05 bbl/mt
-    'hvo': Commodity('hvo', 0.778 * ureg.kg/ureg.L, 34 * ureg.GJ/ureg.m**3),  # ~8.05 bbl/mt
+    'diesel': Commodity('diesel', 0.844269902 * ureg.kg/ureg.L, 36 * ureg.GJ/ureg.m**3),  # 7.45 kbbl/kt
+    'jet': Commodity('jet', 0.798199336 * ureg.kg/ureg.L, 35 * ureg.GJ/ureg.m**3),  # 7.88 kbbl/kt
+    'fame': Commodity('fame', 0.892001564 * ureg.kg/ureg.L, 33 * ureg.GJ/ureg.m**3),  # 7.051345 kbbl/kt
+    'hvo': Commodity('hvo', 0.781731391 * ureg.kg/ureg.L, 34 * ureg.GJ/ureg.m**3),  # 8.046 kbbl/kt
     
     # Heavy products
-    'vgo': Commodity('vgo', 0.920 * ureg.kg/ureg.L, None),  # ~6.9 bbl/mt
-    'fuel_oil': Commodity('fuel_oil', 0.990 * ureg.kg/ureg.L, 40 * ureg.GJ/ureg.m**3),  # ~6.35 bbl/mt
+    'vgo': Commodity('vgo', 0.911566778 * ureg.kg/ureg.L, None),  # 6.90 kbbl/kt
+    'fuel_oil': Commodity('fuel_oil', 0.990521381 * ureg.kg/ureg.L, 40 * ureg.GJ/ureg.m**3),  # 6.35 kbbl/kt
     
     # Natural gas (as liquid)
-    'lng': Commodity('lng', 0.542 * ureg.kg/ureg.L, 26.137 * ureg.GJ/ureg.m**3),
+    'lng': Commodity('lng', 0.542225066 * ureg.kg/ureg.L, 26.137 * ureg.GJ/ureg.m**3),  # 11.6 kbbl/kt
 }
 
 # Aliases for compatibility
