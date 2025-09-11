@@ -1,6 +1,6 @@
 """
-Modern implementation of commodity unit conversions using pint
-No backwards compatibility constraints - clean slate design
+Modern implementation of commodity unit conversions using Pint.
+Clean-slate design with no backward-compatibility constraints.
 """
 
 import pint
@@ -18,7 +18,7 @@ ureg.define('barrel = 158.987294928 liter = bbl')
 ureg.define('gallon = 3.785411784 liter = gal')
 ureg.define('metric_ton = 1000 kilogram = mt')
 ureg.define('kiloton = 1000 metric_ton = kt')
-ureg.define('cubic_kilometer = 1e9 meter**3 = km3')  # 1 km³ = 1 billion m³
+ureg.define('cubic_kilometer = 1e9 meter**3 = km3')  # 1 km^3 = 1 billion m^3
 ureg.define('gigajoule = 1e9 joule = gj = GJ')
 ureg.define('petajoule = 1e15 joule = pj = PJ')
 ureg.define('billion_cubic_meter = 1e9 meter**3 = bcm = BCM')
@@ -34,7 +34,7 @@ class Commodity:
     """Represents a commodity with its physical properties"""
     name: str
     density: pint.Quantity  # kg/L or API gravity
-    energy_content: Optional[pint.Quantity] = None  # GJ/m³ or similar
+    energy_content: Optional[pint.Quantity] = None  # GJ/m^3 or similar
     
     def __post_init__(self):
         # Ensure quantities have correct dimensions
@@ -126,7 +126,7 @@ class CommodityConverter:
             convert(100, 'kt', 'bbl', commodity='diesel')
             
             # Energy conversions
-            convert(1000, 'm³', 'GJ', commodity='diesel')
+            convert(1000, 'm^3', 'GJ', commodity='diesel')
             
             # With pandas Series and daily rates
             convert(series, 'kt/month', 'bbl/day', commodity='gasoline')
@@ -353,6 +353,12 @@ class CommodityConverter:
         }
         for bad, good in replacements.items():
             u = u.replace(bad, good)
+
+        # Additional robust normalizations using ASCII-only fallbacks
+        if u.lower() == 'm3':
+            u = 'm^3'
+        # Handle rate-style variants like 'm3/day' or 'M3/day'
+        u = u.replace('m3/', 'm^3/').replace('M3/', 'm^3/')
         # Energy unit common uppercase forms
         if u == 'BTU':
             u = 'Btu'
@@ -397,7 +403,8 @@ def list_commodities():
 
 def list_units():
     """List common units"""
-    return converter.available_units
+    # Return normalized forms to avoid encoding issues
+    return [converter._normalize_unit(u) for u in converter.available_units]
 
 # Example usage
 if __name__ == "__main__":
