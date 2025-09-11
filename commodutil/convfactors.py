@@ -4,6 +4,7 @@ No backwards compatibility constraints - clean slate design
 """
 
 import pint
+from pint.errors import DimensionalityError
 from typing import Union, Optional
 from dataclasses import dataclass
 import pandas as pd
@@ -130,7 +131,9 @@ class CommodityConverter:
             # With pandas Series and daily rates
             convert(series, 'kt/month', 'bbl/day', commodity='gasoline')
         """
-        # Parse units to handle daily/monthly rates
+        # Normalize and parse units to handle daily/monthly rates
+        from_unit = self._normalize_unit(from_unit)
+        to_unit = self._normalize_unit(to_unit)
         from_rate = self._parse_rate_unit(from_unit)
         to_rate = self._parse_rate_unit(to_unit)
         
@@ -144,115 +147,218 @@ class CommodityConverter:
                                         from_rate['period'], to_rate['period'])
         else:
             result = self._convert_scalar(value, from_base, to_base, commodity)
+            if from_rate['period'] or to_rate['period']:
+                factor = self._rate_factor_scalar(from_rate['period'], to_rate['period'])
+                result = result * factor
         
         return result
     
     def _convert_scalar(self, value: float, from_unit: str, to_unit: str, 
                        commodity: Optional[str]) -> float:
-        """Convert a scalar value"""
+        """Convert a scalar value across mass/volume/energy using commodity context when needed."""
+        from_unit = self._normalize_unit(from_unit)
+        to_unit = self._normalize_unit(to_unit)
         qty = value * self.ureg(from_unit)
         
-        # Get dimensions
-        from_dim = self.ureg.get_dimensionality(from_unit)
-        to_dim = self.ureg.get_dimensionality(to_unit)
-        
-        # Check if we need commodity context
-        if from_dim == to_dim:
-            # Simple unit conversion
+        # Try direct conversion first
+        try:
             return qty.to(to_unit).magnitude
-        
-        # Energy conversions (check first as they may involve volume/mass)
-        if self._needs_energy(from_dim, to_dim):
+        except DimensionalityError:
+            pass
+
+        # Determine unit types
+        is_from_energy = self._is_energy(from_unit)
+        is_to_energy = self._is_energy(to_unit)
+        is_from_mass = self._is_mass(from_unit)
+        is_to_mass = self._is_mass(to_unit)
+        is_from_volume = self._is_volume(from_unit)
+        is_to_volume = self._is_volume(to_unit)
+
+        # Energy conversions
+        if is_from_energy or is_to_energy:
             if not commodity:
-                raise ValueError(f"Commodity required for energy conversion")
-            
+                raise ValueError("Commodity required for energy conversion")
             comm = self.get_commodity(commodity)
             if not comm.energy_content:
                 raise ValueError(f"No energy content defined for {commodity}")
-            
-            if '[energy]' in str(from_dim):
-                # Energy to volume
+
+            ec = comm.energy_content.to('J/m^3')
+
+            if is_from_energy:
                 energy_J = qty.to('J')
-                volume_m3 = energy_J / comm.energy_content
-                return volume_m3.to(to_unit).magnitude
-            else:
-                # Volume/mass to energy
-                # First convert to volume if needed
-                if '[mass]' in str(from_dim):
-                    mass_kg = qty.to('kg')
-                    volume_m3 = mass_kg / comm.density.to('kg/m^3')
+                # Energy -> Volume or Mass
+                volume_m3 = (energy_J / ec).to('m^3')
+                if is_to_volume:
+                    return volume_m3.to(to_unit).magnitude
+                elif is_to_mass:
+                    density_kg_m3 = comm.density.to('kg/m^3')
+                    if density_kg_m3.magnitude == 0:
+                        raise ValueError(f"Density not defined for {commodity}; cannot convert energy to mass")
+                    mass_kg = (volume_m3 * density_kg_m3).to('kg')
+                    return mass_kg.to(to_unit).magnitude
                 else:
+                    raise ValueError(f"Cannot convert energy to {to_unit}")
+            else:
+                # Volume/Mass -> Energy
+                if is_from_mass:
+                    density_kg_m3 = comm.density.to('kg/m^3')
+                    if density_kg_m3.magnitude == 0:
+                        raise ValueError(f"Density not defined for {commodity}; cannot convert mass to energy")
+                    mass_kg = qty.to('kg')
+                    volume_m3 = (mass_kg / density_kg_m3).to('m^3')
+                elif is_from_volume:
                     volume_m3 = qty.to('m^3')
-                energy = volume_m3 * comm.energy_content
-                return energy.to(to_unit).magnitude
-        
-        # Mass to volume or vice versa needs density
-        elif self._needs_density(from_dim, to_dim):
+                else:
+                    raise ValueError(f"Cannot convert {from_unit} to energy")
+                energy_J = (volume_m3 * ec).to('J')
+                return energy_J.to(to_unit).magnitude
+
+        # Mass <-> Volume conversions require density
+        if (is_from_mass and is_to_volume) or (is_from_volume and is_to_mass):
             if not commodity:
                 raise ValueError(f"Commodity required for {from_unit} to {to_unit}")
-            
             comm = self.get_commodity(commodity)
-            
-            if '[mass]' in str(from_dim) and '[length] ** 3' in str(to_dim):
-                # Mass to volume: Use industry standard conversions
-                # For kt to bbl: use the fact that density tells us kg/L
-                # 1 kt = 1,000,000 kg
-                # density kg/L means: 1 L = density kg
-                # So: 1 kg = 1/density L
-                # Therefore: 1 kt = 1,000,000/density L = 1,000,000/density/158.987 bbl
+            density_kg_L = comm.density.to('kg/L')
+            density_kg_m3 = comm.density.to('kg/m^3')
+            if density_kg_L.magnitude == 0 or density_kg_m3.magnitude == 0:
+                raise ValueError(f"Density not defined for {commodity}; cannot convert between mass and volume")
+            if is_from_mass and is_to_volume:
                 mass_kg = qty.to('kg')
-                volume_L = mass_kg / comm.density
+                volume_L = (mass_kg / density_kg_L).to('L')
                 return volume_L.to(to_unit).magnitude
-            elif '[length] ** 3' in str(from_dim) and '[mass]' in str(to_dim):
-                # Volume to mass: convert volume to L first, then multiply by density
+            else:
                 volume_L = qty.to('L')
-                mass_kg = volume_L * comm.density
+                mass_kg = (volume_L * density_kg_L).to('kg')
                 return mass_kg.to(to_unit).magnitude
-        
-        else:
-            raise ValueError(f"Cannot convert from {from_unit} to {to_unit} - incompatible dimensions")
+
+        raise ValueError(f"Cannot convert from {from_unit} to {to_unit} - incompatible dimensions")
     
     def _convert_series(self, series: pd.Series, from_unit: str, to_unit: str,
                        commodity: Optional[str], from_period: Optional[str],
                        to_period: Optional[str]) -> pd.Series:
-        """Convert a pandas Series with optional rate handling"""
+        """Convert a pandas Series with optional rate handling.
+
+        - Month conversions use the index's actual days_in_month when available.
+        - Other time conversions use standard averages (365.25 days/year, 30.4375 days/month).
+        """
         result = series.copy()
-        
+
         # Handle period conversions for rates
-        if from_period == 'day' and from_period != to_period:
-            # Daily to monthly/yearly
-            if hasattr(series.index, 'days_in_month'):
-                result = result * series.index.days_in_month
-        elif to_period == 'day' and from_period != to_period:
-            # Monthly/yearly to daily
-            if hasattr(series.index, 'days_in_month'):
-                result = result / series.index.days_in_month
-        
+        if from_period or to_period:
+            if from_period != to_period:
+                if hasattr(series.index, 'days_in_month') and (
+                    (from_period == 'day' and to_period == 'month') or
+                    (from_period == 'month' and to_period == 'day')
+                ):
+                    # Month-aware conversions using calendar days per month
+                    if from_period == 'day' and to_period == 'month':
+                        result = result * series.index.days_in_month
+                    else:
+                        result = result / series.index.days_in_month
+                else:
+                    # Fallback to scalar factor for other period conversions
+                    factor = self._rate_factor_scalar(from_period, to_period)
+                    result = result * factor
+
         # Apply unit conversion
-        factor = self._convert_scalar(1.0, from_unit, to_unit, commodity)
-        result = result * factor
-        
+        factor_units = self._convert_scalar(1.0, from_unit, to_unit, commodity)
+        result = result * factor_units
+
         return result
     
     def _parse_rate_unit(self, unit: str) -> dict:
-        """Parse units like 'bbl/day' or 'kt/month'"""
+        """Parse units like 'bbl/day' or 'kt/month'."""
         if '/' in unit:
-            base, period = unit.split('/')
-            period = period.rstrip('s')  # Remove plural
+            base, period = unit.split('/', 1)
+            base = self._normalize_unit(base)
+            period = period.strip().lower().rstrip('s')  # day(s), month(s), year(s)
             return {'base': base, 'period': period}
-        return {'base': unit, 'period': None}
+        return {'base': self._normalize_unit(unit), 'period': None}
+
+    def _rate_factor_scalar(self, from_period: Optional[str], to_period: Optional[str]) -> float:
+        """Scalar factor to convert between rate periods for scalars.
+
+        Uses average calendar lengths when months/years are involved.
+        - Average days per year: 365.25
+        - Average days per month: 365.25 / 12 = 30.4375
+        """
+        if from_period == to_period:
+            return 1.0
+        if from_period is None and to_period is None:
+            return 1.0
+        if from_period is None or to_period is None:
+            # Ambiguous to add/remove a time dimension for scalar; no-op to preserve behavior
+            return 1.0
+
+        avg_days_per_year = 365.25
+        avg_days_per_month = avg_days_per_year / 12.0
+
+        # Helper to express rates as per-day factors
+        def per_day_factor(period: str) -> float:
+            if period == 'day':
+                return 1.0
+            if period == 'year':
+                return 1.0 / avg_days_per_year
+            if period == 'month':
+                return 1.0 / avg_days_per_month
+            # Fallback to Pint if it's a known time unit
+            try:
+                return (1 * (self.ureg(period) ** -1)).to(self.ureg.day ** -1).magnitude
+            except Exception:
+                raise ValueError(f"Unsupported rate period: {period}")
+
+        from_per_day = per_day_factor(from_period)
+        to_per_day = per_day_factor(to_period)
+        # Convert from per-from_period to per-to_period
+        return from_per_day / to_per_day
     
-    def _needs_density(self, from_dim, to_dim) -> bool:
-        """Check if conversion needs density"""
-        from_str = str(from_dim)
-        to_str = str(to_dim)
-        mass_to_vol = '[mass]' in from_str and '[length] ** 3' in to_str
-        vol_to_mass = '[length] ** 3' in from_str and '[mass]' in to_str
-        return mass_to_vol or vol_to_mass
-    
-    def _needs_energy(self, from_dim, to_dim) -> bool:
-        """Check if conversion needs energy content"""
-        return '[energy]' in str(from_dim) or '[energy]' in str(to_dim)
+    def _is_energy(self, unit: str) -> bool:
+        try:
+            (1 * self.ureg(unit)).to('J')
+            return True
+        except DimensionalityError:
+            return False
+
+    def _is_mass(self, unit: str) -> bool:
+        try:
+            (1 * self.ureg(unit)).to('kg')
+            return True
+        except DimensionalityError:
+            return False
+
+    def _is_volume(self, unit: str) -> bool:
+        try:
+            (1 * self.ureg(unit)).to('m^3')
+            return True
+        except DimensionalityError:
+            return False
+
+    def _normalize_unit(self, unit: str) -> str:
+        """Normalize common aliases and fix encoding issues.
+
+        - Map 'm��'/'m³'/'m**3'/'cubic_meter' -> 'm^3'
+        - Map energy aliases 'BTU' -> 'Btu', 'MMBTU' -> 'MMBtu'
+        - Trim whitespace
+        """
+        if unit is None:
+            return unit
+        u = unit.strip()
+        # Fix cubic meter notations and encoding issues
+        replacements = {
+            'm��': 'm^3',
+            'm³': 'm^3',
+            'm**3': 'm^3',
+            'cubic_meter': 'm^3',
+            'CUBIC_METER': 'm^3',
+        }
+        for bad, good in replacements.items():
+            u = u.replace(bad, good)
+        # Energy unit common uppercase forms
+        if u == 'BTU':
+            u = 'Btu'
+        if u == 'MMBTU':
+            u = 'MMBtu'
+        return u
     
     @property
     def available_commodities(self) -> list:
@@ -307,9 +413,9 @@ if __name__ == "__main__":
     print(f"100 kt diesel = {convert(100, 'kt', 'bbl', 'diesel'):.0f} bbl")
     print(f"1000 bbl gasoline = {convert(1000, 'bbl', 'mt', 'gasoline'):.2f} mt")
     
-    # Energy conversions (simplified for now - needs more work)
+    # Energy conversions (now implemented across mass/volume/energy)
     print("\n3. Energy conversions:")
-    print("(Energy conversions need additional implementation work)")
+    print("(Energy conversions implemented for mass/volume/energy)")
     
     # Series with daily rates
     print("\n4. Pandas Series with rate conversions:")
