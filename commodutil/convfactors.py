@@ -19,6 +19,14 @@ ureg.define('metric_ton = 1000 kilogram = mt')
 ureg.define('kiloton = 1000 metric_ton = kt')
 ureg.define('cubic_kilometer = 1e9 meter**3 = km3')  # 1 km³ = 1 billion m³
 ureg.define('gigajoule = 1e9 joule = gj = GJ')
+ureg.define('petajoule = 1e15 joule = pj = PJ')
+ureg.define('billion_cubic_meter = 1e9 meter**3 = bcm = BCM')
+ureg.define('billion_cubic_foot = 1e9 foot**3 = bcf = BCF')
+ureg.define('tonne_of_oil_equivalent = 41.868e9 joule = toe = TOE')
+ureg.define('million_tonne_of_oil_equivalent = 1e6 tonne_of_oil_equivalent = Mtoe')
+ureg.define('barrel_of_oil_equivalent = 6.119e9 joule = boe = BOE')
+ureg.define('million_barrel_of_oil_equivalent = 1e6 barrel_of_oil_equivalent = Mboe')
+ureg.define('megatonne = 1e6 metric_ton = Mt')
 
 @dataclass
 class Commodity:
@@ -57,7 +65,10 @@ COMMODITIES = {
     
     # LPG and Natural gas (liquefied)
     'lpg': Commodity('lpg', 0.541 * ureg.kg/ureg.L, 24.96715 * ureg.GJ/ureg.m**3),  # BP: LPG 46.15 GJ/t
-    'natgas': Commodity('natgas', 0.542225066 * ureg.kg/ureg.L, 26.137 * ureg.GJ/ureg.m**3),  # LNG figures
+    'natgas': Commodity('natgas', 0.542225066 * ureg.kg/ureg.L, 26.137 * ureg.GJ/ureg.m**3),
+    
+    # Natural gas (gaseous, pipeline): BP approx 36 PJ per bcm => 0.036 GJ/m**3
+    'natural_gas': Commodity('natural_gas', 0.0 * ureg.kg/ureg.L, 0.036 * ureg.GJ/ureg.m**3),  # LNG figures
     
     # Light gases
     'ethane': Commodity('ethane', 0.373 * ureg.kg/ureg.L, 18.4262 * ureg.GJ/ureg.m**3),  # BP: 49.4 GJ/t
@@ -78,6 +89,7 @@ ALIASES = {
     'lng': 'natgas',
     'kerosene': 'jet',
     'propane': 'lpg',
+    'ng': 'natural_gas',
 }
 
 class CommodityConverter:
@@ -252,11 +264,11 @@ class CommodityConverter:
         """List common units for oil & gas"""
         return [
             # Volume
-            'bbl', 'barrel', 'L', 'liter', 'm³', 'cubic_meter', 'gal', 'gallon',
+            'bbl', 'barrel', 'L', 'liter', 'm³', 'cubic_meter', 'gal', 'gallon', 'bcm', 'bcf',
             # Mass
-            'kg', 'mt', 'metric_ton', 'kt', 'kiloton', 't', 'tonne',
+            'kg', 'mt', 'metric_ton', 'kt', 'kiloton', 't', 'tonne', 'Mt',
             # Energy
-            'J', 'GJ', 'gigajoule', 'MJ', 'megajoule', 'BTU', 'MMBTU',
+            'J', 'GJ', 'gigajoule', 'MJ', 'megajoule', 'PJ', 'toe', 'Mtoe', 'boe', 'Mboe', 'BTU', 'MMBTU',
             # Rates
             'bbl/day', 'kt/month', 'm³/day', 'mt/year'
         ]
@@ -325,3 +337,9 @@ if __name__ == "__main__":
     print("• Better error messages")
     print("• Extensible commodity definitions")
     print("• Modern Python patterns")
+
+
+
+
+
+
