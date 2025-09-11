@@ -41,22 +41,29 @@ COMMODITIES = {
     'crude': Commodity('crude', 0.85809151 * ureg.kg/ureg.L, None),
 
     # Light ends - tuned to match kbbl/kt figures exactly
-    'gasoline': Commodity('gasoline', 0.755079324 * ureg.kg/ureg.L, 32 * ureg.GJ/ureg.m**3),  # 8.33 kbbl/kt
+    'gasoline': Commodity('gasoline', 0.755079324 * ureg.kg/ureg.L, 33.7898 * ureg.GJ/ureg.m**3),  # BP: 44.75 GJ/t
     'naphtha': Commodity('naphtha', 0.706720311 * ureg.kg/ureg.L, None),  # 8.90 kbbl/kt
     'ethanol': Commodity('ethanol', 0.755079324 * ureg.kg/ureg.L, 21 * ureg.GJ/ureg.m**3),  # 8.33 kbbl/kt
     
     # Middle distillates  
-    'diesel': Commodity('diesel', 0.844269902 * ureg.kg/ureg.L, 36 * ureg.GJ/ureg.m**3),  # 7.45 kbbl/kt
-    'jet': Commodity('jet', 0.798199336 * ureg.kg/ureg.L, 35 * ureg.GJ/ureg.m**3),  # 7.88 kbbl/kt
+    'diesel': Commodity('diesel', 0.844269902 * ureg.kg/ureg.L, 36.624428 * ureg.GJ/ureg.m**3),  # BP: 43.38 GJ/t
+    'jet': Commodity('jet', 0.798199336 * ureg.kg/ureg.L, 35.056915 * ureg.GJ/ureg.m**3),  # BP: 43.92 GJ/t
     'fame': Commodity('fame', 0.892001564 * ureg.kg/ureg.L, 33 * ureg.GJ/ureg.m**3),  # 7.051345 kbbl/kt
     'hvo': Commodity('hvo', 0.781731391 * ureg.kg/ureg.L, 34 * ureg.GJ/ureg.m**3),  # 8.046 kbbl/kt
     
     # Heavy products
     'vgo': Commodity('vgo', 0.911566778 * ureg.kg/ureg.L, None),  # 6.90 kbbl/kt
-    'fuel_oil': Commodity('fuel_oil', 0.990521381 * ureg.kg/ureg.L, 40 * ureg.GJ/ureg.m**3),  # 6.35 kbbl/kt
+    'fuel_oil': Commodity('fuel_oil', 0.990521381 * ureg.kg/ureg.L, 41.175974 * ureg.GJ/ureg.m**3),  # BP: 41.57 GJ/t
     
-    # Natural gas (as liquid)
-    'lng': Commodity('lng', 0.542225066 * ureg.kg/ureg.L, 26.137 * ureg.GJ/ureg.m**3),  # 11.6 kbbl/kt
+    # LPG and Natural gas (liquefied)
+    'lpg': Commodity('lpg', 0.541 * ureg.kg/ureg.L, 24.96715 * ureg.GJ/ureg.m**3),  # BP: LPG 46.15 GJ/t
+    'natgas': Commodity('natgas', 0.542225066 * ureg.kg/ureg.L, 26.137 * ureg.GJ/ureg.m**3),  # LNG figures
+    
+    # Light gases
+    'ethane': Commodity('ethane', 0.373 * ureg.kg/ureg.L, 18.4262 * ureg.GJ/ureg.m**3),  # BP: 49.4 GJ/t
+    
+    # BP product basket (optional reference)
+    'product_basket': Commodity('product_basket', 0.781 * ureg.kg/ureg.L, 33.642356 * ureg.GJ/ureg.m**3),
 }
 
 # Aliases for compatibility
@@ -68,7 +75,9 @@ ALIASES = {
     'mogas': 'gasoline',
     'fueloil': 'fuel_oil',
     'fo': 'fuel_oil',
-    'natgas': 'lng',
+    'lng': 'natgas',
+    'kerosene': 'jet',
+    'propane': 'lpg',
 }
 
 class CommodityConverter:
