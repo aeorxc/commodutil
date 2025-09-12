@@ -124,6 +124,28 @@ class TestUtils:
         gas_factor = convfactors.convfactor("kt", "bbl", "gas")
         gasoline_factor = convfactors.convfactor("kt", "bbl", "gasoline")
         assert gas_factor == gasoline_factor
+
+        # New extended aliases
+        # 'crude oil' => 'crude'
+        crude_oil_factor = convfactors.convfactor("kt", "bbl", "crude oil")
+        crude_factor = convfactors.convfactor("kt", "bbl", "crude")
+        assert crude_oil_factor == crude_factor
+
+        # 'fuel oil' => 'fuel_oil'
+        fuel_oil_factor = convfactors.convfactor("kt", "bbl", "fuel oil")
+        fuel_oil_snake = convfactors.convfactor("kt", "bbl", "fuel_oil")
+        assert fuel_oil_factor == fuel_oil_snake
+
+        # 'naturalgas' and 'ng' => 'natural_gas'
+        ng_factor = convfactors.convfactor("m^3", "GJ", "ng")
+        naturalgas_factor = convfactors.convfactor("m^3", "GJ", "naturalgas")
+        natural_gas_factor = convfactors.convfactor("m^3", "GJ", "natural_gas")
+        assert ng_factor == natural_gas_factor == naturalgas_factor
+
+        # 'propane' => 'lpg'
+        propane_factor = convfactors.convfactor("kt", "bbl", "propane")
+        lpg_factor = convfactors.convfactor("kt", "bbl", "lpg")
+        assert propane_factor == lpg_factor
     
     def test_error_handling(self):
         """Test appropriate errors are raised"""
@@ -308,7 +330,6 @@ class TestUtils:
         units = converter.available_units
         assert isinstance(units, list)
         assert "bbl/day" in units
-
 
 
 

@@ -80,17 +80,33 @@ COMMODITIES = {
 
 # Aliases for compatibility
 ALIASES = {
+    # Common synonyms and marketing terms
     'ulsd': 'diesel',
-    'gasoil': 'diesel', 
+    'gasoil': 'diesel',
+    'gas_oil': 'diesel',
+    'gas oil': 'diesel',
     'go': 'diesel',
+    'kerosene': 'jet',
+
+    # Motor gasoline
     'gas': 'gasoline',
     'mogas': 'gasoline',
+
+    # Fuel oil
     'fueloil': 'fuel_oil',
+    'fuel oil': 'fuel_oil',
     'fo': 'fuel_oil',
-    'lng': 'natgas',
-    'kerosene': 'jet',
+
+    # Crude
+    'crude oil': 'crude',
+    'crudeoil': 'crude',
+
+    # LPG and nat gas
     'propane': 'lpg',
-    'ng': 'natural_gas',
+    'lng': 'natgas',  # LNG (liquefied natural gas)
+    'ng': 'natural_gas',  # pipeline natural gas (gaseous)
+    'naturalgas': 'natural_gas',
+    'nat_gas': 'natural_gas',
 }
 
 class CommodityConverter:
