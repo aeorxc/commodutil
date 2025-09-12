@@ -1,5 +1,5 @@
 [build-system]
-requires = ["setuptools>=80.9.0", "wheel==0.45.1"]
+requires = ["setuptools>=80.9.0", "setuptools-scm>=8.0", "wheel==0.45.1"]
 build-backend = "setuptools.build_meta"
 
 [project]
@@ -35,3 +35,4 @@ test = [
 where = ["."]
 include = ["commodutil*"]
 exclude = ["tests*", "*.tests*", "tests.*"]
+[tool.setuptools_scm]
