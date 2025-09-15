@@ -413,6 +413,31 @@ def convfactor(from_unit: str, to_unit: str, commodity: Optional[str] = None) ->
     """Get conversion factor between units"""
     return converter.convert(1.0, from_unit, to_unit, commodity)
 
+
+
+def convert_price(value: Union[float, pd.Series],
+                  from_unit: str,
+                  to_unit: str,
+                  commodity: Optional[str] = None) -> Union[float, pd.Series]:
+    """
+    Convert price values ($/unit) between units using commodity-aware quantity factors.
+
+    Price conversion is the inverse of quantity conversion:
+        price_to = price_from / convfactor(from_unit, to_unit, commodity)
+
+    Examples:
+        # Gasoline: $/mt -> $/bbl (divide by ~8.33)
+        convert_price(100, 'mt', 'bbl', 'gasoline')  # ~12.0
+
+        # US gallon to barrel: $/gal -> $/bbl (multiply by 42)
+        convert_price(2.5, 'gal', 'bbl')  # ~105.0
+    """
+    factor = convfactor(from_unit, to_unit, commodity)
+    if factor is None or factor == 0:
+        return value
+    if isinstance(value, pd.Series):
+        return value / factor
+    return value / factor
 def list_commodities():
     """List all available commodities"""
     return converter.available_commodities
