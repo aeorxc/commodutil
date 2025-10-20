@@ -22,8 +22,8 @@ dependencies = [
 ]
 
 [project.urls]
-Homepage = "https://github.com/aeorxc/commodutil"
-Source = "https://github.com/aeorxc/commodutil"
+Homepage = "https://dev.azure.com/RWEST-MFI-TE/Oil/_git/commodutil"
+Source = "https://dev.azure.com/RWEST-MFI-TE/Oil/_git/commodutil"
 
 [project.optional-dependencies]
 test = [
