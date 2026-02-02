@@ -304,10 +304,8 @@ def recent_spreads(contracts: pd.DataFrame, combination_type: str, **kwargs):
     filtered_columns = filter_columns_by_date(contracts, start_date, end_date)
 
     start_date_qtr = current_date - relativedelta(months=5)
-    end_date_qtr = current_date + relativedelta(months=13)
-    end_date_qtr2 = current_date + relativedelta(months=16)
+    end_date_qtr = current_date + relativedelta(months=16)
     filtered_columns_qtr = filter_columns_by_date(contracts, start_date_qtr, end_date_qtr)
-    filtered_columns_qtr2 = filter_columns_by_date(contracts, start_date_qtr, end_date_qtr2)
 
     if combination_type == "contracts":
         month_df = contracts[filtered_columns]
@@ -333,7 +331,7 @@ def recent_spreads(contracts: pd.DataFrame, combination_type: str, **kwargs):
 
         return spread_df
     elif combination_type in ['quarterly fly']:
-        spread_df = spread_combination(contracts=contracts[filtered_columns_qtr2],
+        spread_df = spread_combination(contracts=contracts[filtered_columns_qtr],
                                        combination_type="quarterly fly",
                                        col_format="%q%q%q %y")
 
