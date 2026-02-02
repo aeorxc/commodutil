@@ -162,7 +162,8 @@ def _reindex_col(df, colname, colyearmap):
     Reindex a single column to the current year by applying a year offset.
     Vectorized date shifting is used instead of a Python loop.
     """
-    if df[colname].isnull().all():
+    # Use .values.all() to handle both Series and DataFrame (MultiIndex columns)
+    if df[colname].isnull().values.all():
         return None  # Return None instead of no return for clearer logic
 
     colyear = colyearmap[colname]
