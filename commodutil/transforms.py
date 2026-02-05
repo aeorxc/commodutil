@@ -44,6 +44,40 @@ def seasonailse(df, fillna=True):
     return seas
 
 
+def seasonalize(data, histfreq: str | None = None, fillna: bool = True):
+    """
+    Canonical seasonalization helper.
+
+    This mirrors the logic historically living in `commodplot.commodplottransform.seasonalise`,
+    but keeps the core transformation in `commodutil`.
+
+    Args:
+        data: Series or DataFrame with a DatetimeIndex.
+        histfreq: Optional frequency hint. If None, inferred from index; defaults to "D".
+        fillna: Passed through to `seasonailse` for daily/monthly paths.
+
+    Returns:
+        Seasonalized DataFrame aligned to the current year index, with year columns.
+    """
+    if isinstance(data, pd.Series):
+        data = pd.DataFrame(data)
+
+    if histfreq is None:
+        histfreq = pd.infer_freq(data.index)
+        if histfreq is None:
+            histfreq = "D"
+
+    if histfreq.startswith("W"):
+        seas = seasonalise_weekly(data)
+    else:
+        # `seasonailse` expects a Series (takes first column when given DataFrame),
+        # but we normalize above to DataFrame so this stays consistent with legacy behavior.
+        seas = seasonailse(data, fillna=fillna)
+
+    seas = seas.dropna(how="all", axis=1)
+    return seas
+
+
 def cleanup_weekly_data(df):
     """
     Processes dates in a DataFrame to ensure that the intended weekday data is present for each week.
