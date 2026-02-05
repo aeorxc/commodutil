@@ -102,3 +102,28 @@ def all_monthly_spreads(contracts, col_format=None):
     res.attrs['legmap'] = legmap
 
     return res
+
+
+def all_monthly_spreads_extended(contracts, col_format=None):
+    """
+    Like `all_monthly_spreads`, but includes a broader set of month pairs.
+
+    This includes:
+    - standard adjacent-month spreads (JanFeb, ..., DecJan)
+    - a handful of common seasonal / 1y spreads (e.g. JunJun, DecDec, OctMar)
+    """
+    dfs = []
+    for spread in monthly_spread_combos_extended:
+        df = time_spreads_monthly(contracts, spread[0], spread[1], col_format=col_format)
+        if df is not None:
+            dfs.append(df)
+
+    if not dfs:
+        return None
+
+    res = pd.concat(dfs, axis=1)
+    legmap = {}
+    for df in dfs:
+        legmap.update(df.attrs)
+    res.attrs["legmap"] = legmap
+    return res

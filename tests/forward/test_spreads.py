@@ -22,3 +22,21 @@ def test_all_monthly_spreads(cl):
     # For example:
     assert res["JanFeb 2020"].loc[pd.to_datetime("2019-01-03")] == pytest.approx(-0.10, abs=1e-2)
     assert res["JanFeb 2021"].loc[pd.to_datetime("2019-05-21")] == pytest.approx(0.31, abs=1e-2)
+
+
+def test_all_monthly_spreads_extended(cl):
+    from commodutil.forward.util import convert_columns_to_date
+
+    contracts = convert_columns_to_date(cl)
+    res = spreads.all_monthly_spreads_extended(cl, col_format=None)
+    assert res is not None
+
+    dt = pd.to_datetime("2019-03-20")
+
+    # JunJun is a 1y structure: Jun(year) - Jun(year+1)
+    expected_junjun_2019 = contracts[pd.to_datetime("2019-06-01")] - contracts[pd.to_datetime("2020-06-01")]
+    assert res["JunJun 2019"].loc[dt] == pytest.approx(expected_junjun_2019.loc[dt], abs=1e-8)
+
+    # OctMar is seasonal: Oct(year) - Mar(year+1)
+    expected_octmar_2019 = contracts[pd.to_datetime("2019-10-01")] - contracts[pd.to_datetime("2020-03-01")]
+    assert res["OctMar 2019"].loc[dt] == pytest.approx(expected_octmar_2019.loc[dt], abs=1e-8)
