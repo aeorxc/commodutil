@@ -451,3 +451,90 @@ def reindex_year_point_stats_table(
 
     res = pd.DataFrame(rows).set_index("group").sort_values(["zscore", "percentile"], ascending=[True, True])
     return res
+
+
+def prompt_strip_point_stats(
+    df: pd.DataFrame,
+    *,
+    asof: datetime | str | pd.Timestamp | None = None,
+    lookback_bdays: int = 756,
+    require_all_columns: bool = True,
+) -> pd.DataFrame:
+    """
+    Compute point stats per prompt-tenor column for a "prompt strip" dataframe.
+
+    Intended shape:
+      - index: DatetimeIndex (trading days)
+      - columns: tenors (e.g., M1..M12) or any set of prompt labels
+
+    The function:
+      - selects an as-of date (default: latest date with values for all columns if `require_all_columns`)
+      - for each column, computes (value, mean, std, zscore, percentile) vs a trailing window
+        of `lookback_bdays` observations, excluding the current as-of value.
+
+    Returns:
+      A DataFrame indexed by column name with stats columns.
+      The selected as-of timestamp is stored in `result.attrs["asof"]`.
+    """
+    if df is None or df.empty:
+        res = pd.DataFrame(columns=["value", "mean", "std", "zscore", "percentile", "n_ref"])
+        res.attrs["asof"] = None
+        return res
+
+    dft = df.copy()
+    dft.index = pd.to_datetime(dft.index)
+
+    if asof is None:
+        d = dft.dropna(how="any" if require_all_columns else "all")
+        asof_ts = pd.Timestamp(d.index.max()) if not d.empty else None
+    else:
+        asof_ts = pd.Timestamp(asof)
+
+    if asof_ts is None or pd.isna(asof_ts):
+        res = pd.DataFrame(columns=["value", "mean", "std", "zscore", "percentile", "n_ref"])
+        res.attrs["asof"] = None
+        return res
+
+    rows: list[dict] = []
+    for col in dft.columns:
+        s = pd.to_numeric(dft[col], errors="coerce")
+        s = s.dropna()
+        current = last_value_at_or_before(s, asof_ts)
+        if current is None:
+            rows.append(
+                {
+                    "tenor": col,
+                    "value": None,
+                    "mean": None,
+                    "std": None,
+                    "zscore": None,
+                    "percentile": None,
+                    "n_ref": 0,
+                }
+            )
+            continue
+
+        hist = s.loc[:asof_ts].dropna()
+        if lookback_bdays and len(hist) > 1:
+            # Use exactly `lookback_bdays` observations prior to the current as-of value when possible.
+            start = max(0, len(hist) - (lookback_bdays + 1))
+            ref = hist.iloc[start:-1]
+        else:
+            ref = hist.iloc[:-1]
+
+        mean, std, z, p = point_stats(float(current), ref.tolist())
+        rows.append(
+            {
+                "tenor": col,
+                "value": float(current),
+                "mean": mean,
+                "std": std,
+                "zscore": z,
+                "percentile": p,
+                "n_ref": int(ref.shape[0]),
+            }
+        )
+
+    res = pd.DataFrame(rows).set_index("tenor")
+    res.attrs["asof"] = asof_ts
+    return res

@@ -126,6 +126,29 @@ class TestForwards(unittest.TestCase):
         self.assertIn("zscore", table.columns)
         self.assertEqual(int(table.loc["JunAug", "prompt_year"]), dates.curyear)
 
+    def test_prompt_strip_point_stats_asof(self):
+        idx = pd.date_range("2024-01-01", periods=10, freq="B")
+        df = pd.DataFrame(
+            {
+                "M1": np.arange(1, 11, dtype=float),
+                "M2": np.arange(11, 21, dtype=float),
+            },
+            index=idx,
+        )
+
+        res = stats.prompt_strip_point_stats(df, lookback_bdays=9, require_all_columns=True)
+        self.assertEqual(res.attrs["asof"].date(), idx[-1].date())
+        self.assertAlmostEqual(float(res.loc["M1", "value"]), 10.0, 6)
+        # Reference is 1..9 (exclude current), so mean=5, std=sqrt(7.5), z=(10-5)/std
+        self.assertAlmostEqual(float(res.loc["M1", "mean"]), 5.0, 6)
+        self.assertAlmostEqual(float(res.loc["M1", "zscore"]), 1.825741858, 6)
+        self.assertAlmostEqual(float(res.loc["M1", "percentile"]), 1.0, 6)
+
+        df2 = df.copy()
+        df2.loc[idx[-1], "M2"] = np.nan
+        res2 = stats.prompt_strip_point_stats(df2, lookback_bdays=9, require_all_columns=True)
+        self.assertEqual(res2.attrs["asof"].date(), idx[-2].date())
+
 
 if __name__ == "__main__":
     unittest.main()
