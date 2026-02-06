@@ -74,7 +74,9 @@ class PointStats:
     percentile: float | None
 
 
-def last_value_at_or_before(series: pd.Series, asof: datetime | str | pd.Timestamp) -> float | None:
+def last_value_at_or_before(
+    series: pd.Series, asof: datetime | str | pd.Timestamp
+) -> float | None:
     """
     Return the last non-null value at or before `asof`.
 
@@ -91,7 +93,9 @@ def last_value_at_or_before(series: pd.Series, asof: datetime | str | pd.Timesta
         return None
 
 
-def empirical_percentile(value: float, reference_values: Iterable[float]) -> float | None:
+def empirical_percentile(
+    value: float, reference_values: Iterable[float]
+) -> float | None:
     """
     Empirical percentile as fraction of reference values <= value.
 
@@ -103,13 +107,18 @@ def empirical_percentile(value: float, reference_values: Iterable[float]) -> flo
     return float(np.mean([x <= value for x in ref]))
 
 
-def point_stats(value: float | None, reference_values: Iterable[float]) -> tuple[float | None, float | None, float | None, float | None]:
+def point_stats(
+    value: float | None, reference_values: Iterable[float]
+) -> tuple[float | None, float | None, float | None, float | None]:
     """
     Compute (mean, std, zscore, percentile) for a value vs reference values.
 
     Std is sample std (ddof=1) when at least 2 reference values exist, else 0.0.
     """
-    ref = np.array([float(x) for x in reference_values if x is not None and not np.isnan(x)], dtype=float)
+    ref = np.array(
+        [float(x) for x in reference_values if x is not None and not np.isnan(x)],
+        dtype=float,
+    )
     if value is None or np.isnan(value) or ref.size == 0:
         return None, None, None, None
 
@@ -136,7 +145,9 @@ def select_reindex_prompt_column(df_reindexed: pd.DataFrame, *, within_days: int
     year_map = dates.find_year(df_reindexed)
     last_val_date = df_reindexed.index[-1]
 
-    current_year_cols = [c for c in df_reindexed.columns if str(dates.curyear) in str(c)]
+    current_year_cols = [
+        c for c in df_reindexed.columns if str(dates.curyear) in str(c)
+    ]
     if not current_year_cols:
         return res_col
 
@@ -172,6 +183,7 @@ def reindex_year_point_stats(
     asof: datetime | str | pd.Timestamp | None = None,
     lookback_years: int = 5,
     within_days: int = 10,
+    trim_expiry: bool = False,
 ) -> PointStats:
     """
     Compute point stats for a reindex-year view.
@@ -179,6 +191,10 @@ def reindex_year_point_stats(
     - Reindex to current year (`commodutil.transforms.reindex_year`).
     - Pick the prompt column via `select_reindex_prompt_column`.
     - Compare prompt value at `asof` vs prior `lookback_years` years at the same as-of date.
+
+    If ``trim_expiry=True``, apply ``trim_expiry_noise`` to the reindexed frame
+    before reading values, so that near-expiry volatile observations in reference
+    years are excluded from the comparison.
     """
     if df is None or df.empty:
         return PointStats(
@@ -194,6 +210,10 @@ def reindex_year_point_stats(
         )
 
     dft = transforms.reindex_year(df)
+
+    if trim_expiry:
+        dft = trim_expiry_noise(dft)
+
     if dft is None or dft.empty:
         return PointStats(
             asof=pd.NaT,
@@ -215,7 +235,9 @@ def reindex_year_point_stats(
     prompt_year_int = prompt_year if isinstance(prompt_year, int) else None
 
     current_value = (
-        last_value_at_or_before(dft[prompt_col], asof_ts) if prompt_col is not None else None
+        last_value_at_or_before(dft[prompt_col], asof_ts)
+        if prompt_col is not None
+        else None
     )
 
     reference_years: list[int] = []
@@ -372,6 +394,7 @@ def reindex_year_point_stats_table(
     lookback_years: int = 5,
     within_days: int = 10,
     min_columns: int = 3,
+    trim_expiry: bool = False,
 ) -> pd.DataFrame:
     """
     Compute prompt-vs-history point stats for many structures in one dataframe.
@@ -383,6 +406,8 @@ def reindex_year_point_stats_table(
     - groups columns by a "base label" (column label with year tokens stripped),
     - runs `reindex_year_point_stats` per group,
     - returns a sortable table (z-score/percentile) for scanning cheap/rich structures.
+
+    If ``trim_expiry=True``, each per-group call applies expiry noise trimming.
 
     Notes:
     - Columns must include a 4-digit year somewhere for `dates.find_year` to work reliably.
@@ -419,6 +444,7 @@ def reindex_year_point_stats_table(
             asof=asof,
             lookback_years=lookback_years,
             within_days=within_days,
+            trim_expiry=trim_expiry,
         )
         rows.append(
             {
@@ -449,7 +475,11 @@ def reindex_year_point_stats_table(
             ]
         )
 
-    res = pd.DataFrame(rows).set_index("group").sort_values(["zscore", "percentile"], ascending=[True, True])
+    res = (
+        pd.DataFrame(rows)
+        .set_index("group")
+        .sort_values(["zscore", "percentile"], ascending=[True, True])
+    )
     return res
 
 
@@ -477,7 +507,9 @@ def prompt_strip_point_stats(
       The selected as-of timestamp is stored in `result.attrs["asof"]`.
     """
     if df is None or df.empty:
-        res = pd.DataFrame(columns=["value", "mean", "std", "zscore", "percentile", "n_ref"])
+        res = pd.DataFrame(
+            columns=["value", "mean", "std", "zscore", "percentile", "n_ref"]
+        )
         res.attrs["asof"] = None
         return res
 
@@ -491,7 +523,9 @@ def prompt_strip_point_stats(
         asof_ts = pd.Timestamp(asof)
 
     if asof_ts is None or pd.isna(asof_ts):
-        res = pd.DataFrame(columns=["value", "mean", "std", "zscore", "percentile", "n_ref"])
+        res = pd.DataFrame(
+            columns=["value", "mean", "std", "zscore", "percentile", "n_ref"]
+        )
         res.attrs["asof"] = None
         return res
 
@@ -538,3 +572,107 @@ def prompt_strip_point_stats(
     res = pd.DataFrame(rows).set_index("tenor")
     res.attrs["asof"] = asof_ts
     return res
+
+
+# ---------------------------------------------------------------------------
+# Expiry noise detection and trimming
+# ---------------------------------------------------------------------------
+
+
+def detect_expiry_noise_cutoff(
+    s: pd.Series,
+    *,
+    threshold_std: float = 2.0,
+    min_stable_frac: float = 0.6,
+    calm_streak: int = 3,
+    min_obs: int = 20,
+) -> pd.Timestamp | None:
+    """
+    Detect where expiry noise begins in a spread/fly time series.
+
+    Spreads and flies become extremely volatile near expiry as liquidity dries
+    up and individual legs settle independently.  This function finds the last
+    "stable" date before the noisy tail by:
+
+    1. Computing absolute daily changes.
+    2. Establishing "normal" volatility from the first ``min_stable_frac``
+       fraction of the data.
+    3. Walking backwards from the end and looking for a contiguous run of days
+       where the absolute change exceeds ``mean + threshold_std * std`` of the
+       stable period.
+    4. The cutoff is the last calm date before that noisy tail (requiring
+       ``calm_streak`` consecutive calm days to confirm stability).
+
+    Returns the cutoff date (last usable date), or None if no significant
+    expiry noise is detected.
+    """
+    s = pd.to_numeric(s, errors="coerce").dropna()
+    if len(s) < min_obs:
+        return None
+
+    changes = s.diff().abs().dropna()
+    if len(changes) < min_obs:
+        return None
+
+    # Establish normal volatility from first portion of data.
+    stable_n = max(10, int(len(changes) * min_stable_frac))
+    stable_changes = changes.iloc[:stable_n]
+    mean_c = float(stable_changes.mean())
+    std_c = float(stable_changes.std())
+
+    if std_c == 0.0 or np.isnan(std_c):
+        return None
+
+    threshold = mean_c + threshold_std * std_c
+
+    # Walk backwards: find where a sustained noisy tail begins.
+    noisy = (changes > threshold).values
+    n = len(noisy)
+    calm_count = 0
+
+    for i in range(n - 1, -1, -1):
+        if not noisy[i]:
+            calm_count += 1
+            if calm_count >= calm_streak:
+                # We found `calm_streak` consecutive calm days.
+                # The cutoff is the last of these calm days (before noise resumes).
+                cutoff_idx = i + calm_streak - 1
+                if cutoff_idx >= n - 1:
+                    return None  # No noise after this calm streak
+                return pd.Timestamp(changes.index[cutoff_idx])
+        else:
+            calm_count = 0
+
+    # Entire series is noisy (unlikely) — don't truncate.
+    return None
+
+
+def trim_expiry_noise(
+    df: pd.DataFrame,
+    *,
+    threshold_std: float = 2.0,
+    min_stable_frac: float = 0.6,
+    calm_streak: int = 3,
+    min_obs: int = 20,
+) -> pd.DataFrame:
+    """
+    Trim expiry noise from each column of a reindexed (or raw) DataFrame.
+
+    For each column, detects the expiry-noise cutoff via
+    ``detect_expiry_noise_cutoff`` and sets values after that date to NaN.
+
+    Returns a copy of the DataFrame with noisy tails removed.
+    """
+    out = df.copy()
+    for col in out.columns:
+        s = pd.to_numeric(out[col], errors="coerce")
+        cutoff = detect_expiry_noise_cutoff(
+            s,
+            threshold_std=threshold_std,
+            min_stable_frac=min_stable_frac,
+            calm_streak=calm_streak,
+            min_obs=min_obs,
+        )
+        if cutoff is not None:
+            out.loc[out.index > cutoff, col] = np.nan
+    return out
