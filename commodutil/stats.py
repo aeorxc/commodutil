@@ -489,6 +489,7 @@ def prompt_strip_point_stats(
     asof: datetime | str | pd.Timestamp | None = None,
     lookback_bdays: int = 756,
     require_all_columns: bool = True,
+    seasonal_window_days: int | None = None,
 ) -> pd.DataFrame:
     """
     Compute point stats per prompt-tenor column for a "prompt strip" dataframe.
@@ -502,9 +503,17 @@ def prompt_strip_point_stats(
       - for each column, computes (value, mean, std, zscore, percentile) vs a trailing window
         of `lookback_bdays` observations, excluding the current as-of value.
 
+    Parameters:
+      seasonal_window_days: If set, filter reference values to ±N calendar days around the
+        same day-of-year as the as-of date. This converts the z-score from unconditional
+        ("is $9.30 cheap vs ALL M1 history?") to seasonal ("is $9.30 cheap for mid-February?").
+        CRITICAL for seasonal products like gasoline cracks, gasnaph, or any structure with
+        strong intra-year patterns. Typical value: 21 (±3 weeks = ~6 week window).
+
     Returns:
       A DataFrame indexed by column name with stats columns.
       The selected as-of timestamp is stored in `result.attrs["asof"]`.
+      If seasonal_window_days is set, `result.attrs["seasonal_window_days"]` is also stored.
     """
     if df is None or df.empty:
         res = pd.DataFrame(
@@ -556,6 +565,17 @@ def prompt_strip_point_stats(
         else:
             ref = hist.iloc[:-1]
 
+        # Seasonal filtering: keep only reference values within ±N calendar days
+        # of the same day-of-year as the as-of date.  This prevents unconditional
+        # z-scores from confusing seasonal patterns with cheap/rich signals.
+        if seasonal_window_days is not None and not ref.empty:
+            asof_doy = asof_ts.dayofyear
+            ref_doy = ref.index.dayofyear
+            # Circular distance (handles year-wrap, e.g., Jan vs Dec)
+            dist = (ref_doy - asof_doy).to_series(index=ref.index).abs()
+            dist = dist.where(dist <= 182, 365 - dist)
+            ref = ref[dist.values <= seasonal_window_days]
+
         mean, std, z, p = point_stats(float(current), ref.tolist())
         rows.append(
             {
@@ -571,6 +591,8 @@ def prompt_strip_point_stats(
 
     res = pd.DataFrame(rows).set_index("tenor")
     res.attrs["asof"] = asof_ts
+    if seasonal_window_days is not None:
+        res.attrs["seasonal_window_days"] = seasonal_window_days
     return res
 
 
