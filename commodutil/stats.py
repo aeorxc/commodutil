@@ -211,9 +211,6 @@ def reindex_year_point_stats(
 
     dft = transforms.reindex_year(df)
 
-    if trim_expiry:
-        dft = trim_expiry_noise(dft)
-
     if dft is None or dft.empty:
         return PointStats(
             asof=pd.NaT,
@@ -227,9 +224,14 @@ def reindex_year_point_stats(
             percentile=None,
         )
 
-    asof_ts = pd.Timestamp(dft.index.max()) if asof is None else pd.Timestamp(asof)
-
+    # Select prompt BEFORE trimming so rollover logic sees complete data
     prompt_col = select_reindex_prompt_column(dft, within_days=within_days)
+
+    if trim_expiry:
+        exclude = [prompt_col] if prompt_col is not None else None
+        dft = trim_expiry_noise(dft, exclude_columns=exclude)
+
+    asof_ts = pd.Timestamp(dft.index.max()) if asof is None else pd.Timestamp(asof)
     year_map = dates.find_year(dft)
     prompt_year = year_map.get(prompt_col) if prompt_col is not None else None
     prompt_year_int = prompt_year if isinstance(prompt_year, int) else None
@@ -387,6 +389,66 @@ def _base_label_from_column(col) -> str | None:
     return s or None
 
 
+# ---------------------------------------------------------------------------
+# Expired-structure detection
+# ---------------------------------------------------------------------------
+
+_QUARTER_LAST_MONTH = {"q1": 3, "q2": 6, "q3": 9, "q4": 12}
+
+
+def _front_delivery_month(base_label):
+    """Extract front delivery month number from label like 'JanFeb', 'Q1Q2'.
+
+    Uses month_abbr_inv from commodutil.forward.util for month parsing
+    (same pattern as spread_combination_fly in forwards.py).
+    """
+    from commodutil.forward.util import month_abbr_inv
+
+    s = base_label.strip().lower()
+    if not s or len(s) < 2:
+        return None
+    # Monthly: starts with 3-letter month abbreviation
+    if len(s) >= 3 and s[:3] in month_abbr_inv:
+        return month_abbr_inv[s[:3]]
+    # Quarterly: starts with Q + digit
+    m = re.match(r"q(\d)", s)
+    if m:
+        return {"1": 1, "2": 4, "3": 7, "4": 10}.get(m.group(1))
+    return None  # CAL, H1H2, SummerWinter — don't filter
+
+
+def _is_structure_expired(base_label, year, ref_date=None):
+    """Check if a structure's front delivery leg has expired.
+
+    Monthly structures: expired when front month has passed.
+    Quarterly structures: expired when entire front quarter has passed.
+    CAL/H1/H2/Summer/Winter: never filtered (partial expiry is normal).
+    """
+    if ref_date is None:
+        ref_date = datetime.now()
+    if isinstance(ref_date, pd.Timestamp):
+        ref_date = ref_date.to_pydatetime()
+    front_month = _front_delivery_month(base_label)
+    if front_month is None:
+        return False
+    s = base_label.strip().lower()
+    # Quarterly: expired after the last month of the front quarter
+    q_match = re.match(r"q(\d)", s)
+    if q_match:
+        last_m = _QUARTER_LAST_MONTH.get(f"q{q_match.group(1)}", front_month)
+        boundary = (
+            datetime(year + 1, 1, 1) if last_m == 12 else datetime(year, last_m + 1, 1)
+        )
+    else:
+        # Monthly: expired after the front month ends
+        boundary = (
+            datetime(year + 1, 1, 1)
+            if front_month == 12
+            else datetime(year, front_month + 1, 1)
+        )
+    return ref_date >= boundary
+
+
 def reindex_year_point_stats_table(
     df: pd.DataFrame,
     *,
@@ -395,6 +457,7 @@ def reindex_year_point_stats_table(
     within_days: int = 10,
     min_columns: int = 3,
     trim_expiry: bool = False,
+    skip_expired: bool = True,
 ) -> pd.DataFrame:
     """
     Compute prompt-vs-history point stats for many structures in one dataframe.
@@ -408,6 +471,8 @@ def reindex_year_point_stats_table(
     - returns a sortable table (z-score/percentile) for scanning cheap/rich structures.
 
     If ``trim_expiry=True``, each per-group call applies expiry noise trimming.
+    If ``skip_expired=True`` (default), structures whose front delivery month has
+    already expired are excluded from results.
 
     Notes:
     - Columns must include a 4-digit year somewhere for `dates.find_year` to work reliably.
@@ -435,9 +500,15 @@ def reindex_year_point_stats_table(
             continue
         groups.setdefault(key, []).append(col)
 
+    ref_date = datetime.now() if asof is None else pd.Timestamp(asof).to_pydatetime()
+
     rows: list[dict] = []
     for key, cols in groups.items():
         if len(cols) < min_columns:
+            continue
+        if skip_expired and _is_structure_expired(
+            key, dates.curyear, ref_date=ref_date
+        ):
             continue
         stats_res = reindex_year_point_stats(
             df[cols],
@@ -672,6 +743,7 @@ def detect_expiry_noise_cutoff(
 def trim_expiry_noise(
     df: pd.DataFrame,
     *,
+    exclude_columns: Iterable | None = None,
     threshold_std: float = 2.0,
     min_stable_frac: float = 0.6,
     calm_streak: int = 3,
@@ -683,10 +755,16 @@ def trim_expiry_noise(
     For each column, detects the expiry-noise cutoff via
     ``detect_expiry_noise_cutoff`` and sets values after that date to NaN.
 
+    Columns listed in ``exclude_columns`` are left untouched (useful for
+    preserving the prompt/current year column).
+
     Returns a copy of the DataFrame with noisy tails removed.
     """
     out = df.copy()
+    skip = set(exclude_columns) if exclude_columns else set()
     for col in out.columns:
+        if col in skip:
+            continue
         s = pd.to_numeric(out[col], errors="coerce")
         cutoff = detect_expiry_noise_cutoff(
             s,
