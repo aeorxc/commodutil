@@ -597,6 +597,10 @@ _FRACTIONAL_TO_MAJOR = {
 # Known currency tokens for the price-unit parser. Anything not in this set
 # is NOT treated as a currency — so e.g. `bbl/day` is correctly identified
 # as a bare rate unit rather than parsed as currency=`bbl`, unit=`day`.
+#
+# PUBLIC API: exported as `VALID_CURRENCY_TOKENS` (alias below) so downstream
+# callers (e.g. pyoilprice.conversion) can reuse the same set instead of
+# duplicating it.
 # TODO: if this list grows beyond ~30 tokens, switch to the `iso4217` package
 # rather than hand-curating.
 _VALID_CURRENCY_TOKENS = {
@@ -635,6 +639,35 @@ _VALID_CURRENCY_TOKENS = {
     # Currency symbol shorthand also accepted as a currency token
     "$",
 }
+
+# Public aliases for downstream packages (pyoilprice, etc.). Single source of
+# truth lives in commodutil; pyoilprice imports rather than mirrors.
+VALID_CURRENCY_TOKENS = _VALID_CURRENCY_TOKENS
+FRACTIONAL_TO_MAJOR = _FRACTIONAL_TO_MAJOR
+
+
+def is_fractional_currency(token: str) -> bool:
+    """Return True if `token` is a recognised fractional currency
+    (e.g. 'GBp', 'USc'). Useful for detecting pure-scale conversions that
+    don't require an FX leg.
+    """
+    return token in _FRACTIONAL_TO_MAJOR
+
+
+def fractional_to_major(token: str) -> str:
+    """Resolve a fractional currency token to its parent major currency.
+
+    Examples:
+        fractional_to_major('GBp') -> 'GBP'
+        fractional_to_major('USc') -> 'USD'
+        fractional_to_major('EUR') -> 'EUR'   (already major; returned unchanged)
+        fractional_to_major('$')   -> 'USD'   ('$' shorthand resolved to USD)
+    """
+    if not token:
+        return ""
+    if token == "$":
+        return "USD"
+    return _FRACTIONAL_TO_MAJOR.get(token, token.upper())
 
 
 def _split_currency_unit(token: str) -> tuple[str, str]:
