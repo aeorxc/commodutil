@@ -670,7 +670,7 @@ def fractional_to_major(token: str) -> str:
     return _FRACTIONAL_TO_MAJOR.get(token, token.upper())
 
 
-def _split_currency_unit(token: str) -> tuple[str, str]:
+def split_currency_unit(token: str) -> tuple[str, str]:
     """Split a 'CCY/unit' token into ('CCY', 'unit').
 
     Only splits when the prefix before the first `/` is a recognised
@@ -685,6 +685,12 @@ def _split_currency_unit(token: str) -> tuple[str, str]:
     if head in _VALID_CURRENCY_TOKENS:
         return head, tail.strip()
     return "", token
+
+
+# Backwards-compatible private alias. Was the original name pre-2026-05-14;
+# kept so any in-flight imports still resolve. New callers should use the
+# public `split_currency_unit`.
+_split_currency_unit = split_currency_unit
 
 
 def convert_price(
@@ -745,8 +751,8 @@ def convert_price(
         fx_series = pd.Series([1.07, 1.08, 1.06], index=p.index)
         convert_price(p, 'EUR/MWh', 'USD/MMBtu', fx=fx_series)
     """
-    from_ccy, from_bare_unit = _split_currency_unit(from_unit)
-    to_ccy, to_bare_unit = _split_currency_unit(to_unit)
+    from_ccy, from_bare_unit = split_currency_unit(from_unit)
+    to_ccy, to_bare_unit = split_currency_unit(to_unit)
 
     # Resolve the underlying "major" currency on each side for same-base detection
     # (e.g. USc and USD share major USD — pure scale, no FX needed).
