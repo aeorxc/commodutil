@@ -102,10 +102,12 @@ def test_parity_with_curvemetadata_long_patterns_only():
         )
 
 
-def test_short_pattern_divergence_from_curvemetadata():
-    """Pin the known bug fix: normalize_region matches short codes that
-    curvemetadata.infer_region (broken) does not. If curvemetadata ever
-    fixes its `\\b` typo, this test will fail and should be deleted.
+def test_short_pattern_parity_with_curvemetadata():
+    """Short-pattern (len <= 3) regions used to diverge between
+    normalize_region and curvemetadata.taxonomy.infer_region because
+    the latter had a `\\b` regex bug (literal backslash-b instead of
+    a word boundary). The bug was fixed in curvemetadata 2026-05;
+    this test is now a regression guard against the bug returning.
     """
     try:
         from curvemetadata.taxonomy import infer_region
@@ -114,22 +116,24 @@ def test_short_pattern_divergence_from_curvemetadata():
 
         pytest.skip("curvemetadata not available in this environment")
 
-    # Only patterns of len <= 3 hit the broken regex branch. Among the
-    # configured patterns those are: "nyh", "ara", "med", "nwe".
+    # Only patterns of len <= 3 hit the previously-broken regex branch.
+    # Among the configured patterns those are: "nyh", "ara", "med", "nwe".
     short_pattern_cases = [
         ("Brent NYH", "NYH"),
         ("NWE jet", "NWE"),
         ("ARA gasoil", "ARA"),
         ("Med fuel oil", "Med"),
+        # Word-boundary protection: "ara" must NOT match inside "Saharan"
+        ("Saharan crude", None),
     ]
     for text, expected in short_pattern_cases:
         assert normalize_region(text) == expected, (
             f"normalize_region({text!r}) should match {expected!r}"
         )
-        assert infer_region(text) is None, (
-            f"curvemetadata.infer_region({text!r}) is expected to return "
-            f"None (broken). Got {infer_region(text)!r}. If the bug is "
-            f"fixed, delete this test."
+        assert infer_region(text) == expected, (
+            f"curvemetadata.infer_region({text!r}) should match {expected!r} "
+            f"(got {infer_region(text)!r}). If you see None for one of the "
+            f"short patterns, the curvemetadata `\\b` regex bug has regressed."
         )
 
 
