@@ -33,6 +33,24 @@ ureg.define("megatonne = 1e6 metric_ton = Mt")
 # normalize_unit helper already maps 'MMBTU' -> 'MMBtu').
 ureg.define("million_british_thermal_unit = 1e6 Btu = MMBtu")
 
+# Case-insensitive aliases for the most-quoted energy / power units.
+# Pint is case-sensitive by default, so `ureg('mmbtu')` or `ureg('mw')` raise
+# UndefinedUnitError even though `MMBtu` / `MW` work. Callers (Power Query, ad-hoc
+# scripts, copy-pasted Platts symbols) very commonly use the lowercase / all-caps
+# / underscored forms, so register them explicitly here.
+#
+# Energy: MMBtu + therm + Btu spellings (MMBtu is defined above; therm + Btu are
+# in pint's defaults). `million_btu` is the long-form alias.
+ureg.define("@alias million_british_thermal_unit = mmbtu = MMBTU = million_btu")
+ureg.define("@alias therm = Therm = THERM")
+ureg.define("@alias british_thermal_unit = btu")
+# Power / energy: MW and MWh are SI-prefix forms of `watt` / `watt_hour`, so they
+# cannot be aliased via `@alias`. Register lowercase / all-caps spellings as
+# standalone units with the same magnitude.
+ureg.define("mw = 1e6 watt")
+ureg.define("mwh = 1e6 watt * hour")
+ureg.define("MWH = 1e6 watt * hour")
+
 
 @dataclass
 class Commodity:

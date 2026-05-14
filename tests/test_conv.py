@@ -340,6 +340,53 @@ class TestUtils:
         result = convfactors.convert(simple_series, "bbl/day", "bbl/month")
         assert result.iloc[0] == pytest.approx(3043.75, abs=0.1)
 
+    def test_case_insensitive_energy_aliases(self):
+        """Lowercase / all-caps / long-form spellings of MMBtu, therm, Btu resolve."""
+        from commodutil.convfactors import ureg
+
+        # MMBtu and its aliases all resolve to the same base magnitude
+        canonical_mmbtu = (1 * ureg("MMBtu")).to_base_units().magnitude
+        for alias in ("mmbtu", "MMBTU", "million_btu"):
+            mag = (1 * ureg(alias)).to_base_units().magnitude
+            assert mag == pytest.approx(canonical_mmbtu), (
+                f"{alias} should resolve to MMBtu (got {mag} vs {canonical_mmbtu})"
+            )
+
+        # therm + Therm + THERM
+        canonical_therm = (1 * ureg("therm")).to_base_units().magnitude
+        for alias in ("Therm", "THERM"):
+            mag = (1 * ureg(alias)).to_base_units().magnitude
+            assert mag == pytest.approx(canonical_therm)
+
+        # Btu + btu + BTU
+        canonical_btu = (1 * ureg("Btu")).to_base_units().magnitude
+        for alias in ("btu", "BTU"):
+            mag = (1 * ureg(alias)).to_base_units().magnitude
+            assert mag == pytest.approx(canonical_btu)
+
+        # Sanity: 1 MMBtu = 1e6 Btu
+        assert canonical_mmbtu == pytest.approx(1e6 * canonical_btu)
+
+    def test_case_insensitive_power_aliases(self):
+        """Lowercase / all-caps spellings of MW and MWh resolve."""
+        from commodutil.convfactors import ureg
+
+        # MW and mw
+        canonical_mw = (1 * ureg("MW")).to_base_units().magnitude
+        assert (1 * ureg("mw")).to_base_units().magnitude == pytest.approx(canonical_mw)
+
+        # MWh, mwh, MWH
+        canonical_mwh = (1 * ureg("MWh")).to_base_units().magnitude
+        for alias in ("mwh", "MWH"):
+            mag = (1 * ureg(alias)).to_base_units().magnitude
+            assert mag == pytest.approx(canonical_mwh), (
+                f"{alias} should resolve to MWh (got {mag} vs {canonical_mwh})"
+            )
+
+        # Sanity: 1 MWh = 3.6 GJ
+        assert (1 * ureg("MWh")).to("GJ").magnitude == pytest.approx(3.6)
+        assert (1 * ureg("mwh")).to("GJ").magnitude == pytest.approx(3.6)
+
     def test_caching_and_properties(self):
         """Test caching and property methods"""
         from commodutil.convfactors import converter
