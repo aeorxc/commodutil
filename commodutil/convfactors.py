@@ -3,6 +3,7 @@ Modern implementation of commodity unit conversions using Pint.
 Clean-slate design with no backward-compatibility constraints.
 """
 
+import logging
 import pint
 from pint.errors import DimensionalityError
 from typing import Union, Optional
@@ -10,11 +11,20 @@ from dataclasses import dataclass
 import pandas as pd
 from functools import lru_cache
 
+logger = logging.getLogger(__name__)
+
 # Initialize pint with custom definitions
 ureg = pint.UnitRegistry()
 
-# Define oil & gas specific units
-ureg.define("barrel = 158.987294928 liter = bbl")
+# Define oil & gas specific units.
+#
+# Pint already ships a `barrel` unit but its default (US dry barrel,
+# ~119.24 L) is NOT the oil/petroleum barrel. Rather than silently
+# clobbering pint's default (which would mean downstream callers using
+# `ureg.barrel` for non-oil contexts get the wrong answer), we register
+# a distinct `oil_barrel` (158.987294928 L = 42 US gallons) and route
+# the `bbl` alias to it. `ureg.barrel` retains pint's default meaning.
+ureg.define("oil_barrel = 158.987294928 liter = bbl")
 ureg.define("gallon = 3.785411784 liter = gal")
 ureg.define("metric_ton = 1000 kilogram = mt")
 ureg.define("kiloton = 1000 metric_ton = kt")
@@ -54,15 +64,22 @@ ureg.define("MWH = 1e6 watt * hour")
 
 @dataclass
 class Commodity:
-    """Represents a commodity with its physical properties"""
+    """Represents a commodity with its physical properties.
+
+    `density` is `Optional[pint.Quantity]`: `None` means "no liquid density
+    defined" (e.g. pipeline natural gas — it's a gas, not a liquid, so
+    mass<->volume conversion is undefined and must raise).
+    Previously this used `0.0 kg/L` as a sentinel; magnitude==0 checks
+    were scattered through the codebase. `None` makes the intent explicit.
+    """
 
     name: str
-    density: pint.Quantity  # kg/L or API gravity
+    density: Optional[pint.Quantity] = None  # kg/L or API gravity; None = not a liquid
     energy_content: Optional[pint.Quantity] = None  # GJ/m^3 or similar
 
     def __post_init__(self):
         # Ensure quantities have correct dimensions
-        if not isinstance(self.density, pint.Quantity):
+        if self.density is not None and not isinstance(self.density, pint.Quantity):
             self.density = self.density * ureg.kg / ureg.liter
         if self.energy_content and not isinstance(self.energy_content, pint.Quantity):
             self.energy_content = self.energy_content * ureg.GJ / ureg.m**3
@@ -109,9 +126,10 @@ COMMODITIES = {
         "natgas", 0.542225066 * ureg.kg / ureg.L, 26.137 * ureg.GJ / ureg.m**3
     ),
     # Natural gas (gaseous, pipeline): BP approx 36 PJ per bcm => 0.036 GJ/m**3
+    # density=None: not a liquid, so mass<->volume conversion is undefined.
     "natural_gas": Commodity(
-        "natural_gas", 0.0 * ureg.kg / ureg.L, 0.036 * ureg.GJ / ureg.m**3
-    ),  # LNG figures
+        "natural_gas", density=None, energy_content=0.036 * ureg.GJ / ureg.m**3
+    ),
     # Light gases (NGLs as discrete species — supersede the generic 'lpg' alias
     # for unit conversions where pure-component density/HHV matter, e.g.
     # $/gal <-> $/MMBtu for the MB OPIS futures (AC0, B0, AD0, A8I)).
@@ -288,11 +306,12 @@ class CommodityConverter:
                 if is_to_volume:
                     return volume_m3.to(to_unit).magnitude
                 elif is_to_mass:
-                    density_kg_m3 = comm.density.to("kg/m^3")
-                    if density_kg_m3.magnitude == 0:
+                    if comm.density is None:
                         raise ValueError(
-                            f"Density not defined for {commodity}; cannot convert energy to mass"
+                            f"Mass<->volume conversion not supported for {commodity!r} "
+                            f"(no density defined); cannot convert energy to mass"
                         )
+                    density_kg_m3 = comm.density.to("kg/m^3")
                     mass_kg = (volume_m3 * density_kg_m3).to("kg")
                     return mass_kg.to(to_unit).magnitude
                 else:
@@ -300,11 +319,12 @@ class CommodityConverter:
             else:
                 # Volume/Mass -> Energy
                 if is_from_mass:
-                    density_kg_m3 = comm.density.to("kg/m^3")
-                    if density_kg_m3.magnitude == 0:
+                    if comm.density is None:
                         raise ValueError(
-                            f"Density not defined for {commodity}; cannot convert mass to energy"
+                            f"Mass<->volume conversion not supported for {commodity!r} "
+                            f"(no density defined); cannot convert mass to energy"
                         )
+                    density_kg_m3 = comm.density.to("kg/m^3")
                     mass_kg = qty.to("kg")
                     volume_m3 = (mass_kg / density_kg_m3).to("m^3")
                 elif is_from_volume:
@@ -319,12 +339,13 @@ class CommodityConverter:
             if not commodity:
                 raise ValueError(f"Commodity required for {from_unit} to {to_unit}")
             comm = self.get_commodity(commodity)
+            if comm.density is None:
+                raise ValueError(
+                    f"Mass<->volume conversion not supported for {commodity!r} "
+                    f"(no density defined)"
+                )
             density_kg_L = comm.density.to("kg/L")
             density_kg_m3 = comm.density.to("kg/m^3")
-            if density_kg_L.magnitude == 0 or density_kg_m3.magnitude == 0:
-                raise ValueError(
-                    f"Density not defined for {commodity}; cannot convert between mass and volume"
-                )
             if is_from_mass and is_to_volume:
                 mass_kg = qty.to("kg")
                 volume_L = (mass_kg / density_kg_L).to("L")
@@ -490,7 +511,7 @@ class CommodityConverter:
         return [
             # Volume
             "bbl",
-            "barrel",
+            "oil_barrel",
             "L",
             "liter",
             "m³",
@@ -544,43 +565,14 @@ def convfactor(from_unit: str, to_unit: str, commodity: Optional[str] = None) ->
     return converter.convert(1.0, from_unit, to_unit, commodity)
 
 
-def convert_price(
-    value: Union[float, pd.Series],
-    from_unit: str,
-    to_unit: str,
-    commodity: Optional[str] = None,
-) -> Union[float, pd.Series]:
-    """
-    Convert price values ($/unit) between units using commodity-aware quantity factors.
-
-    Price conversion is the inverse of quantity conversion:
-        price_to = price_from / convfactor(from_unit, to_unit, commodity)
-
-    Examples:
-        # Gasoline: $/mt -> $/bbl (divide by ~8.33)
-        convert_price(100, 'mt', 'bbl', 'gasoline')  # ~12.0
-
-        # US gallon to barrel: $/gal -> $/bbl (multiply by 42)
-        convert_price(2.5, 'gal', 'bbl')  # ~105.0
-    """
-    factor = convfactor(from_unit, to_unit, commodity)
-    if factor is None or factor == 0:
-        return value
-    if isinstance(value, pd.Series):
-        return value / factor
-    return value / factor
-
-
-# ---- FX scaling helpers for $/{currency}/{energy-or-volume-or-mass} prices ----
+# ---- Currency-aware price conversion helpers ----
 #
 # Design note (2026-05): callers building cross-currency / cross-unit energy
-# prices (e.g. TTF EUR/MWh -> $/MMBtu, NBP GBp/therm -> $/MMBtu) previously had
-# to roll their own helper because `convert_price` is FX-agnostic.
-# `convert_price_with_fx` keeps the FX leg explicit (an FX *series* or scalar,
-# fetched and aligned by the caller — convfactors does not pull from any FX
-# feed itself) and delegates the unit-leg to `convert_price`. This keeps the
-# single-conversion-call ergonomics promised by the saved feedback memory
-# without coupling commodutil to any pricing feed.
+# prices (e.g. TTF EUR/MWh -> $/MMBtu, NBP GBp/therm -> $/MMBtu) need an FX
+# leg in addition to the commodity unit leg. `convert_price` accepts an
+# optional `fx` parameter (scalar or pandas.Series) so a single call handles
+# both legs. FX is supplied by the caller — convfactors does not pull from
+# any FX feed itself.
 
 _FRACTIONAL_CURRENCY_DIVISORS = {
     # Quoted-in-fractional-units of a major currency. Multiplying by the FX rate
@@ -592,77 +584,179 @@ _FRACTIONAL_CURRENCY_DIVISORS = {
     "JPy": 100.0,  # rare, but for symmetry
 }
 
+# Mapping fractional currency -> its parent major currency. Used to short-circuit
+# the FX requirement when the source and target only differ by a fractional
+# prefix (e.g. USc -> USD is a pure /100 scale, no FX needed).
+_FRACTIONAL_TO_MAJOR = {
+    "USc": "USD",
+    "GBp": "GBP",
+    "EUc": "EUR",
+    "JPy": "JPY",
+}
+
+# Known currency tokens for the price-unit parser. Anything not in this set
+# is NOT treated as a currency — so e.g. `bbl/day` is correctly identified
+# as a bare rate unit rather than parsed as currency=`bbl`, unit=`day`.
+# TODO: if this list grows beyond ~30 tokens, switch to the `iso4217` package
+# rather than hand-curating.
+_VALID_CURRENCY_TOKENS = {
+    # ISO 4217 majors relevant to commodity trading
+    "USD",
+    "EUR",
+    "GBP",
+    "JPY",
+    "CAD",
+    "AUD",
+    "CHF",
+    "CNY",
+    "CNH",
+    "INR",
+    "MXN",
+    "BRL",
+    "ZAR",
+    "KRW",
+    "SGD",
+    "HKD",
+    "NZD",
+    "NOK",
+    "SEK",
+    "DKK",
+    "PLN",
+    "TRY",
+    "RUB",
+    "ILS",
+    # Fractional / minor units
+    "USc",
+    "GBp",
+    "EUc",
+    "JPy",
+    "CAc",
+    "AUc",
+    # Currency symbol shorthand also accepted as a currency token
+    "$",
+}
+
 
 def _split_currency_unit(token: str) -> tuple[str, str]:
-    """Split a 'CCY/unit' token into ('CCY', 'unit'). Returns ('', token) if no slash."""
+    """Split a 'CCY/unit' token into ('CCY', 'unit').
+
+    Only splits when the prefix before the first `/` is a recognised
+    currency token (see `_VALID_CURRENCY_TOKENS`). Otherwise returns
+    ('', token) — so bare rate units like 'bbl/day' or 'kt/month' are
+    left intact for the downstream rate-unit parser.
+    """
     if "/" not in token:
         return "", token
-    ccy, unit = token.split("/", 1)
-    return ccy.strip(), unit.strip()
+    head, _, tail = token.partition("/")
+    head = head.strip()
+    if head in _VALID_CURRENCY_TOKENS:
+        return head, tail.strip()
+    return "", token
 
 
-def convert_price_with_fx(
+def convert_price(
     value: Union[float, pd.Series],
     from_unit: str,
     to_unit: str,
-    fx: Union[float, pd.Series, None] = None,
     commodity: Optional[str] = None,
+    fx: Union[float, pd.Series, None] = None,
+    ffill_policy: str = "strict",
+    max_staleness: pd.Timedelta = pd.Timedelta(days=7),
 ) -> Union[float, pd.Series]:
     """
-    Convert a price across both a currency leg AND a unit leg in one call.
+    Convert price values ($/unit) between units, optionally bearing an FX rate.
 
-    Use this when you have prices quoted in a foreign currency per a non-USD-
-    standard unit (e.g. EUR/MWh, GBp/therm) and you want $/MMBtu.
+    Price conversion is the inverse of quantity conversion:
+        price_to = price_from / convfactor(from_unit, to_unit, commodity)
 
-    The currency token is the prefix before the '/' (e.g. 'EUR' in 'EUR/MWh',
-    'GBp' in 'GBp/therm'). Pass `fx` as the rate (or pandas Series of rates)
-    quoted as **target/source** — i.e. USD-per-foreign-currency. So for
-    EUR/MWh -> $/MMBtu, pass `fx = EURUSD` (the EURUSD spot, ~1.07).
-    For GBp/therm -> $/MMBtu, pass `fx = GBPUSD` — the fractional 'GBp' suffix
-    is detected automatically and divided by 100.
+    If `from_unit` and `to_unit` differ in currency (e.g. EUR/MWh -> USD/MMBtu),
+    `fx` must be supplied (scalar or pandas.Series indexed by date), quoted as
+    target/source — i.e. USD-per-foreign-currency. Fractional-currency
+    prefixes ('GBp', 'USc', ...) are auto-detected and divided by 100.
+
+    If `fx` is a Series and `value` is a Series, alignment policy is controlled
+    by `ffill_policy` and `max_staleness`:
+
+    - `ffill_policy='strict'` (default): FX is forward-filled onto value.index
+      with a bounded ffill of `max_staleness`. If any target dates remain
+      uncovered, a `ValueError` is raised — refusing to silently back-fill
+      pre-FX-start dates (which would be future leakage in backtests) or
+      to extend stale FX values indefinitely.
+    - `ffill_policy='ffill'`: legacy permissive behaviour — union the two
+      indices, ffill across the union, then reindex back; any remaining
+      NaNs are filled with the most-recent non-null FX. Emits a logging
+      warning because this is unsafe for backtests.
+
+    There is no all-NaN `1.0` fallback. If FX is unusable, the function raises.
 
     `from_unit` / `to_unit` are EITHER bare units ('mt', 'bbl', 'gal', 'MMBtu',
     'MWh', 'therm') OR currency-qualified ('USD/bbl', 'EUR/MWh', 'GBp/therm').
-    If a currency is supplied on `to_unit`, it is currently assumed to be USD
-    (passing anything else raises ValueError — extend in future if non-USD
-    targets are needed).
+    Currency-qualified targets are currently restricted to USD (anything else
+    raises ValueError — extend in future if non-USD targets are needed).
 
-    Examples
-    --------
-    >>> # TTF EUR/MWh -> $/MMBtu (EURUSD = 1.07)
-    >>> convert_price_with_fx(35.0, 'EUR/MWh', 'USD/MMBtu', fx=1.07)  # ~10.98
-    >>>
-    >>> # NBP GBp/therm -> $/MMBtu (GBPUSD = 1.25)
-    >>> # GBp prefix auto-detected & /100; therm->MMBtu *10; net /10
-    >>> convert_price_with_fx(80.0, 'GBp/therm', 'USD/MMBtu', fx=1.25)  # ~10.00
-    >>>
-    >>> # Time-varying FX with a pandas Series
-    >>> p = pd.Series([35.0, 36.5, 34.2], index=pd.date_range('2026', periods=3))
-    >>> fx_series = pd.Series([1.07, 1.08, 1.06], index=p.index)
-    >>> convert_price_with_fx(p, 'EUR/MWh', 'USD/MMBtu', fx=fx_series)
+    Examples:
+        # Gasoline: $/mt -> $/bbl (divide by ~8.33)
+        convert_price(100, 'mt', 'bbl', commodity='gasoline')  # ~12.0
 
-    Notes
-    -----
-    - If FX is None and the currency token is USD-equivalent, this falls back
-      to `convert_price` (pure unit-leg).
-    - The FX series is aligned to `value`'s index when both are pandas Series.
-    - Returning a numeric type (not None) is always preferred — if `fx` is
-      missing for some dates in a Series, those rows become NaN (pandas default).
+        # US gallon to barrel: $/gal -> $/bbl (multiply by 42)
+        convert_price(2.5, 'gal', 'bbl')  # ~105.0
+
+        # TTF EUR/MWh -> $/MMBtu (EURUSD = 1.07)
+        convert_price(35.0, 'EUR/MWh', 'USD/MMBtu', fx=1.07)  # ~10.98
+
+        # NBP GBp/therm -> $/MMBtu (GBPUSD = 1.25); GBp auto-detected & /100
+        convert_price(80.0, 'GBp/therm', 'USD/MMBtu', fx=1.25)  # ~10.00
+
+        # Time-varying FX with a pandas Series
+        p = pd.Series([35.0, 36.5, 34.2], index=pd.date_range('2026', periods=3))
+        fx_series = pd.Series([1.07, 1.08, 1.06], index=p.index)
+        convert_price(p, 'EUR/MWh', 'USD/MMBtu', fx=fx_series)
     """
     from_ccy, from_bare_unit = _split_currency_unit(from_unit)
     to_ccy, to_bare_unit = _split_currency_unit(to_unit)
 
-    # Validate target currency — explicit USD only for now
-    if to_ccy and to_ccy.upper() not in {"USD", "$"}:
+    # Resolve the underlying "major" currency on each side for same-base detection
+    # (e.g. USc and USD share major USD — pure scale, no FX needed).
+    from_major = _FRACTIONAL_TO_MAJOR.get(
+        from_ccy, from_ccy.upper() if from_ccy else ""
+    )
+    to_major = _FRACTIONAL_TO_MAJOR.get(to_ccy, to_ccy.upper() if to_ccy else "")
+    # Treat '$' as 'USD' for the purpose of major-currency comparison.
+    if from_major == "$":
+        from_major = "USD"
+    if to_major == "$":
+        to_major = "USD"
+
+    same_base_fractional = bool(from_ccy and to_ccy and from_major == to_major)
+
+    # Validate target currency — explicit USD only for now (only enforced when
+    # the target is currency-qualified at all AND we're not in a same-base
+    # fractional case like GBp/therm -> GBP/therm, which is a pure scale).
+    if to_ccy and to_major != "USD" and not same_base_fractional:
         raise ValueError(
-            f"convert_price_with_fx currently only supports USD/* as target; got '{to_unit}'"
+            f"convert_price currently only supports USD/* as target; got '{to_unit}'"
         )
 
     # Unit-leg conversion (no FX yet — uses commodity factors)
-    unit_converted = convert_price(value, from_bare_unit, to_bare_unit, commodity)
+    factor = convfactor(from_bare_unit, to_bare_unit, commodity)
+    if factor is None or factor == 0:
+        unit_converted = value
+    else:
+        unit_converted = value / factor
+
+    # Same-base fractional case: USc -> USD, GBp -> GBP, EUc -> EUR, JPy -> JPY.
+    # This is a pure /100 scale (or *100 in the reverse direction) — no FX
+    # needed even though the literal currency tokens differ. Handle BEFORE the
+    # `fx is None` raise below.
+    if same_base_fractional:
+        from_div = _FRACTIONAL_CURRENCY_DIVISORS.get(from_ccy, 1.0)
+        to_div = _FRACTIONAL_CURRENCY_DIVISORS.get(to_ccy, 1.0)
+        # value is in source-currency units; divide by from_div to get majors,
+        # multiply by to_div to get target-currency units.
+        return unit_converted * (to_div / from_div)
 
     # If no source currency or it's already USD, no FX leg needed
-    if not from_ccy or from_ccy.upper() in {"USD", "$"}:
+    if not from_ccy or from_major == "USD":
         return unit_converted
 
     # Apply FX leg
@@ -675,8 +769,62 @@ def convert_price_with_fx(
     fractional_divisor = _FRACTIONAL_CURRENCY_DIVISORS.get(from_ccy, 1.0)
 
     if isinstance(unit_converted, pd.Series) and isinstance(fx, pd.Series):
-        # Align FX to value index
-        fx_aligned = fx.reindex(unit_converted.index).ffill()
+        target_idx = unit_converted.index
+
+        if ffill_policy == "strict":
+            # Bounded ffill: only forward-fill within `max_staleness`. Anything
+            # uncovered (e.g. value-dates before fx.index.min() or stale past
+            # the limit) stays NaN and triggers a loud raise — no silent
+            # back-fill, no silent stale extrapolation.
+            union_idx = fx.index.union(target_idx)
+            fx_union = fx.reindex(union_idx).sort_index().ffill()
+            # Track how stale each ffilled value is and zero-out anything older
+            # than max_staleness.
+            valid_mask = ~fx.reindex(union_idx).isna()
+            last_valid_pos = (
+                pd.Series(union_idx, index=union_idx).where(valid_mask).ffill()
+            )
+            staleness = pd.Series(union_idx, index=union_idx) - last_valid_pos
+            fx_union = fx_union.where(staleness <= max_staleness)
+            fx_aligned = fx_union.reindex(target_idx)
+            if fx_aligned.isna().any():
+                missing = target_idx[fx_aligned.isna()]
+                first_missing = missing[0]
+                first_missing_str = (
+                    first_missing.date()
+                    if hasattr(first_missing, "date")
+                    else first_missing
+                )
+                raise ValueError(
+                    f"FX missing or stale (>{max_staleness}) for "
+                    f"{len(missing)} target date(s) (first: {first_missing_str}). "
+                    f"Pass ffill_policy='ffill' to fill with the last non-null "
+                    f"FX (BACKTEST FUTURE LEAKAGE RISK)."
+                )
+        elif ffill_policy == "ffill":
+            logger.warning(
+                "convert_price: ffill_policy='ffill' — pre-FX-start dates will "
+                "be back-filled with the latest FX. Future-leakage risk in "
+                "backtests; prefer 'strict' for historical research."
+            )
+            if not target_idx.isin(fx.index).all():
+                union_idx = fx.index.union(target_idx)
+                fx_aligned = fx.reindex(union_idx).ffill().reindex(target_idx)
+            else:
+                fx_aligned = fx.reindex(target_idx).ffill()
+            if fx_aligned.isna().any():
+                fx_nonnull = fx.dropna()
+                if fx_nonnull.size == 0:
+                    raise ValueError(
+                        "FX series is entirely NaN; refusing the silent "
+                        "multiply-by-1.0 fallback."
+                    )
+                fx_aligned = fx_aligned.fillna(fx_nonnull.iloc[-1])
+        else:
+            raise ValueError(
+                f"Unknown ffill_policy: {ffill_policy!r} (expected 'strict' or 'ffill')"
+            )
+
         return unit_converted * fx_aligned / fractional_divisor
 
     return unit_converted * fx / fractional_divisor
