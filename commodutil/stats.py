@@ -740,6 +740,433 @@ def detect_expiry_noise_cutoff(
     return None
 
 
+# ---------------------------------------------------------------------------
+# STL-detrended seasonal z-scores
+# ---------------------------------------------------------------------------
+
+
+@dataclass(frozen=True)
+class STLZScoreResult:
+    """
+    Result of STL-detrended seasonal z-score analysis.
+
+    The STL (Seasonal-Trend decomposition using LOESS) approach separates a
+    time series into Trend + Seasonal + Residual, then computes z-scores on
+    the residuals grouped by their within-year period.  This gives a
+    detrended, seasonally-adjusted measure of surprise.
+
+    Background & references:
+        - Cleveland et al. (1990), "STL: A Seasonal-Trend Decomposition
+          Procedure Based on Loess", Journal of Official Statistics, 6(1).
+        - risktools-dev (Python port of R's RTL package) implements a similar
+          ``chart_zscore`` using STL + per-period residual z-scores.
+          See: https://github.com/bbcho/risktools-dev
+        - statsmodels ``STL`` class:
+          https://www.statsmodels.org/stable/generated/statsmodels.tsa.seasonal.STL.html
+
+    Why this matters for commodity fundamentals:
+        Standard seasonal overlays (5-year range charts) conflate structural
+        trends with seasonal patterns.  For example, if crude stocks drew down
+        steadily over 5 years, the current level looks "low vs history" even
+        if it's *above* the trend line.  STL decomposition removes the trend
+        first, so the z-score reflects genuine deviation from seasonal norms.
+
+    When to use vs existing stats functions:
+        - ``reindex_year_point_stats`` / ``seasonal_point_stats``: best for
+          spreads, flies, and structures that don't have strong multi-year
+          trends.
+        - ``stl_seasonal_zscore``: best for level data with trends — stocks,
+          demand, refinery runs, production, any fundamentals indicator.
+    """
+
+    date: pd.Timestamp
+    value: float | None
+    trend: float | None
+    seasonal: float | None
+    residual: float | None
+    zscore: float | None
+    percentile: float | None
+    period_mean: float | None
+    period_std: float | None
+    period_label: int | None
+    n_reference: int
+
+
+def stl_seasonal_zscore(
+    s: pd.Series,
+    *,
+    freq: str | None = None,
+    period: int | None = None,
+    seasonal: int | None = None,
+    robust: bool = True,
+    asof: datetime | str | pd.Timestamp | None = None,
+    min_obs: int = 52,
+) -> STLZScoreResult:
+    """
+    Compute a detrended, seasonally-adjusted z-score using STL decomposition.
+
+    Decomposes the series into Trend + Seasonal + Residual via STL (LOESS),
+    then computes the z-score of the current residual relative to all
+    historical residuals at the same within-year period (e.g., same ISO week
+    or same month).
+
+    This is directly inspired by risktools-dev ``chart_zscore`` (which ports
+    R's RTL package), adapted to fit the commodutil conventions (returns a
+    structured result rather than a chart, uses the same sign convention as
+    ``point_stats``: positive z = above mean = richer/higher than normal).
+
+    Parameters
+    ----------
+    s : pd.Series
+        Time series with a DatetimeIndex.  Should be regularly spaced
+        (weekly or monthly works best).  Daily data is supported but will
+        be slower and may need a larger ``seasonal`` window.
+    freq : str, optional
+        Resample frequency before decomposition.  Common values:
+        ``'W-FRI'`` (weekly, Friday), ``'MS'`` (month start), ``'ME'``
+        (month end).  If None, uses the series as-is (must have a
+        recognisable frequency).
+    period : int, optional
+        Seasonal period for STL.  Auto-detected if not provided:
+        52 for weekly, 12 for monthly, 365 for daily.
+    seasonal : int, optional
+        Length of the seasonal smoother (must be odd, >= 3).
+        Auto-set if not provided: 13 for monthly, 53 for weekly,
+        7 for daily.  Larger = smoother seasonal component.
+    robust : bool, default True
+        Use robust fitting (downweights outliers in the LOESS fit).
+        Generally recommended for commodity data which has occasional
+        spikes.
+    asof : datetime-like, optional
+        Evaluation date.  Defaults to the last date in the series.
+    min_obs : int, default 52
+        Minimum observations required.  STL needs at least 2 full
+        seasonal cycles to produce meaningful results.
+
+    Returns
+    -------
+    STLZScoreResult
+        Frozen dataclass with the decomposition values at ``asof``,
+        the z-score, and the empirical percentile vs same-period
+        historical residuals.
+
+    Examples
+    --------
+    >>> from pyoilfundydb.fundamentals import FundamentalHandler
+    >>> fh = FundamentalHandler()
+    >>> stocks = fh.series(indexids=[12345], start_date=date(2018, 1, 1))
+    >>> stocks_weekly = stocks.iloc[:, 0]  # single series
+    >>> result = stl_seasonal_zscore(stocks_weekly, freq='W-FRI')
+    >>> print(f"z={result.zscore:.2f}, pct={result.percentile:.0%}")
+
+    >>> # For EIA weekly crude stocks:
+    >>> result = stl_seasonal_zscore(eia_crude_stocks, freq='W-FRI')
+    >>> if result.zscore and result.zscore > 2.0:
+    ...     print("Stocks significantly above detrended seasonal norm (bearish)")
+
+    Notes
+    -----
+    - The z-score sign convention matches ``point_stats``:
+      positive = above the period mean (for stocks: bearish; for demand: bullish).
+    - ``robust=True`` (default) differs from risktools which uses ``robust=False``.
+      Robust fitting is preferred for commodity data where occasional supply
+      disruptions or weather events create outliers that shouldn't dominate
+      the decomposition.
+    - The period label is the within-year period number: ISO week (1-53) for
+      weekly data, month (1-12) for monthly data, day-of-year for daily.
+    """
+    try:
+        from statsmodels.tsa.seasonal import STL as _STL
+    except ImportError:
+        raise ImportError(
+            "statsmodels is required for stl_seasonal_zscore. "
+            "Install it with: pip install statsmodels"
+        )
+
+    if s is None or len(s) < min_obs:
+        return STLZScoreResult(
+            date=pd.NaT,
+            value=None,
+            trend=None,
+            seasonal=None,
+            residual=None,
+            zscore=None,
+            percentile=None,
+            period_mean=None,
+            period_std=None,
+            period_label=None,
+            n_reference=0,
+        )
+
+    # Ensure Series with DatetimeIndex
+    ts = s.copy()
+    ts.index = pd.to_datetime(ts.index)
+    ts = ts.sort_index()
+
+    if freq is not None:
+        ts = ts.resample(freq).last().dropna()
+
+    if len(ts) < min_obs:
+        return STLZScoreResult(
+            date=pd.NaT,
+            value=None,
+            trend=None,
+            seasonal=None,
+            residual=None,
+            zscore=None,
+            percentile=None,
+            period_mean=None,
+            period_std=None,
+            period_label=None,
+            n_reference=0,
+        )
+
+    # Auto-detect period and seasonal smoother length
+    inferred = pd.infer_freq(ts.index)
+    if period is None:
+        if inferred and inferred.startswith("W"):
+            period = 52
+        elif inferred and inferred.startswith("M"):
+            period = 12
+        elif inferred and inferred.startswith("D"):
+            period = 365
+        else:
+            # Guess from median gap between observations
+            median_days = ts.index.to_series().diff().median().days
+            if median_days is not None:
+                if median_days <= 2:
+                    period = 365
+                elif median_days <= 10:
+                    period = 52
+                else:
+                    period = 12
+            else:
+                period = 52  # safe default for commodity data
+
+    if seasonal is None:
+        if period >= 200:
+            seasonal = 7  # daily
+        elif period >= 30:
+            seasonal = 53  # weekly
+        else:
+            seasonal = 13  # monthly
+
+    # Run STL decomposition
+    stl = _STL(
+        ts,
+        period=period,
+        seasonal=seasonal,
+        seasonal_deg=0,
+        robust=robust,
+    )
+    result = stl.fit()
+
+    resid = result.resid
+    trend = result.trend
+    seasonal_component = result.seasonal
+
+    # Assign within-year period labels for grouping residuals
+    if period >= 200:
+        period_labels = resid.index.dayofyear
+    elif period >= 30:
+        period_labels = resid.index.isocalendar().week.astype(int).values
+    else:
+        period_labels = resid.index.month
+
+    resid_df = pd.DataFrame(
+        {
+            "residual": resid,
+            "period": period_labels,
+        }
+    )
+
+    # Determine as-of date
+    asof_ts = pd.Timestamp(ts.index.max()) if asof is None else pd.Timestamp(asof)
+    # Find closest available date
+    valid_idx = resid_df.index[resid_df.index <= asof_ts]
+    if len(valid_idx) == 0:
+        return STLZScoreResult(
+            date=asof_ts,
+            value=None,
+            trend=None,
+            seasonal=None,
+            residual=None,
+            zscore=None,
+            percentile=None,
+            period_mean=None,
+            period_std=None,
+            period_label=None,
+            n_reference=0,
+        )
+
+    asof_actual = valid_idx.max()
+    current_resid = float(resid_df.loc[asof_actual, "residual"])
+    current_period = int(resid_df.loc[asof_actual, "period"])
+
+    # Get all residuals at the same period, excluding current observation
+    same_period = resid_df[
+        (resid_df["period"] == current_period) & (resid_df.index < asof_actual)
+    ]["residual"].dropna()
+
+    ref_values = same_period.tolist()
+    mean, std, z, p = point_stats(current_resid, ref_values)
+
+    return STLZScoreResult(
+        date=asof_actual,
+        value=float(ts.loc[asof_actual]) if asof_actual in ts.index else None,
+        trend=float(trend.loc[asof_actual]) if asof_actual in trend.index else None,
+        seasonal=float(seasonal_component.loc[asof_actual])
+        if asof_actual in seasonal_component.index
+        else None,
+        residual=current_resid,
+        zscore=z,
+        percentile=p,
+        period_mean=mean,
+        period_std=std,
+        period_label=current_period,
+        n_reference=len(ref_values),
+    )
+
+
+def stl_seasonal_zscore_series(
+    s: pd.Series,
+    *,
+    freq: str | None = None,
+    period: int | None = None,
+    seasonal: int | None = None,
+    robust: bool = True,
+    min_obs: int = 52,
+) -> pd.DataFrame:
+    """
+    Compute STL-detrended z-scores for every observation in a series.
+
+    Same methodology as ``stl_seasonal_zscore`` but applied to every point,
+    returning a full DataFrame suitable for charting (e.g., a z-score bar
+    chart or heatmap).
+
+    Each observation's z-score is computed against all *prior* observations
+    at the same within-year period (expanding window, no lookahead).
+
+    Parameters
+    ----------
+    s : pd.Series
+        Time series with DatetimeIndex.
+    freq, period, seasonal, robust, min_obs :
+        Same as ``stl_seasonal_zscore``.
+
+    Returns
+    -------
+    pd.DataFrame
+        Columns: value, trend, seasonal, residual, period, zscore, percentile.
+        Index: DatetimeIndex matching the (resampled) input.
+    """
+    try:
+        from statsmodels.tsa.seasonal import STL as _STL
+    except ImportError:
+        raise ImportError(
+            "statsmodels is required for stl_seasonal_zscore_series. "
+            "Install it with: pip install statsmodels"
+        )
+
+    if s is None or len(s) < (min_obs if min_obs else 52):
+        return pd.DataFrame(
+            columns=[
+                "value",
+                "trend",
+                "seasonal",
+                "residual",
+                "period",
+                "zscore",
+                "percentile",
+            ]
+        )
+
+    ts = s.copy()
+    ts.index = pd.to_datetime(ts.index)
+    ts = ts.sort_index()
+
+    if freq is not None:
+        ts = ts.resample(freq).last().dropna()
+
+    if len(ts) < (min_obs if min_obs else 52):
+        return pd.DataFrame(
+            columns=[
+                "value",
+                "trend",
+                "seasonal",
+                "residual",
+                "period",
+                "zscore",
+                "percentile",
+            ]
+        )
+
+    # Auto-detect period (same logic as stl_seasonal_zscore)
+    inferred = pd.infer_freq(ts.index)
+    if period is None:
+        if inferred and inferred.startswith("W"):
+            period = 52
+        elif inferred and inferred.startswith("M"):
+            period = 12
+        elif inferred and inferred.startswith("D"):
+            period = 365
+        else:
+            median_days = ts.index.to_series().diff().median().days
+            if median_days is not None:
+                if median_days <= 2:
+                    period = 365
+                elif median_days <= 10:
+                    period = 52
+                else:
+                    period = 12
+            else:
+                period = 52
+
+    if seasonal is None:
+        if period >= 200:
+            seasonal = 7
+        elif period >= 30:
+            seasonal = 53
+        else:
+            seasonal = 13
+
+    stl = _STL(ts, period=period, seasonal=seasonal, seasonal_deg=0, robust=robust)
+    result = stl.fit()
+
+    if period >= 200:
+        period_labels = result.resid.index.dayofyear
+    elif period >= 30:
+        period_labels = result.resid.index.isocalendar().week.astype(int).values
+    else:
+        period_labels = result.resid.index.month
+
+    out = pd.DataFrame(
+        {
+            "value": ts,
+            "trend": result.trend,
+            "seasonal": result.seasonal,
+            "residual": result.resid,
+            "period": period_labels,
+        }
+    )
+
+    # Compute expanding-window z-scores (no lookahead)
+    zscores = []
+    percentiles = []
+    for i in range(len(out)):
+        row_period = out.iloc[i]["period"]
+        current_resid = out.iloc[i]["residual"]
+        prior = out.iloc[:i]
+        ref = prior[prior["period"] == row_period]["residual"].dropna().tolist()
+        _, _, z, p = point_stats(current_resid, ref)
+        zscores.append(z)
+        percentiles.append(p)
+
+    out["zscore"] = zscores
+    out["percentile"] = percentiles
+    return out
+
+
 def trim_expiry_noise(
     df: pd.DataFrame,
     *,
