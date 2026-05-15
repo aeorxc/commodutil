@@ -60,8 +60,15 @@ def normalize_region(text: Optional[str]) -> Optional[str]:
 
     lower = text.lower()
 
-    # RBOB convention: always NY Harbor
-    if "rbob" in lower:
+    # CARBOB short-circuit: California Reformulated Blendstock for Oxygenate
+    # Blending — Los Angeles / US West Coast, NOT NY Harbor. Must run BEFORE
+    # the RBOB check so "carbob" doesn't fall through to the NYH heuristic.
+    if re.search(r"\bcarbob\b", lower):
+        return "LA"
+
+    # RBOB convention: always NY Harbor. Use word boundary so "carbob" (which
+    # has 'a' before 'rbob' — no word boundary) does not match here.
+    if re.search(r"\brbob\b", lower):
         return "NYH"
 
     # Pattern-match against REGION_PATTERNS

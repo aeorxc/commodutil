@@ -19,6 +19,21 @@ def test_normalize_region_rbob_heuristic():
     assert normalize_region("RBOB Feb25") == "NYH"
 
 
+def test_normalize_region_carbob_is_not_nyh():
+    """CARBOB is California gasoline (Los Angeles / USWC), NOT NY Harbor.
+
+    Regression guard against the prior substring bug where `"rbob" in lower`
+    matched "carbob" and mis-classified California gasoline as NYH. The fix
+    uses a word-boundary regex plus an explicit CARBOB short-circuit that
+    maps to "LA".
+    """
+    assert normalize_region("CARBOB") != "NYH"
+    assert normalize_region("CARBOB") == "LA"
+    assert normalize_region("Los Angeles CARBOB") == "LA"
+    # Sanity: plain RBOB still resolves to NYH.
+    assert normalize_region("RBOB") == "NYH"
+
+
 def test_normalize_region_rdam_substring():
     assert normalize_region("RDam fuel oil") == "Rott"
 
