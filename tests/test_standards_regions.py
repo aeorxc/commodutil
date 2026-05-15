@@ -138,7 +138,7 @@ def test_short_pattern_parity_with_curvemetadata():
 
 
 def test_facade_reexports_visible_at_top_level():
-    # Smoke check: the eager facade exposes key symbols at top level.
+    # Smoke check: the lazy facade exposes key symbols via dir().
     import commodutil
 
     names = set(dir(commodutil))
@@ -154,3 +154,53 @@ def test_facade_unknown_attribute_raises():
 
     with pytest.raises(AttributeError):
         _ = commodutil.this_symbol_does_not_exist
+
+
+def test_facade_is_lazy_bare_import_does_not_load_convfactors():
+    """Regression guard for the PEP 562 lazy facade. `import commodutil`
+    must NOT eagerly load convfactors (pint registry + Commodity
+    dataclass init). Reverting the facade to eager would trip this and
+    the cost evidence is documented in the commit message that
+    introduced the lazy pattern (~3.3s -> ~2ms speedup)."""
+    import importlib
+    import sys
+
+    # Force a clean import to measure the bare cost.
+    for mod in [
+        "commodutil",
+        "commodutil.convfactors",
+        "commodutil.dates",
+        "commodutil.forwards",
+        "commodutil.pandasutil",
+        "commodutil.transforms",
+    ]:
+        sys.modules.pop(mod, None)
+
+    importlib.import_module("commodutil")
+    assert "commodutil.convfactors" not in sys.modules, (
+        "Lazy facade is broken — `import commodutil` triggered convfactors "
+        "load. Restore the PEP 562 __getattr__ pattern in commodutil/__init__.py."
+    )
+
+
+def test_facade_lazy_load_resolves_and_caches():
+    """First access of a facade symbol loads the source submodule and
+    caches the resolved value back into globals."""
+    import importlib
+    import sys
+
+    for mod in [
+        "commodutil",
+        "commodutil.convfactors",
+    ]:
+        sys.modules.pop(mod, None)
+
+    commodutil = importlib.import_module("commodutil")
+    assert "commodutil.convfactors" not in sys.modules
+
+    fn = commodutil.convert_price  # triggers lazy load
+    assert "commodutil.convfactors" in sys.modules
+    assert callable(fn)
+
+    # Second access hits the cache (still works, same object)
+    assert commodutil.convert_price is fn

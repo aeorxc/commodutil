@@ -1,84 +1,80 @@
 """commodutil: Commodity market standards backbone.
 
 Public API for unit conversions, forward curve transforms, date utilities,
-and pandas helpers. Re-exports the most-used symbols from sub-modules so
-callers can write `from commodutil import convert_price` instead of
-`from commodutil.convfactors import convert_price`.
+and pandas helpers. Symbols are loaded lazily on first access via PEP 562
+`__getattr__` so `import commodutil` stays cheap (~10ms vs. ~3s if the
+facade eagerly imported convfactors and its pint registry).
+
+Cheap paths:
+    import commodutil                                  # near-instant
+    from commodutil.standards.regions import ...       # stdlib only
+    from commodutil.standards.currency import ...      # stdlib only
+
+Heavier paths (lazy-load their sub-module on first attribute access):
+    from commodutil import convert_price               # triggers convfactors
+    from commodutil import curyear                     # triggers dates
 """
 
-from commodutil.convfactors import (
-    ALIASES,
-    COMMODITIES,
-    Commodity,
-    FRACTIONAL_TO_MAJOR,
-    VALID_CURRENCY_TOKENS,
-    convert,
-    convert_price,
-    convfactor,
-    fractional_to_major,
-    is_fractional_currency,
-    list_commodities,
-    list_units,
-    split_currency_unit,
-)
-from commodutil.dates import (
-    curmon,
-    curmonyear,
-    curmonyear_str,
-    curyear,
-    find_year,
-    last_day_of_prev_month,
-    nextyear,
-    prevmon,
-    prevmon_str,
-    prevyear,
-    start_day_of_prev_month,
-)
-from commodutil.forwards import (
-    all_spread_combinations,
-    time_spreads,
-)
-from commodutil.pandasutil import (
-    fillna_downbet,
-    mergets,
-)
-from commodutil.transforms import (
-    seasonalize,
-)
+from __future__ import annotations
 
-__all__ = [
-    # convfactors
-    "ALIASES",
-    "COMMODITIES",
-    "Commodity",
-    "FRACTIONAL_TO_MAJOR",
-    "VALID_CURRENCY_TOKENS",
-    "convert",
-    "convert_price",
-    "convfactor",
-    "fractional_to_major",
-    "is_fractional_currency",
-    "list_commodities",
-    "list_units",
-    "split_currency_unit",
+# Map exported name -> dotted submodule path. Single source of truth for the
+# public facade. Keys in this dict are what `from commodutil import X` will
+# resolve via __getattr__ below.
+_LAZY_EXPORTS = {
+    # convfactors (heaviest -- pint registry + Commodity dataclass init)
+    "ALIASES": "commodutil.convfactors",
+    "COMMODITIES": "commodutil.convfactors",
+    "Commodity": "commodutil.convfactors",
+    "FRACTIONAL_TO_MAJOR": "commodutil.convfactors",
+    "VALID_CURRENCY_TOKENS": "commodutil.convfactors",
+    "convert": "commodutil.convfactors",
+    "convert_price": "commodutil.convfactors",
+    "convfactor": "commodutil.convfactors",
+    "fractional_to_major": "commodutil.convfactors",
+    "is_fractional_currency": "commodutil.convfactors",
+    "list_commodities": "commodutil.convfactors",
+    "list_units": "commodutil.convfactors",
+    "split_currency_unit": "commodutil.convfactors",
     # dates
-    "curmon",
-    "curmonyear",
-    "curmonyear_str",
-    "curyear",
-    "find_year",
-    "last_day_of_prev_month",
-    "nextyear",
-    "prevmon",
-    "prevmon_str",
-    "prevyear",
-    "start_day_of_prev_month",
+    "curmon": "commodutil.dates",
+    "curmonyear": "commodutil.dates",
+    "curmonyear_str": "commodutil.dates",
+    "curyear": "commodutil.dates",
+    "find_year": "commodutil.dates",
+    "last_day_of_prev_month": "commodutil.dates",
+    "nextyear": "commodutil.dates",
+    "prevmon": "commodutil.dates",
+    "prevmon_str": "commodutil.dates",
+    "prevyear": "commodutil.dates",
+    "start_day_of_prev_month": "commodutil.dates",
     # forwards
-    "all_spread_combinations",
-    "time_spreads",
+    "all_spread_combinations": "commodutil.forwards",
+    "time_spreads": "commodutil.forwards",
     # pandasutil
-    "fillna_downbet",
-    "mergets",
+    "fillna_downbet": "commodutil.pandasutil",
+    "mergets": "commodutil.pandasutil",
     # transforms
-    "seasonalize",
-]
+    "seasonalize": "commodutil.transforms",
+}
+
+__all__ = sorted(_LAZY_EXPORTS.keys())
+
+
+def __getattr__(name: str):
+    """PEP 562 lazy attribute access — loads the source submodule on first
+    use of a facade-exported symbol, caches the resolved value back into
+    the module's globals so subsequent accesses skip the dispatch.
+    """
+    module_path = _LAZY_EXPORTS.get(name)
+    if module_path is None:
+        raise AttributeError(f"module 'commodutil' has no attribute {name!r}")
+    import importlib
+
+    module = importlib.import_module(module_path)
+    value = getattr(module, name)
+    globals()[name] = value
+    return value
+
+
+def __dir__():
+    return sorted(set(globals()) | set(_LAZY_EXPORTS))
