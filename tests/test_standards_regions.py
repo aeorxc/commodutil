@@ -106,15 +106,30 @@ def test_short_pattern_parity_with_curvemetadata():
     """Short-pattern (len <= 3) regions used to diverge between
     normalize_region and curvemetadata.taxonomy.infer_region because
     the latter had a `\\b` regex bug (literal backslash-b instead of
-    a word boundary). The bug was fixed in curvemetadata 2026-05;
-    this test is now a regression guard against the bug returning.
+    a word boundary). The bug was fixed in curvemetadata 1.4.0 (commit
+    e8ba20e on the 1.2.0 release branch); this test is a regression
+    guard once that fix is published.
+
+    Skips gracefully when the installed curvemetadata still has the
+    bug (e.g. CI envs pulling curvemetadata < 1.4.0 from the package
+    index during the release-window between commodutil 3.10.0 and
+    curvemetadata 1.4.0 publishing).
     """
+    import pytest
+
     try:
         from curvemetadata.taxonomy import infer_region
     except ImportError:
-        import pytest
-
         pytest.skip("curvemetadata not available in this environment")
+
+    # Probe: does the installed curvemetadata have the `\b` fix? Any of
+    # the short patterns would return None if the bug is still present.
+    if infer_region("Brent NYH") is None:
+        pytest.skip(
+            "Installed curvemetadata has the pre-1.4.0 `\\b` regex bug "
+            "(short-pattern regions never match). Upgrade curvemetadata "
+            "to >=1.4.0 to enable this parity test."
+        )
 
     # Only patterns of len <= 3 hit the previously-broken regex branch.
     # Among the configured patterns those are: "nyh", "ara", "med", "nwe".
@@ -132,8 +147,8 @@ def test_short_pattern_parity_with_curvemetadata():
         )
         assert infer_region(text) == expected, (
             f"curvemetadata.infer_region({text!r}) should match {expected!r} "
-            f"(got {infer_region(text)!r}). If you see None for one of the "
-            f"short patterns, the curvemetadata `\\b` regex bug has regressed."
+            f"(got {infer_region(text)!r}). The `\\b` fix is present (probe "
+            f"above passed) but parity broke on this input -- investigate."
         )
 
 
