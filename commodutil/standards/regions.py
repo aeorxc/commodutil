@@ -29,6 +29,8 @@ REGION_PATTERNS = [
     ("ARA", ["ara"]),
     ("Med", ["mediterranean", "med"]),
     ("Sing", ["singapore", "sing"]),
+    ("MEG", ["meg", "middle east gulf", "arabian gulf", "persian gulf"]),
+    ("Japan", ["japan"]),
 ]
 
 # Canonical region codes as frozenset for fast membership checks
@@ -189,36 +191,9 @@ CRUDE_GRADE_REGIONS = {
 VALID_CRUDE_GRADE_REGIONS = frozenset(CRUDE_GRADE_REGIONS.keys())
 
 
-# ---- Product hubs ----
-#
-# Canonical refining / delivery hubs for refined-product pricing. Distinct
-# vocabulary from CRUDE_GRADE_REGIONS (producer-side grade origins) — must
-# stay siblings, not unified. Casing matches REGION_PATTERNS where the
-# hub also appears as a normalised region code ("Med", "Sing") so a hub
-# string can be checked directly against VALID_REGIONS where they overlap.
-PRODUCT_HUBS = frozenset(
-    {
-        "NYH",  # New York Harbor
-        "USGC",  # US Gulf Coast
-        "LA",  # Los Angeles (US West Coast)
-        "NWE",  # Northwest Europe
-        "ARA",  # Amsterdam-Rotterdam-Antwerp
-        "Med",  # Mediterranean
-        "Sing",  # Singapore
-        "MEG",  # Middle East Gulf
-        "Japan",  # Japan
-    }
-)
-
-
 def is_crude_grade_region(key: str) -> bool:
     """Return True if key is a canonical crude grade-region key."""
     return key in VALID_CRUDE_GRADE_REGIONS
-
-
-def is_product_hub(code: str) -> bool:
-    """Return True if code is a canonical product hub."""
-    return code in PRODUCT_HUBS
 
 
 __all__ = [
@@ -229,6 +204,4 @@ __all__ = [
     "CRUDE_GRADE_REGIONS",
     "VALID_CRUDE_GRADE_REGIONS",
     "is_crude_grade_region",
-    "PRODUCT_HUBS",
-    "is_product_hub",
 ]

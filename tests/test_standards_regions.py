@@ -299,78 +299,57 @@ def test_is_crude_grade_region():
     assert is_crude_grade_region("north_sea") is True
     assert is_crude_grade_region("waf") is True
     assert is_crude_grade_region("not_a_region") is False
-    assert is_crude_grade_region("NYH") is False  # product hub, not grade region
+    assert (
+        is_crude_grade_region("NYH") is False
+    )  # canonical region code, not a grade region
 
 
-# ---- PRODUCT_HUBS tests ----
+# ---- MEG / Japan additions ----
 
 
-def test_product_hubs_canonical_set():
-    from commodutil.standards.regions import PRODUCT_HUBS
-
-    assert PRODUCT_HUBS == frozenset(
-        {
-            "NYH",
-            "USGC",
-            "LA",
-            "NWE",
-            "ARA",
-            "Med",
-            "Sing",
-            "MEG",
-            "Japan",
-        }
-    )
+def test_meg_is_valid_region():
+    assert is_valid_region("MEG") is True
 
 
-def test_is_product_hub():
-    from commodutil.standards.regions import is_product_hub
-
-    assert is_product_hub("NWE") is True
-    assert is_product_hub("USGC") is True
-    assert is_product_hub("Japan") is True
-    assert is_product_hub("not_a_hub") is False
-    assert is_product_hub("north_sea") is False  # grade region, not a hub
+def test_japan_is_valid_region():
+    assert is_valid_region("Japan") is True
 
 
-def test_product_hubs_subset_of_valid_regions_or_new():
-    """PRODUCT_HUBS that overlap with REGION_PATTERNS codes must match
-    casing exactly (so a hub string round-trips through normalize_region /
-    is_valid_region). Hubs new to commodutil (MEG, Japan) are allowed."""
-    from commodutil.standards.regions import PRODUCT_HUBS, VALID_REGIONS
+def test_normalize_region_meg_aliases():
+    assert normalize_region("MEG fuel oil") == "MEG"
+    assert normalize_region("Middle East Gulf naphtha") == "MEG"
+    assert normalize_region("Arabian Gulf gasoil") == "MEG"
+    assert normalize_region("Persian Gulf cargo") == "MEG"
 
-    new_hubs = {"MEG", "Japan"}
-    overlapping = PRODUCT_HUBS - new_hubs
-    assert overlapping.issubset(VALID_REGIONS), (
-        f"Hubs not in VALID_REGIONS (casing drift?): {overlapping - VALID_REGIONS}"
-    )
+
+def test_normalize_region_japan():
+    assert normalize_region("Japan gasoil") == "Japan"
 
 
 # ---- Sibling-vocab invariant ----
 
 
-def test_crude_grade_regions_and_product_hubs_do_not_overlap():
-    """The two vocabularies describe different things and MUST stay disjoint:
-    CRUDE_GRADE_REGIONS keys are producer-side grade groupings (snake_case,
-    e.g. 'north_sea'); PRODUCT_HUBS are delivery / refining hubs (acronym
-    or proper-noun, e.g. 'NWE'). Any overlap would be a vocabulary bug."""
-    from commodutil.standards.regions import (
-        PRODUCT_HUBS,
-        VALID_CRUDE_GRADE_REGIONS,
-    )
+def test_crude_grade_regions_and_valid_regions_do_not_overlap():
+    """CRUDE_GRADE_REGIONS (producer-side grade groupings, snake_case e.g.
+    'north_sea') and VALID_REGIONS (canonical delivery / pricing region
+    codes, e.g. 'NWE') describe different things and MUST stay disjoint.
+    Any overlap would be a vocabulary bug."""
+    from commodutil.standards.regions import VALID_CRUDE_GRADE_REGIONS
 
-    assert PRODUCT_HUBS.isdisjoint(VALID_CRUDE_GRADE_REGIONS)
+    assert VALID_REGIONS.isdisjoint(VALID_CRUDE_GRADE_REGIONS)
 
 
 def test_new_vocabs_exposed_via_standards_facade():
     from commodutil.standards import (
         CRUDE_GRADE_REGIONS,
-        PRODUCT_HUBS,
+        VALID_REGIONS,
         is_crude_grade_region,
-        is_product_hub,
+        is_valid_region,
     )
 
     assert "north_sea" in CRUDE_GRADE_REGIONS
-    assert "NWE" in PRODUCT_HUBS
+    assert "NWE" in VALID_REGIONS
+    assert "MEG" in VALID_REGIONS
+    assert "Japan" in VALID_REGIONS
     assert is_crude_grade_region("waf")
-    assert is_product_hub("USGC")
+    assert is_valid_region("USGC")
