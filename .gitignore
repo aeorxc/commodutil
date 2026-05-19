@@ -3,3 +3,25 @@
 # Local IDE / agent state (should not be committed)
 .idea/
 .system/
+
+### Distribution / packaging
+build/
+dist/
+*.egg-info/
+.worktrees/
+
+### Byte-compiled
+__pycache__/
+*.py[cod]
+*.so
+
+### Test / coverage
+.pytest_cache/
+.mypy_cache/
+.coverage
+coverage.xml
+
+### IDE
+.vscode/
+
+scripts/

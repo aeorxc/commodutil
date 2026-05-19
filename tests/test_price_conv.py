@@ -312,7 +312,9 @@ def test_bug3_unknown_ffill_policy_raises():
 def test_bug4_split_currency_unit_does_not_treat_bbl_as_currency():
     """Bug 4: `bbl/day` is a bare rate unit, NOT a currency-qualified price.
     The parser must return ('', 'bbl/day'), not ('bbl', 'day')."""
-    from commodutil.convfactors import _split_currency_unit
+    from commodutil.standards.currency import (
+        split_currency_unit as _split_currency_unit,
+    )
 
     assert _split_currency_unit("bbl/day") == ("", "bbl/day")
     assert _split_currency_unit("kt/month") == ("", "kt/month")

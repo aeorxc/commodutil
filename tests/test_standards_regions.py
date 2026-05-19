@@ -234,3 +234,122 @@ def test_facade_lazy_load_resolves_and_caches():
 
     # Second access hits the cache (still works, same object)
     assert commodutil.convert_price is fn
+
+
+# ---- CRUDE_GRADE_REGIONS tests ----
+
+
+def test_crude_grade_regions_keys_match_source_file():
+    """CRUDE_GRADE_REGIONS keys are byte-identical to the source layout in
+    oilpricingcharts.symbols_config_crudediffs. Re-keying would break the
+    follow-up migration."""
+    from commodutil.standards.regions import CRUDE_GRADE_REGIONS
+
+    expected = {
+        "north_sea",
+        "waf",
+        "nafrica",
+        "russian",
+        "us_midcon",
+        "us_texas",
+        "us_louisiana",
+        "canadian",
+        "latam_wti",
+        "asia_pacific",
+        "middle_east",
+    }
+    assert set(CRUDE_GRADE_REGIONS.keys()) == expected
+
+
+def test_crude_grade_regions_values_are_non_empty_tuples():
+    from commodutil.standards.regions import CRUDE_GRADE_REGIONS
+
+    for key, grades in CRUDE_GRADE_REGIONS.items():
+        assert isinstance(grades, tuple), f"{key} must be a tuple"
+        assert grades, f"{key} must have at least one grade"
+        for g in grades:
+            assert isinstance(g, str) and g, (
+                f"{key}: grade {g!r} must be a non-empty str"
+            )
+
+
+def test_crude_grade_regions_known_grades_present():
+    """Spot-check a few well-known grades land in the right region."""
+    from commodutil.standards.regions import CRUDE_GRADE_REGIONS
+
+    assert "Forties" in CRUDE_GRADE_REGIONS["north_sea"]
+    assert "Bonny Light" in CRUDE_GRADE_REGIONS["waf"]
+    assert "ESPO" in CRUDE_GRADE_REGIONS["russian"]
+    assert "Dubai" in CRUDE_GRADE_REGIONS["middle_east"]
+    assert "Tapis" in CRUDE_GRADE_REGIONS["asia_pacific"]
+
+
+def test_valid_crude_grade_regions_matches_dict():
+    from commodutil.standards.regions import (
+        CRUDE_GRADE_REGIONS,
+        VALID_CRUDE_GRADE_REGIONS,
+    )
+
+    assert VALID_CRUDE_GRADE_REGIONS == frozenset(CRUDE_GRADE_REGIONS.keys())
+
+
+def test_is_crude_grade_region():
+    from commodutil.standards.regions import is_crude_grade_region
+
+    assert is_crude_grade_region("north_sea") is True
+    assert is_crude_grade_region("waf") is True
+    assert is_crude_grade_region("not_a_region") is False
+    assert (
+        is_crude_grade_region("NYH") is False
+    )  # canonical region code, not a grade region
+
+
+# ---- MEG / Japan additions ----
+
+
+def test_meg_is_valid_region():
+    assert is_valid_region("MEG") is True
+
+
+def test_japan_is_valid_region():
+    assert is_valid_region("Japan") is True
+
+
+def test_normalize_region_meg_aliases():
+    assert normalize_region("MEG fuel oil") == "MEG"
+    assert normalize_region("Middle East Gulf naphtha") == "MEG"
+    assert normalize_region("Arabian Gulf gasoil") == "MEG"
+    assert normalize_region("Persian Gulf cargo") == "MEG"
+
+
+def test_normalize_region_japan():
+    assert normalize_region("Japan gasoil") == "Japan"
+
+
+# ---- Sibling-vocab invariant ----
+
+
+def test_crude_grade_regions_and_valid_regions_do_not_overlap():
+    """CRUDE_GRADE_REGIONS (producer-side grade groupings, snake_case e.g.
+    'north_sea') and VALID_REGIONS (canonical delivery / pricing region
+    codes, e.g. 'NWE') describe different things and MUST stay disjoint.
+    Any overlap would be a vocabulary bug."""
+    from commodutil.standards.regions import VALID_CRUDE_GRADE_REGIONS
+
+    assert VALID_REGIONS.isdisjoint(VALID_CRUDE_GRADE_REGIONS)
+
+
+def test_new_vocabs_exposed_via_standards_facade():
+    from commodutil.standards import (
+        CRUDE_GRADE_REGIONS,
+        VALID_REGIONS,
+        is_crude_grade_region,
+        is_valid_region,
+    )
+
+    assert "north_sea" in CRUDE_GRADE_REGIONS
+    assert "NWE" in VALID_REGIONS
+    assert "MEG" in VALID_REGIONS
+    assert "Japan" in VALID_REGIONS
+    assert is_crude_grade_region("waf")
+    assert is_valid_region("USGC")

@@ -29,6 +29,8 @@ REGION_PATTERNS = [
     ("ARA", ["ara"]),
     ("Med", ["mediterranean", "med"]),
     ("Sing", ["singapore", "sing"]),
+    ("MEG", ["meg", "middle east gulf", "arabian gulf", "persian gulf"]),
+    ("Japan", ["japan"]),
 ]
 
 # Canonical region codes as frozenset for fast membership checks
@@ -97,9 +99,109 @@ def is_valid_region(code: str) -> bool:
     return code in VALID_REGIONS
 
 
+# ---- Crude grade regions ----
+#
+# Producer-region groupings for crude grades, used by crude-differentials
+# charts. Lifted from oilpricingcharts.symbols_config_crudediffs (keys kept
+# byte-identical to the source so chart configs can switch over without
+# re-mapping). Values are ordered tuples of display grade names — they are
+# NOT pricing symbols and do NOT carry vendor (Platts/Argus) IDs. Symbol
+# resolution stays in the chart-config layer.
+CRUDE_GRADE_REGIONS = {
+    "north_sea": (
+        "Forties",
+        "Oseberg",
+        "Ekofisk",
+        "Troll",
+        "Johan Sverdrup",
+        "FOB N Sea WTI Midland",
+    ),
+    "waf": (
+        "Bonny Light",
+        "Forcados",
+        "Qua Iboe",
+        "Cabinda",
+        "Doba",
+    ),
+    "nafrica": (
+        "Nile Blend",
+        "Dar Blend",
+        "Es Sider",
+    ),
+    "russian": (
+        "Urals Rott",
+        "Urals Med",
+        "ESPO",
+        "Siberian Light",
+        "Sokol",
+    ),
+    "us_midcon": (
+        "Bakken Clearbook",
+        "Light Sweet Guernsey",
+        "Denver Julesburg Light",
+    ),
+    "us_texas": (
+        "WTI Houston",
+        "WTI Midland",
+        "WTS",
+        "Southern Green Canyon",
+        "WCS Houston",
+    ),
+    "us_louisiana": (
+        "LLS",
+        "HLS",
+        "Thunder Horse",
+        "Poseidon",
+        "Mars",
+    ),
+    "canadian": (
+        "WCS",
+        "CDB",
+        "AWB",
+        "CLK",
+        "MSW",
+        "Syn",
+    ),
+    "latam_wti": (
+        "Vasconia",
+        "Castilla",
+        "Maya",
+        "Liza",
+        "Buzios",
+        "Mero",
+        "Tupi",
+        "Unity Gold",
+    ),
+    "asia_pacific": (
+        "Tapis",
+        "Duri",
+        "Vincent",
+    ),
+    "middle_east": (
+        "Dubai",
+        "Oman",
+        "Murban",
+        "Al Shaheen",
+        "Upper Zakum",
+        "Qatar Land",
+        "Qatar Marine",
+    ),
+}
+
+VALID_CRUDE_GRADE_REGIONS = frozenset(CRUDE_GRADE_REGIONS.keys())
+
+
+def is_crude_grade_region(key: str) -> bool:
+    """Return True if key is a canonical crude grade-region key."""
+    return key in VALID_CRUDE_GRADE_REGIONS
+
+
 __all__ = [
     "REGION_PATTERNS",
     "VALID_REGIONS",
     "normalize_region",
     "is_valid_region",
+    "CRUDE_GRADE_REGIONS",
+    "VALID_CRUDE_GRADE_REGIONS",
+    "is_crude_grade_region",
 ]

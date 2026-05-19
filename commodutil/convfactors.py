@@ -11,6 +11,8 @@ from dataclasses import dataclass
 import pandas as pd
 from functools import lru_cache
 
+from commodutil.standards.units import to_pint_token as _to_pint_token
+
 logger = logging.getLogger(__name__)
 
 # Initialize pint with custom definitions
@@ -468,37 +470,13 @@ class CommodityConverter:
             return False
 
     def _normalize_unit(self, unit: str) -> str:
-        """Normalize common aliases and fix encoding issues.
+        """Normalize a unit string into a pint-parseable token.
 
-        - Map 'm��'/'m³'/'m**3'/'cubic_meter' -> 'm^3'
-        - Map energy aliases 'BTU' -> 'Btu', 'MMBTU' -> 'MMBtu'
-        - Trim whitespace
+        Thin shim around :func:`commodutil.standards.units.to_pint_token`.
+        Kept as a bound method because it has six internal call sites and
+        is exercised by the public test surface (``converter._normalize_unit``).
         """
-        if unit is None:
-            return unit
-        u = unit.strip()
-        # Fix cubic meter notations and encoding issues
-        replacements = {
-            "m��": "m^3",
-            "m³": "m^3",
-            "m**3": "m^3",
-            "cubic_meter": "m^3",
-            "CUBIC_METER": "m^3",
-        }
-        for bad, good in replacements.items():
-            u = u.replace(bad, good)
-
-        # Additional robust normalizations using ASCII-only fallbacks
-        if u.lower() == "m3":
-            u = "m^3"
-        # Handle rate-style variants like 'm3/day' or 'M3/day'
-        u = u.replace("m3/", "m^3/").replace("M3/", "m^3/")
-        # Energy unit common uppercase forms
-        if u == "BTU":
-            u = "Btu"
-        if u == "MMBTU":
-            u = "MMBtu"
-        return u
+        return _to_pint_token(unit)
 
     @property
     def available_commodities(self) -> list:
