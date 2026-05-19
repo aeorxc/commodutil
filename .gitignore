@@ -8,6 +8,7 @@
 build/
 dist/
 *.egg-info/
+.worktrees/
 
 ### Byte-compiled
 __pycache__/
