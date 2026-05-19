@@ -97,9 +97,138 @@ def is_valid_region(code: str) -> bool:
     return code in VALID_REGIONS
 
 
+# ---- Crude grade regions ----
+#
+# Producer-region groupings for crude grades, used by crude-differentials
+# charts. Lifted from oilpricingcharts.symbols_config_crudediffs (keys kept
+# byte-identical to the source so chart configs can switch over without
+# re-mapping). Values are ordered tuples of display grade names — they are
+# NOT pricing symbols and do NOT carry vendor (Platts/Argus) IDs. Symbol
+# resolution stays in the chart-config layer.
+CRUDE_GRADE_REGIONS = {
+    "north_sea": (
+        "Forties",
+        "Oseberg",
+        "Ekofisk",
+        "Troll",
+        "Johan Sverdrup",
+        "FOB N Sea WTI Midland",
+    ),
+    "waf": (
+        "Bonny Light",
+        "Forcados",
+        "Qua Iboe",
+        "Cabinda",
+        "Doba",
+    ),
+    "nafrica": (
+        "Nile Blend",
+        "Dar Blend",
+        "Es Sider",
+    ),
+    "russian": (
+        "Urals Rott",
+        "Urals Med",
+        "ESPO",
+        "Siberian Light",
+        "Sokol",
+    ),
+    "us_midcon": (
+        "Bakken Clearbook",
+        "Light Sweet Guernsey",
+        "Denver Julesburg Light",
+    ),
+    "us_texas": (
+        "WTI Houston",
+        "WTI Midland",
+        "WTS",
+        "Southern Green Canyon",
+        "WCS Houston",
+    ),
+    "us_louisiana": (
+        "LLS",
+        "HLS",
+        "Thunder Horse",
+        "Poseidon",
+        "Mars",
+    ),
+    "canadian": (
+        "WCS",
+        "CDB",
+        "AWB",
+        "CLK",
+        "MSW",
+        "Syn",
+    ),
+    "latam_wti": (
+        "Vasconia",
+        "Castilla",
+        "Maya",
+        "Liza",
+        "Buzios",
+        "Mero",
+        "Tupi",
+        "Unity Gold",
+    ),
+    "asia_pacific": (
+        "Tapis",
+        "Duri",
+        "Vincent",
+    ),
+    "middle_east": (
+        "Dubai",
+        "Oman",
+        "Murban",
+        "Al Shaheen",
+        "Upper Zakum",
+        "Qatar Land",
+        "Qatar Marine",
+    ),
+}
+
+VALID_CRUDE_GRADE_REGIONS = frozenset(CRUDE_GRADE_REGIONS.keys())
+
+
+# ---- Product hubs ----
+#
+# Canonical refining / delivery hubs for refined-product pricing. Distinct
+# vocabulary from CRUDE_GRADE_REGIONS (producer-side grade origins) — must
+# stay siblings, not unified. Casing matches REGION_PATTERNS where the
+# hub also appears as a normalised region code ("Med", "Sing") so a hub
+# string can be checked directly against VALID_REGIONS where they overlap.
+PRODUCT_HUBS = frozenset(
+    {
+        "NYH",  # New York Harbor
+        "USGC",  # US Gulf Coast
+        "LA",  # Los Angeles (US West Coast)
+        "NWE",  # Northwest Europe
+        "ARA",  # Amsterdam-Rotterdam-Antwerp
+        "Med",  # Mediterranean
+        "Sing",  # Singapore
+        "MEG",  # Middle East Gulf
+        "Japan",  # Japan
+    }
+)
+
+
+def is_crude_grade_region(key: str) -> bool:
+    """Return True if key is a canonical crude grade-region key."""
+    return key in VALID_CRUDE_GRADE_REGIONS
+
+
+def is_product_hub(code: str) -> bool:
+    """Return True if code is a canonical product hub."""
+    return code in PRODUCT_HUBS
+
+
 __all__ = [
     "REGION_PATTERNS",
     "VALID_REGIONS",
     "normalize_region",
     "is_valid_region",
+    "CRUDE_GRADE_REGIONS",
+    "VALID_CRUDE_GRADE_REGIONS",
+    "is_crude_grade_region",
+    "PRODUCT_HUBS",
+    "is_product_hub",
 ]

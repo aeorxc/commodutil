@@ -29,8 +29,13 @@ from commodutil.standards.currency import (
     to_symbol,
 )
 from commodutil.standards.regions import (
+    CRUDE_GRADE_REGIONS,
+    PRODUCT_HUBS,
     REGION_PATTERNS,
+    VALID_CRUDE_GRADE_REGIONS,
     VALID_REGIONS,
+    is_crude_grade_region,
+    is_product_hub,
     is_valid_region,
     normalize_region,
 )
@@ -61,8 +66,13 @@ __all__ = [
     "split_currency_unit",
     "to_symbol",
     # regions
+    "CRUDE_GRADE_REGIONS",
+    "PRODUCT_HUBS",
     "REGION_PATTERNS",
+    "VALID_CRUDE_GRADE_REGIONS",
     "VALID_REGIONS",
+    "is_crude_grade_region",
+    "is_product_hub",
     "is_valid_region",
     "normalize_region",
     # units
