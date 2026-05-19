@@ -37,6 +37,7 @@ from commodutil.standards.regions import (
 from commodutil.standards.units import (
     UNIT_MAP,
     default_unit_for_commodity,
+    to_pint_token,
 )
 
 __all__ = [
@@ -67,4 +68,5 @@ __all__ = [
     # units
     "UNIT_MAP",
     "default_unit_for_commodity",
+    "to_pint_token",
 ]

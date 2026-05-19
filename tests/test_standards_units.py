@@ -69,6 +69,86 @@ def test_unit_map_canonical_set_only_three():
     assert set(UNIT_MAP.values()) == {"bbl", "gal", "mt"}
 
 
+# ---- to_pint_token tests ----
+
+
+def test_to_pint_token_cubic_meter_variants():
+    from commodutil.standards.units import to_pint_token
+
+    assert to_pint_token("m³") == "m^3"
+    assert to_pint_token("m**3") == "m^3"
+    assert to_pint_token("cubic_meter") == "m^3"
+    assert to_pint_token("CUBIC_METER") == "m^3"
+    assert to_pint_token("m3") == "m^3"
+    assert to_pint_token("M3") == "m^3"
+
+
+def test_to_pint_token_cubic_meter_rate_forms():
+    from commodutil.standards.units import to_pint_token
+
+    assert to_pint_token("m3/day") == "m^3/day"
+    assert to_pint_token("M3/day") == "m^3/day"
+
+
+def test_to_pint_token_energy_casing():
+    from commodutil.standards.units import to_pint_token
+
+    assert to_pint_token("BTU") == "Btu"
+    assert to_pint_token("MMBTU") == "MMBtu"
+
+
+def test_to_pint_token_whitespace_stripped():
+    from commodutil.standards.units import to_pint_token
+
+    assert to_pint_token("  bbl  ") == "bbl"
+    assert to_pint_token("\tMMBTU\n") == "MMBtu"
+
+
+def test_to_pint_token_none_passthrough():
+    from commodutil.standards.units import to_pint_token
+
+    assert to_pint_token(None) is None
+
+
+def test_to_pint_token_passthrough_for_unknown_tokens():
+    from commodutil.standards.units import to_pint_token
+
+    # Tokens outside the rule table pass through unchanged.
+    assert to_pint_token("bbl") == "bbl"
+    assert to_pint_token("kg") == "kg"
+    assert to_pint_token("GJ") == "GJ"
+    # Aliases handled by pint registration (not here)
+    assert to_pint_token("barrel") == "barrel"
+    assert to_pint_token("tonne") == "tonne"
+
+
+def test_to_pint_token_exposed_via_standards_facade():
+    """to_pint_token must be importable from commodutil.standards."""
+    from commodutil.standards import to_pint_token
+
+    assert to_pint_token("m³") == "m^3"
+
+
+def test_converter_normalize_unit_delegates_to_to_pint_token():
+    """CommodityConverter._normalize_unit is a thin shim around the
+    standalone normaliser. Regression guard against accidental drift."""
+    from commodutil.convfactors import converter
+    from commodutil.standards.units import to_pint_token
+
+    for sample in [
+        "m³",
+        "m**3",
+        "cubic_meter",
+        "CUBIC_METER",
+        "BTU",
+        "MMBTU",
+        "  bbl  ",
+        "m3/day",
+        None,
+    ]:
+        assert converter._normalize_unit(sample) == to_pint_token(sample)
+
+
 def test_unit_map_parity_with_curvemetadata():
     """Regression guard: UNIT_MAP must match curvemetadata's previous local
     copy byte-for-byte until curvemetadata's re-export PR lands. Skipped if
