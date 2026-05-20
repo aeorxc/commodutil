@@ -210,10 +210,36 @@ def to_symbol(code: Optional[str]) -> str:
     return _SYMBOLS.get(str(code), str(code))
 
 
+# ---- Vendor-spec free-text -> canonical-token map ------------------------
+#
+# Maps lowercase free-form currency phrases (as they appear in CME/ICE
+# contract spec descriptions) to canonical ISO 4217 codes. Used by
+# vendor-spec parsers (e.g. curvemetadata.ice_util.map_currency) to lift
+# strings like "US Dollars and Cents" -> "USD". Keys are matched
+# case-insensitively at call time — callers should lowercase input.
+#
+# Lifted from curvemetadata.common_maps so commodutil owns the single
+# source of truth for currency-token vocabulary.
+CURRENCY_MAP = {
+    "us dollars and cents": "USD",
+    "u.s. dollars and cents": "USD",
+    "us dollars": "USD",
+    "u.s. dollars": "USD",
+    "usd": "USD",
+    "euros": "EUR",
+    "euro": "EUR",
+    "pounds sterling": "GBP",
+    "british pounds": "GBP",
+    "canadian dollars": "CAD",
+    "cad": "CAD",
+}
+
+
 __all__ = [
     "VALID_CURRENCY_TOKENS",
     "FRACTIONAL_TO_MAJOR",
     "FRACTIONAL_CURRENCY_DIVISORS",
+    "CURRENCY_MAP",
     "is_fractional_currency",
     "fractional_to_major",
     "split_currency_unit",

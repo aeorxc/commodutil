@@ -1,6 +1,7 @@
 """Tests for commodutil.standards.currency."""
 
 from commodutil.standards.currency import (
+    CURRENCY_MAP,
     FRACTIONAL_CURRENCY_DIVISORS,
     FRACTIONAL_TO_MAJOR,
     VALID_CURRENCY_TOKENS,
@@ -109,6 +110,28 @@ def test_vocab_constants_present():
     assert "$" in VALID_CURRENCY_TOKENS
     assert FRACTIONAL_TO_MAJOR["GBp"] == "GBP"
     assert FRACTIONAL_CURRENCY_DIVISORS["USc"] == 100.0
+
+
+# ---- CURRENCY_MAP (vendor-spec free-text -> ISO 4217 token) -------------
+
+
+def test_currency_map_keys_lowercase():
+    # Vendor parsers lowercase input before lookup; all keys must be lowercase.
+    for key in CURRENCY_MAP:
+        assert key == key.lower(), f"CURRENCY_MAP key {key!r} is not lowercase"
+
+
+def test_currency_map_values_are_iso_codes():
+    # All values are canonical 3-letter ISO 4217 codes.
+    for code in CURRENCY_MAP.values():
+        assert len(code) == 3 and code.isupper(), f"Bad currency token {code!r}"
+
+
+def test_currency_map_known_entries():
+    assert CURRENCY_MAP["us dollars and cents"] == "USD"
+    assert CURRENCY_MAP["euros"] == "EUR"
+    assert CURRENCY_MAP["pounds sterling"] == "GBP"
+    assert CURRENCY_MAP["canadian dollars"] == "CAD"
 
 
 # ---- Legacy import-path regression tests ----

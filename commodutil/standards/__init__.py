@@ -12,6 +12,9 @@ from commodutil.standards.analysis_types import (
 from commodutil.standards.commodities import (
     COMMODITY_CONVERSION_MAP,
     COMMODITY_KEYWORDS,
+    infer_commodity_and_group,
+    infer_commodity_from_exchange_symbol,
+    normalize_commodity_for_conversion,
 )
 from commodutil.standards.commodity_groups import (
     COMMODITY_GROUPS,
@@ -19,6 +22,7 @@ from commodutil.standards.commodity_groups import (
     is_valid_commodity_group,
 )
 from commodutil.standards.currency import (
+    CURRENCY_MAP,
     FRACTIONAL_CURRENCY_DIVISORS,
     FRACTIONAL_TO_MAJOR,
     VALID_CURRENCY_TOKENS,
@@ -50,11 +54,15 @@ __all__ = [
     # commodities
     "COMMODITY_CONVERSION_MAP",
     "COMMODITY_KEYWORDS",
+    "infer_commodity_and_group",
+    "infer_commodity_from_exchange_symbol",
+    "normalize_commodity_for_conversion",
     # commodity_groups
     "COMMODITY_GROUPS",
     "VALID_COMMODITY_GROUPS",
     "is_valid_commodity_group",
     # currency
+    "CURRENCY_MAP",
     "FRACTIONAL_CURRENCY_DIVISORS",
     "FRACTIONAL_TO_MAJOR",
     "VALID_CURRENCY_TOKENS",
