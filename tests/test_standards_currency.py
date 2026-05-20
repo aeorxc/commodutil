@@ -134,22 +134,33 @@ def test_currency_map_known_entries():
     assert CURRENCY_MAP["canadian dollars"] == "CAD"
 
 
-# ---- Legacy import-path regression tests ----
+# ---- Shim-removal regression guard ----
 
 
-def test_legacy_imports_from_convfactors():
-    """Downstream callers must still be able to import the moved names from
-    commodutil.convfactors (backwards-compat re-exports)."""
-    from commodutil.convfactors import (
-        FRACTIONAL_TO_MAJOR as cf_FRACTIONAL_TO_MAJOR,
-        VALID_CURRENCY_TOKENS as cf_VALID_CURRENCY_TOKENS,
-        fractional_to_major as cf_fractional_to_major,
-        is_fractional_currency as cf_is_fractional_currency,
-        split_currency_unit as cf_split_currency_unit,
+def test_legacy_convfactors_currency_shims_are_gone():
+    """The 4.0 standards consolidation kept temporary back-compat re-exports
+    of the currency vocabulary on commodutil.convfactors. They were removed
+    in 4.1 after an in-repo consumer sweep across the stack confirmed zero
+    live downstream callers. This test is a positive guard against
+    accidental re-introduction of the shims -- importing any of these names
+    from commodutil.convfactors must fail. The canonical home is
+    commodutil.standards.currency.
+    """
+    import pytest
+
+    import commodutil.convfactors as cf
+
+    legacy_names = (
+        "VALID_CURRENCY_TOKENS",
+        "FRACTIONAL_TO_MAJOR",
+        "fractional_to_major",
+        "is_fractional_currency",
+        "split_currency_unit",
+        "_split_currency_unit",
+        "_FRACTIONAL_CURRENCY_DIVISORS",
+        "_FRACTIONAL_TO_MAJOR",
+        "_VALID_CURRENCY_TOKENS",
     )
-
-    assert cf_VALID_CURRENCY_TOKENS is VALID_CURRENCY_TOKENS
-    assert cf_FRACTIONAL_TO_MAJOR is FRACTIONAL_TO_MAJOR
-    assert cf_is_fractional_currency("USc") is True
-    assert cf_fractional_to_major("GBp") == "GBP"
-    assert cf_split_currency_unit("EUR/MWh") == ("EUR", "MWh")
+    for name in legacy_names:
+        with pytest.raises(AttributeError):
+            getattr(cf, name)
