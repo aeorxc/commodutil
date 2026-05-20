@@ -240,8 +240,8 @@ class CommodityConverter:
             convert(series, 'kt/month', 'bbl/day', commodity='gasoline')
         """
         # Normalize and parse units to handle daily/monthly rates
-        from_unit = self._normalize_unit(from_unit)
-        to_unit = self._normalize_unit(to_unit)
+        from_unit = _to_pint_token(from_unit)
+        to_unit = _to_pint_token(to_unit)
         from_rate = self._parse_rate_unit(from_unit)
         to_rate = self._parse_rate_unit(to_unit)
 
@@ -273,8 +273,8 @@ class CommodityConverter:
         self, value: float, from_unit: str, to_unit: str, commodity: Optional[str]
     ) -> float:
         """Convert a scalar value across mass/volume/energy using commodity context when needed."""
-        from_unit = self._normalize_unit(from_unit)
-        to_unit = self._normalize_unit(to_unit)
+        from_unit = _to_pint_token(from_unit)
+        to_unit = _to_pint_token(to_unit)
         qty = value * self.ureg(from_unit)
 
         # Try direct conversion first
@@ -404,10 +404,10 @@ class CommodityConverter:
         """Parse units like 'bbl/day' or 'kt/month'."""
         if "/" in unit:
             base, period = unit.split("/", 1)
-            base = self._normalize_unit(base)
+            base = _to_pint_token(base)
             period = period.strip().lower().rstrip("s")  # day(s), month(s), year(s)
             return {"base": base, "period": period}
-        return {"base": self._normalize_unit(unit), "period": None}
+        return {"base": _to_pint_token(unit), "period": None}
 
     def _rate_factor_scalar(
         self, from_period: Optional[str], to_period: Optional[str]
@@ -468,15 +468,6 @@ class CommodityConverter:
             return True
         except DimensionalityError:
             return False
-
-    def _normalize_unit(self, unit: str) -> str:
-        """Normalize a unit string into a pint-parseable token.
-
-        Thin shim around :func:`commodutil.standards.units.to_pint_token`.
-        Kept as a bound method because it has six internal call sites and
-        is exercised by the public test surface (``converter._normalize_unit``).
-        """
-        return _to_pint_token(unit)
 
     @property
     def available_commodities(self) -> list:
@@ -545,27 +536,13 @@ def convfactor(from_unit: str, to_unit: str, commodity: Optional[str] = None) ->
 
 # ---- Currency-aware price conversion helpers ----
 #
-# Vocabulary moved to commodutil.standards.currency (2026-05) so it's
-# importable without dragging in pint / pandas. convfactors still owns the
-# integrated unit + currency `convert_price` math (which depends on the
-# pint registry above). Names are re-exported for backwards compatibility —
-# `from commodutil.convfactors import VALID_CURRENCY_TOKENS` still works.
+# Currency vocabulary lives in commodutil.standards.currency (importable
+# without dragging in pint / pandas). convfactors owns only the integrated
+# unit + currency `convert_price` math (which depends on the pint registry
+# above) and reads currency vocabulary directly from _currency. Callers
+# wanting currency vocabulary should import from commodutil.standards.currency.
 
 from commodutil.standards import currency as _currency
-
-_FRACTIONAL_CURRENCY_DIVISORS = _currency.FRACTIONAL_CURRENCY_DIVISORS
-_FRACTIONAL_TO_MAJOR = _currency.FRACTIONAL_TO_MAJOR
-_VALID_CURRENCY_TOKENS = _currency.VALID_CURRENCY_TOKENS
-
-# Public re-exports — preserve every existing public symbol so that
-# `from commodutil.convfactors import VALID_CURRENCY_TOKENS, fractional_to_major, ...`
-# continues to resolve for downstream packages (pyoilprice etc.).
-VALID_CURRENCY_TOKENS = _VALID_CURRENCY_TOKENS
-FRACTIONAL_TO_MAJOR = _FRACTIONAL_TO_MAJOR
-fractional_to_major = _currency.fractional_to_major
-is_fractional_currency = _currency.is_fractional_currency
-split_currency_unit = _currency.split_currency_unit
-_split_currency_unit = split_currency_unit
 
 
 def convert_price(
@@ -626,8 +603,8 @@ def convert_price(
         fx_series = pd.Series([1.07, 1.08, 1.06], index=p.index)
         convert_price(p, 'EUR/MWh', 'USD/MMBtu', fx=fx_series)
     """
-    from_ccy, from_bare_unit = split_currency_unit(from_unit)
-    to_ccy, to_bare_unit = split_currency_unit(to_unit)
+    from_ccy, from_bare_unit = _currency.split_currency_unit(from_unit)
+    to_ccy, to_bare_unit = _currency.split_currency_unit(to_unit)
 
     # Resolve the underlying "major" currency on each side for same-base detection
     # (e.g. USc and USD share major USD — pure scale, no FX needed).
@@ -754,7 +731,7 @@ def list_commodities():
 def list_units():
     """List common units"""
     # Return normalized forms to avoid encoding issues
-    return [converter._normalize_unit(u) for u in converter.available_units]
+    return [_to_pint_token(u) for u in converter.available_units]
 
 
 # Example usage
