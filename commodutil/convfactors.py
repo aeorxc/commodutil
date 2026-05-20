@@ -631,10 +631,12 @@ def convert_price(
 
     # Resolve the underlying "major" currency on each side for same-base detection
     # (e.g. USc and USD share major USD — pure scale, no FX needed).
-    from_major = _FRACTIONAL_TO_MAJOR.get(
+    from_major = _currency.FRACTIONAL_TO_MAJOR.get(
         from_ccy, from_ccy.upper() if from_ccy else ""
     )
-    to_major = _FRACTIONAL_TO_MAJOR.get(to_ccy, to_ccy.upper() if to_ccy else "")
+    to_major = _currency.FRACTIONAL_TO_MAJOR.get(
+        to_ccy, to_ccy.upper() if to_ccy else ""
+    )
     # Treat '$' as 'USD' for the purpose of major-currency comparison.
     if from_major == "$":
         from_major = "USD"
@@ -663,8 +665,8 @@ def convert_price(
     # needed even though the literal currency tokens differ. Handle BEFORE the
     # `fx is None` raise below.
     if same_base_fractional:
-        from_div = _FRACTIONAL_CURRENCY_DIVISORS.get(from_ccy, 1.0)
-        to_div = _FRACTIONAL_CURRENCY_DIVISORS.get(to_ccy, 1.0)
+        from_div = _currency.FRACTIONAL_CURRENCY_DIVISORS.get(from_ccy, 1.0)
+        to_div = _currency.FRACTIONAL_CURRENCY_DIVISORS.get(to_ccy, 1.0)
         # value is in source-currency units; divide by from_div to get majors,
         # multiply by to_div to get target-currency units.
         return unit_converted * (to_div / from_div)
@@ -680,7 +682,7 @@ def convert_price(
             f"(source currency '{from_ccy}' is non-USD)"
         )
 
-    fractional_divisor = _FRACTIONAL_CURRENCY_DIVISORS.get(from_ccy, 1.0)
+    fractional_divisor = _currency.FRACTIONAL_CURRENCY_DIVISORS.get(from_ccy, 1.0)
 
     if isinstance(unit_converted, pd.Series) and isinstance(fx, pd.Series):
         target_idx = unit_converted.index
