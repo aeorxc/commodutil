@@ -129,26 +129,6 @@ def test_to_pint_token_exposed_via_standards_facade():
     assert to_pint_token("m³") == "m^3"
 
 
-def test_converter_normalize_unit_delegates_to_to_pint_token():
-    """CommodityConverter._normalize_unit is a thin shim around the
-    standalone normaliser. Regression guard against accidental drift."""
-    from commodutil.convfactors import converter
-    from commodutil.standards.units import to_pint_token
-
-    for sample in [
-        "m³",
-        "m**3",
-        "cubic_meter",
-        "CUBIC_METER",
-        "BTU",
-        "MMBTU",
-        "  bbl  ",
-        "m3/day",
-        None,
-    ]:
-        assert converter._normalize_unit(sample) == to_pint_token(sample)
-
-
 def test_unit_map_parity_with_curvemetadata():
     """Regression guard: UNIT_MAP must match curvemetadata's previous local
     copy byte-for-byte until curvemetadata's re-export PR lands. Skipped if

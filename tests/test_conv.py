@@ -217,21 +217,21 @@ class TestUtils:
         )  # 7450 bbl/kt / 30.4375 days/month
 
     def test_normalize_unit(self):
-        """Test unit normalization"""
-        from commodutil.convfactors import converter
+        """Test unit normalization (delegates to standards.units.to_pint_token)."""
+        from commodutil.standards.units import to_pint_token
 
         # Test cubic meter variations
-        assert converter._normalize_unit("m³") == "m^3"
-        assert converter._normalize_unit("m**3") == "m^3"
-        assert converter._normalize_unit("cubic_meter") == "m^3"
-        assert converter._normalize_unit("CUBIC_METER") == "m^3"
+        assert to_pint_token("m³") == "m^3"
+        assert to_pint_token("m**3") == "m^3"
+        assert to_pint_token("cubic_meter") == "m^3"
+        assert to_pint_token("CUBIC_METER") == "m^3"
 
         # Test energy unit normalization
-        assert converter._normalize_unit("BTU") == "Btu"
-        assert converter._normalize_unit("MMBTU") == "MMBtu"
+        assert to_pint_token("BTU") == "Btu"
+        assert to_pint_token("MMBTU") == "MMBtu"
 
         # Test whitespace handling
-        assert converter._normalize_unit("  bbl  ") == "bbl"
+        assert to_pint_token("  bbl  ") == "bbl"
 
     def test_commodity_properties(self):
         """Test commodity property access and helper functions"""
