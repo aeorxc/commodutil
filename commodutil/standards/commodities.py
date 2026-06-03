@@ -21,6 +21,9 @@ commodutil's commodity lists.
 
 from __future__ import annotations
 
+import re
+from typing import Optional
+
 
 COMMODITY_KEYWORDS = [
     ("Brent", "Crude Oil", ["brent"]),
@@ -29,7 +32,20 @@ COMMODITY_KEYWORDS = [
     # NB: 'Natural Gasoline' MUST come before 'Natural Gas' — the substring
     # "natural gas" is contained in "natural gasoline" and would otherwise win.
     ("Natural Gasoline", "NGL", ["natural gasoline"]),
-    ("Natural Gas", "Natural Gas", ["natural gas", "nat gas", "natgas"]),
+    (
+        "Natural Gas",
+        "Natural Gas",
+        [
+            "natural gas",
+            "nat gas",
+            "natgas",
+            "jkm",
+            "ttf",
+            "nbp",
+            "henry hub",
+            "henry",
+        ],
+    ),
     ("Jet", "Refined Products", ["jet fuel", "jet"]),
     ("Diesel", "Refined Products", ["diesel", "ulsd", "gasoil", "heating oil"]),
     ("Gasoline", "Refined Products", ["gasoline", "rbob", "cbob", "mogas", "eurobob"]),
@@ -154,48 +170,92 @@ def normalize_commodity_for_conversion(commodity: Optional[str]) -> Optional[str
     return text.replace(" ", "_")
 
 
+_EXCHANGE_SYMBOL_TOKEN_SPLIT = re.compile(r"[_:.\-\s/]+")
+
+# Token sets for ``infer_commodity_from_exchange_symbol`` — matched via
+# whole-token equality after splitting on ``_ : . - whitespace /``. Token sets
+# are checked in order; first hit wins. All tokens are lower-case.
+#
+# We deliberately AVOID short ambiguous 2-char tokens (``cl`` / ``rb`` /
+# ``ho`` / ``ng``) that used to live here as substrings — they caused
+# false-positives across real feed-prefixed identifiers (e.g.
+# ``Ice_ClearedGas:JKM`` → 'crude' via ``cl``; ``Singapore_Spot:Naphtha`` →
+# 'natgas' via ``ng``; ``Hong_Kong:HKD`` → 'gasoil' via ``ho``).
+#
+# Natgas tokens include LNG/European/US hub acronyms (jkm/ttf/nbp/hh/henry)
+# so feed-prefixed gas symbols classify correctly instead of falling through
+# to ``cl``-style false matches.
+_EXCHANGE_SYMBOL_TOKENS: list[tuple[str, frozenset[str]]] = [
+    # Order matters only when token sets could overlap; they don't here.
+    ("crude", frozenset({"wti", "brent", "brn"})),
+    ("gasoline", frozenset({"rbob", "gasoline", "mogas"})),
+    ("gasoil", frozenset({"gasoil", "diesel", "heating"})),
+    (
+        "natgas",
+        frozenset(
+            {
+                "natural",
+                "natgas",
+                "jkm",
+                "ttf",
+                "nbp",
+                "hh",
+                "henry",
+            }
+        ),
+    ),
+]
+
+
 def infer_commodity_from_exchange_symbol(symbol: Optional[str]) -> Optional[str]:
-    """Infer commodity from a raw exchange symbol name (loose substring match).
+    """Infer commodity from a raw exchange symbol name (token-based match).
 
     Last-resort fallback when description-based ``infer_commodity_and_group``
     fails (no Description, or Description didn't match COMMODITY_KEYWORDS).
-    Mirrors legacy substring-fallback logic that lived inline in
-    ``pyoilprice.conversion`` and then in ``curvemetadata.taxonomy``. Patterns
-    are SHORT substrings (cl, rb, ho, ng) matched anywhere in the input —
-    ``"close_value"`` will match ``cl`` and return ``"crude"``. This is
-    acceptable on raw exchange-symbol identifiers (which are short and
-    predictable) but **UNSAFE on free-text inputs** — use
-    ``infer_commodity_and_group()`` for descriptions or product names.
+    The symbol is lower-cased and split on ``_ : . - whitespace /`` into
+    tokens; commodity is inferred via WHOLE-TOKEN equality against
+    ``_EXCHANGE_SYMBOL_TOKENS``.
+
+    This replaces an older substring-based implementation that used short
+    2-char tokens (``cl`` / ``rb`` / ``ho`` / ``ng``); those caused
+    false-positives on feed-prefixed identifiers — e.g.
+    ``"Ice_ClearedGas:JKM"`` matched ``cl`` and returned 'crude' instead of
+    'natgas'; ``"Singapore_Spot:Naphtha"`` matched ``ng`` and returned
+    'natgas' instead of 'naphtha' (no match). The token-equality rewrite
+    eliminates the substring leak.
 
     Returns:
         Canonical commodity name ('crude' / 'gasoline' / 'gasoil' / 'natgas')
-        or None if no match.
+        or None if no match. Symbols that don't match any known token return
+        ``None`` — callers should treat ``None`` as "skip / unknown" rather
+        than guess.
 
-    Examples (raw exchange symbols only):
-        >>> infer_commodity_from_exchange_symbol("CL_Mar25")
-        'crude'
+    Examples:
         >>> infer_commodity_from_exchange_symbol("ICE_EuroFutures:BRN")
         'crude'
         >>> infer_commodity_from_exchange_symbol("RBOB_Apr25")
         'gasoline'
-        >>> infer_commodity_from_exchange_symbol("HO_May25")
-        'gasoil'
-        >>> infer_commodity_from_exchange_symbol("NG_Jun25")
+        >>> infer_commodity_from_exchange_symbol("Ice_ClearedGas:JKM")
         'natgas'
+        >>> infer_commodity_from_exchange_symbol("Ice_ClearedGas:TTF")
+        'natgas'
+        >>> infer_commodity_from_exchange_symbol("Singapore_Spot:Naphtha") is None
+        True
+        >>> infer_commodity_from_exchange_symbol("Hong_Kong:HKD") is None
+        True
+        >>> infer_commodity_from_exchange_symbol("LME_Copper:Long") is None
+        True
         >>> infer_commodity_from_exchange_symbol("XYZ_Spot") is None
         True
     """
     if not symbol:
         return None
-    s = str(symbol).lower()
-    if any(x in s for x in ["cl", "wti", "brent", "brn"]):
-        return "crude"
-    if any(x in s for x in ["rb", "gasoline", "mogas"]):
-        return "gasoline"
-    if any(x in s for x in ["ho", "diesel", "gasoil"]):
-        return "gasoil"
-    if any(x in s for x in ["ng", "natural"]):
-        return "natgas"
+    tokens = {t for t in _EXCHANGE_SYMBOL_TOKEN_SPLIT.split(str(symbol).lower()) if t}
+    if not tokens:
+        return None
+    for commodity, token_set in _EXCHANGE_SYMBOL_TOKENS:
+        if tokens & token_set:
+            return commodity
     return None
 
 
