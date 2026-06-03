@@ -141,27 +141,101 @@ def test_normalize_commodity_for_conversion_unknown_falls_back_to_slug():
 @pytest.mark.parametrize(
     "symbol,expected",
     [
-        ("CL_Mar25", "crude"),
+        # Crude — token matches on wti / brent / brn. Raw NYMEX `cl` is
+        # NOT a token any more (false-positive risk in 'Cleared' / 'Close');
+        # the canonical Brent token is 'brn' and full forms hit free-text.
         ("ICE_EuroFutures:BRN", "crude"),
         ("brent forward", "crude"),
         ("wti", "crude"),
-        ("CME_NymexFutures_EOD:RB", "gasoline"),
+        # Gasoline — token matches on rbob / gasoline / mogas. `rb` alone
+        # is no longer a token (false positives in 'Carbon').
         ("RBOB_Apr25", "gasoline"),
-        ("HO_May25", "gasoil"),
+        # Gasoil — token matches on gasoil / diesel / heating. `ho` alone
+        # is no longer a token (false positives in 'Hong' / 'HKD').
         ("diesel europe", "gasoil"),
-        ("NG_Jun25", "natgas"),
+        ("heating oil", "gasoil"),
+        # Natgas — natural / natgas / hub acronyms. `ng` alone is no
+        # longer a token (false positives in 'Long' / 'Naphtha').
         ("natural gas", "natgas"),
+        ("JKM_M1", "natgas"),
+        ("ICE_TTF", "natgas"),
+        # No-match — returns None and the caller (e.g. pyoilprice) should
+        # skip with a WARN rather than guess.
         ("XYZ_Spot", None),
         (None, None),
         ("", None),
+        # Dropped legacy 2-char tokens — these now return None.
+        ("CL_Mar25", None),
+        ("CME_NymexFutures_EOD:RB", None),
+        ("HO_May25", None),
+        ("NG_Jun25", None),
     ],
 )
 def test_infer_commodity_from_exchange_symbol(symbol, expected):
     assert infer_commodity_from_exchange_symbol(symbol) == expected
 
 
-def test_infer_commodity_from_exchange_symbol_loose_match_documented():
-    # INTENTIONAL loose-match behaviour: "close_value" contains "cl" so the
-    # function returns "crude". This is the documented short-substring
-    # fallback for raw exchange symbols (NOT free-form text).
-    assert infer_commodity_from_exchange_symbol("close_value") == "crude"
+def test_infer_commodity_from_exchange_symbol_no_loose_substring_match():
+    # GUARD against the old substring-based behaviour: previously
+    # ``"close_value"`` contained the substring "cl" and the function
+    # returned "crude". The token-based rewrite splits the symbol and
+    # matches whole tokens only — "close" is not "cl" and we get None.
+    # The docstring previously called this loose match "INTENTIONAL"; it
+    # caused false-positives across feed-prefixed identifiers
+    # (JKM/TTF/Naphtha/HKD/Copper) and is now considered a bug.
+    assert infer_commodity_from_exchange_symbol("close_value") is None
+
+
+# Regression suite — these symbols previously misclassified under the
+# substring-based implementation. See task #68 diagnosis + pyoilprice
+# PR #20928 (JKM unit-conversion bug).
+@pytest.mark.parametrize(
+    "symbol,expected",
+    [
+        # Gas hubs that previously matched 'cl' (ClearedGas) -> 'crude'.
+        # Token-based: 'jkm' / 'ttf' / 'nbp' / 'hh' tokens hit 'natgas'.
+        ("Ice_ClearedGas:JKM", "natgas"),
+        ("Ice_ClearedGas:TTF", "natgas"),
+        ("Ice_ClearedGas:NBP", "natgas"),
+        ("Ice_ClearedGas:HH", "natgas"),
+        ("Ice_ClearedGas:Henry", "natgas"),
+        # 'Naphtha' contains 'ng' substring; previously matched 'natgas'.
+        # Token-based: 'naphtha' is its own token, not 'ng' -> None.
+        ("Singapore_Spot:Naphtha", None),
+        # 'HKD' contains 'ho' substring; previously matched 'gasoil'.
+        ("Hong_Kong:HKD", None),
+        # 'Carbon' contains 'rb' substring; previously matched 'gasoline'.
+        ("Carbon:EUA", None),
+        # 'Long' contains 'ng' substring; previously matched 'natgas'.
+        ("LME_Copper:Long", None),
+    ],
+)
+def test_infer_commodity_from_exchange_symbol_regression_no_substring_leak(
+    symbol, expected
+):
+    assert infer_commodity_from_exchange_symbol(symbol) == expected
+
+
+def test_infer_commodity_from_exchange_symbol_dropped_2char_tokens():
+    """The 2-char ambiguous tokens cl/rb/ho/ng must NOT match when embedded
+    in larger words. The legacy substring behaviour was the root cause of
+    all the regressions above; this test pins the removal."""
+    # 'cl' inside 'Cleared' / 'Close' must not return 'crude'.
+    assert infer_commodity_from_exchange_symbol("Cleared") is None
+    assert infer_commodity_from_exchange_symbol("close") is None
+    # 'rb' inside 'Carbon' must not return 'gasoline'.
+    assert infer_commodity_from_exchange_symbol("Carbon") is None
+    # 'ho' inside 'HKD' / 'Hong' must not return 'gasoil'.
+    assert infer_commodity_from_exchange_symbol("Hong") is None
+    # 'ng' inside 'Long' / 'Naphtha' must not return 'natgas'.
+    assert infer_commodity_from_exchange_symbol("Long") is None
+    assert infer_commodity_from_exchange_symbol("Naphtha") is None
+
+
+def test_infer_commodity_from_exchange_symbol_token_separators():
+    """Tokeniser must split on _ : . - whitespace and /."""
+    assert infer_commodity_from_exchange_symbol("ICE:BRN") == "crude"
+    assert infer_commodity_from_exchange_symbol("ICE.BRN") == "crude"
+    assert infer_commodity_from_exchange_symbol("ICE-BRN") == "crude"
+    assert infer_commodity_from_exchange_symbol("ICE BRN") == "crude"
+    assert infer_commodity_from_exchange_symbol("ICE/BRN") == "crude"
