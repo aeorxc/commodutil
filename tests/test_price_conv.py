@@ -228,6 +228,29 @@ def test_bug2_same_currency_unit_only():
     assert out == pytest.approx(105.0, rel=1e-6)
 
 
+def test_bbl_per_price_unit_uses_quote_denominator():
+    assert convfactors.bbl_per_price_unit("USD/GAL") == pytest.approx(
+        convfactors.convfactor("gal", "bbl")
+    )
+    assert convfactors.bbl_per_price_unit("USc/GAL") == pytest.approx(
+        convfactors.convfactor("gal", "bbl")
+    )
+    assert convfactors.bbl_per_price_unit("USD/MT", commodity="diesel") == pytest.approx(
+        convfactors.convfactor("mt", "bbl", "diesel")
+    )
+    assert convfactors.bbl_per_price_unit("USD/BBL") == pytest.approx(1.0)
+
+
+def test_bbl_per_price_unit_uses_quote_unit_fallback_and_blocks_missing_mt_commodity():
+    assert convfactors.bbl_per_price_unit(None, quote_unit="GAL") == pytest.approx(
+        convfactors.convfactor("gal", "bbl")
+    )
+    assert convfactors.bbl_per_price_unit(None) is None
+
+    with pytest.raises(ValueError, match="Commodity required"):
+        convfactors.bbl_per_price_unit("USD/MT")
+
+
 def test_bug3_strict_raises_on_insufficient_fx():
     """Bug 3: default `ffill_policy='strict'` must refuse to silently back-fill
     or extend stale FX. Pre-FX-start dates with no observation within

@@ -23,6 +23,7 @@ from __future__ import annotations
 _LAZY_EXPORTS = {
     # convfactors (heaviest -- pint registry + Commodity dataclass init)
     "ALIASES": "commodutil.convfactors",
+    "bbl_per_price_unit": "commodutil.convfactors",
     "COMMODITIES": "commodutil.convfactors",
     "Commodity": "commodutil.convfactors",
     "convert": "commodutil.convfactors",
@@ -36,6 +37,9 @@ _LAZY_EXPORTS = {
     "fractional_to_major": "commodutil.standards.currency",
     "is_fractional_currency": "commodutil.standards.currency",
     "split_currency_unit": "commodutil.standards.currency",
+    # standards.units (stdlib-only -- cheap, no pint)
+    "canonical_quantity_unit": "commodutil.standards.units",
+    "quantity_unit_from_price_unit": "commodutil.standards.units",
     # dates
     "curmon": "commodutil.dates",
     "curmonyear": "commodutil.dates",
