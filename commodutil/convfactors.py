@@ -11,6 +11,7 @@ from dataclasses import dataclass
 import pandas as pd
 from functools import lru_cache
 
+from commodutil.standards import currency as _currency
 from commodutil.standards.units import to_pint_token as _to_pint_token
 
 logger = logging.getLogger(__name__)
@@ -541,8 +542,6 @@ def convfactor(from_unit: str, to_unit: str, commodity: Optional[str] = None) ->
 # unit + currency `convert_price` math (which depends on the pint registry
 # above) and reads currency vocabulary directly from _currency. Callers
 # wanting currency vocabulary should import from commodutil.standards.currency.
-
-from commodutil.standards import currency as _currency
 
 
 def convert_price(

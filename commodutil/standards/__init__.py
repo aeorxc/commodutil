@@ -43,7 +43,9 @@ from commodutil.standards.regions import (
 )
 from commodutil.standards.units import (
     UNIT_MAP,
+    canonical_quantity_unit,
     default_unit_for_commodity,
+    quantity_unit_from_price_unit,
     to_pint_token,
 )
 
@@ -81,6 +83,8 @@ __all__ = [
     "normalize_region",
     # units
     "UNIT_MAP",
+    "canonical_quantity_unit",
     "default_unit_for_commodity",
+    "quantity_unit_from_price_unit",
     "to_pint_token",
 ]

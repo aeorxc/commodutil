@@ -1,6 +1,10 @@
 """Tests for commodutil.standards.units."""
 
-from commodutil.standards.units import default_unit_for_commodity
+from commodutil.standards.units import (
+    canonical_quantity_unit,
+    default_unit_for_commodity,
+    quantity_unit_from_price_unit,
+)
 
 
 def test_natgas_defaults_to_mmbtu():
@@ -67,6 +71,25 @@ def test_unit_map_canonical_set_only_three():
     from commodutil.standards.units import UNIT_MAP
 
     assert set(UNIT_MAP.values()) == {"bbl", "gal", "mt"}
+
+
+def test_canonical_quantity_unit_normalizes_common_labels():
+    assert canonical_quantity_unit("BBL") == "bbl"
+    assert canonical_quantity_unit("barrels") == "bbl"
+    assert canonical_quantity_unit("GAL") == "gal"
+    assert canonical_quantity_unit("Metric Tonnes") == "mt"
+    assert canonical_quantity_unit("mmbtu") is None
+    assert canonical_quantity_unit(None) is None
+
+
+def test_quantity_unit_from_price_unit_uses_quote_denominator():
+    assert quantity_unit_from_price_unit("USD/MT") == "mt"
+    assert quantity_unit_from_price_unit("usd/mt") == "mt"
+    assert quantity_unit_from_price_unit("USc/GAL") == "gal"
+    assert quantity_unit_from_price_unit("USC/GAL") == "gal"
+    assert quantity_unit_from_price_unit("$/BBL") == "bbl"
+    assert quantity_unit_from_price_unit("BBL") == "bbl"
+    assert quantity_unit_from_price_unit("bbl/day") is None
 
 
 # ---- to_pint_token tests ----

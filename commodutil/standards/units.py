@@ -26,6 +26,8 @@ from __future__ import annotations
 
 from typing import Optional
 
+from commodutil.standards.currency import split_currency_unit
+
 
 # ---- Alias -> canonical normalisation ----
 
@@ -45,6 +47,7 @@ UNIT_MAP = {
     "metric tons": "mt",
     "metric tonne": "mt",
     "metric tonnes": "mt",
+    "mt": "mt",
     "tonne": "mt",
     "tonnes": "mt",
 }
@@ -70,6 +73,43 @@ def default_unit_for_commodity(commodity: Optional[str]) -> str:
     if not commodity:
         return "bbl"
     return _DEFAULT_UNIT.get(str(commodity).lower(), "bbl")
+
+
+def canonical_quantity_unit(unit: object) -> str | None:
+    """Return the canonical quantity unit token for free-form unit text.
+
+    This intentionally covers quoted physical units only: ``bbl``, ``gal``,
+    and ``mt``. Rate periods and currencies are outside this vocabulary.
+    """
+    if unit is None:
+        return None
+    text = str(unit).strip().lower()
+    if not text:
+        return None
+    return UNIT_MAP.get(text)
+
+
+def quantity_unit_from_price_unit(price_unit: object) -> str | None:
+    """Return the denominator quantity unit from a price-unit string.
+
+    Examples:
+        ``USD/MT`` -> ``mt``
+        ``USc/GAL`` -> ``gal``
+        ``$/BBL`` -> ``bbl``
+
+    Bare quantity units are also accepted. Bare rate units such as
+    ``bbl/day`` return ``None`` because the denominator is a time period, not
+    a physical quantity.
+    """
+    if price_unit is None:
+        return None
+    text = str(price_unit).strip()
+    if not text:
+        return None
+    _, unit_text = split_currency_unit(text)
+    if "/" in unit_text:
+        _, _, unit_text = text.partition("/")
+    return canonical_quantity_unit(unit_text)
 
 
 # ---- Pint-token normalisation ----
@@ -122,4 +162,10 @@ def to_pint_token(unit: Optional[str]) -> Optional[str]:
     return u
 
 
-__all__ = ["UNIT_MAP", "default_unit_for_commodity", "to_pint_token"]
+__all__ = [
+    "UNIT_MAP",
+    "canonical_quantity_unit",
+    "default_unit_for_commodity",
+    "quantity_unit_from_price_unit",
+    "to_pint_token",
+]
