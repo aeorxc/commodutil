@@ -23,7 +23,6 @@ from __future__ import annotations
 _LAZY_EXPORTS = {
     # convfactors (heaviest -- pint registry + Commodity dataclass init)
     "ALIASES": "commodutil.convfactors",
-    "bbl_per_price_unit": "commodutil.convfactors",
     "COMMODITIES": "commodutil.convfactors",
     "Commodity": "commodutil.convfactors",
     "convert": "commodutil.convfactors",

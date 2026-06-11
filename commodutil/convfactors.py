@@ -12,11 +12,7 @@ import pandas as pd
 from functools import lru_cache
 
 from commodutil.standards import currency as _currency
-from commodutil.standards.units import (
-    canonical_quantity_unit,
-    quantity_unit_from_price_unit,
-    to_pint_token as _to_pint_token,
-)
+from commodutil.standards.units import to_pint_token as _to_pint_token
 
 logger = logging.getLogger(__name__)
 
@@ -537,30 +533,6 @@ def convert(value, from_unit: str, to_unit: str, commodity: Optional[str] = None
 def convfactor(from_unit: str, to_unit: str, commodity: Optional[str] = None) -> float:
     """Get conversion factor between units"""
     return converter.convert(1.0, from_unit, to_unit, commodity)
-
-
-def bbl_per_price_unit(
-    price_unit: object,
-    *,
-    commodity: Optional[str] = None,
-    quote_unit: object = None,
-) -> Optional[float]:
-    """Return BBL per one quoted price denominator unit.
-
-    ``price_unit`` is the source of truth when it contains a denominator
-    quantity (e.g. ``USD/MT``). ``quote_unit`` is a metadata fallback for data
-    feeds that split currency and quantity unit across fields.
-
-    Commodity context is required for mass-to-volume conversions such as
-    ``USD/MT`` -> BBL/MT. Missing commodity context raises through
-    ``convfactor``; unknown or missing unit text returns ``None``.
-    """
-    unit = quantity_unit_from_price_unit(price_unit) or canonical_quantity_unit(quote_unit)
-    if unit is None:
-        return None
-    if unit == "bbl":
-        return 1.0
-    return float(convfactor(unit, "bbl", commodity))
 
 
 # ---- Currency-aware price conversion helpers ----
