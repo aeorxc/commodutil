@@ -231,6 +231,33 @@ def test_convert_price_from_quote_returns_conversion_metadata():
     assert converted is True
 
 
+def test_convert_price_unit_uses_explicit_source_price_unit():
+    out, source_unit, target_unit, converted = convfactors.convert_price_unit(
+        71.26,
+        "USc/LBS",
+        "USD/LB_SOYBEANOIL",
+    )
+
+    assert out == pytest.approx(0.7126, rel=1e-9)
+    assert source_unit == "USc/lb"
+    assert target_unit == "USD/lb"
+    assert converted is True
+
+
+def test_convert_price_from_major_currency_quote_unit_does_not_infer_cents():
+    out, source_unit, target_unit, converted = convfactors.convert_price_from_quote(
+        71.26,
+        "USD",
+        "LBS",
+        "USD/LB_SOYBEANOIL",
+    )
+
+    assert out == pytest.approx(71.26, rel=1e-9)
+    assert source_unit == "USD/lb"
+    assert target_unit == "USD/lb"
+    assert converted is False
+
+
 def test_bug2_gbp_pence_to_gbp_no_fx_required():
     """Bug 2: GBp -> GBP is a pure /100 scale (no FX)."""
     out = convfactors.convert_price(50.0, "GBp/therm", "GBP/therm")

@@ -27,6 +27,7 @@ _LAZY_EXPORTS = {
     "Commodity": "commodutil.convfactors",
     "convert": "commodutil.convfactors",
     "convert_price": "commodutil.convfactors",
+    "convert_price_unit": "commodutil.convfactors",
     "convfactor": "commodutil.convfactors",
     "list_commodities": "commodutil.convfactors",
     "list_units": "commodutil.convfactors",

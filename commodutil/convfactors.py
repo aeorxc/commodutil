@@ -754,6 +754,35 @@ def price_unit_from_quote(currency: object, quote_unit: object) -> Optional[str]
     return normalize_price_unit(f"{ccy}/{unit}")
 
 
+def convert_price_unit(
+    value: Union[float, pd.Series],
+    source_price_unit: object,
+    target_price_unit: object,
+    commodity: Optional[str] = None,
+    **kwargs,
+) -> tuple[Union[float, pd.Series], Optional[str], Optional[str], bool]:
+    """Convert a price between explicit source and target price-unit strings.
+
+    Returns ``(value, normalized_source_price_unit, normalized_target_price_unit,
+    converted)``. If either side is missing, or the units already match, the
+    original value is returned with ``converted=False``.
+    """
+    source_unit = normalize_price_unit(source_price_unit)
+    target_unit = normalize_price_unit(target_price_unit)
+    if not source_unit or not target_unit:
+        return value, source_unit, target_unit, False
+    if source_unit.upper() == target_unit.upper():
+        return value, source_unit, target_unit, False
+    converted = convert_price(
+        value,
+        source_unit,
+        target_unit,
+        commodity=commodity,
+        **kwargs,
+    )
+    return converted, source_unit, target_unit, True
+
+
 def convert_price_from_quote(
     value: Union[float, pd.Series],
     currency: object,
@@ -769,19 +798,13 @@ def convert_price_from_quote(
     returned with ``converted=False``.
     """
     source_unit = price_unit_from_quote(currency, quote_unit)
-    target_unit = normalize_price_unit(target_price_unit)
-    if not source_unit or not target_unit:
-        return value, source_unit, target_unit, False
-    if source_unit.upper() == target_unit.upper():
-        return value, source_unit, target_unit, False
-    converted = convert_price(
+    return convert_price_unit(
         value,
         source_unit,
-        target_unit,
+        target_price_unit,
         commodity=commodity,
         **kwargs,
     )
-    return converted, source_unit, target_unit, True
 
 
 def list_commodities():
