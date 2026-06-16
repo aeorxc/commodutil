@@ -134,7 +134,15 @@ def test_to_pint_token_pound_casing():
 
     assert to_pint_token("LBS") == "lb"
     assert to_pint_token("lbs") == "lb"
+
+
+def test_to_pint_token_strips_vendor_product_suffix_from_known_unit_prefixes():
+    from commodutil.standards.units import to_pint_token
+
     assert to_pint_token("LB_SOYBEANOIL") == "lb"
+    assert to_pint_token("GAL_RBOB") == "gal"
+    assert to_pint_token("BBL_CRUDE") == "bbl"
+    assert to_pint_token("MT_GASOIL") == "mt"
 
 
 def test_to_pint_token_whitespace_stripped():
