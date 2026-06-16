@@ -211,19 +211,6 @@ def test_usc_per_pound_to_usd_per_pound_no_fx_required():
     assert out == pytest.approx(0.7126, rel=1e-9)
 
 
-def test_convert_price_accepts_soybean_oil_pound_price_unit_alias():
-    assert convfactors.convert_price(
-        71.26,
-        "USc/LBS",
-        "USD/LB_SOYBEANOIL",
-    ) == pytest.approx(0.7126, rel=1e-9)
-    assert convfactors.convert_price(
-        71.26,
-        "USD/LBS",
-        "USD/LB_SOYBEANOIL",
-    ) == pytest.approx(71.26, rel=1e-9)
-
-
 def test_bug2_gbp_pence_to_gbp_no_fx_required():
     """Bug 2: GBp -> GBP is a pure /100 scale (no FX)."""
     out = convfactors.convert_price(50.0, "GBp/therm", "GBP/therm")

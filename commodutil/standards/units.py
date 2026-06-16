@@ -134,8 +134,6 @@ def to_pint_token(unit: Optional[str]) -> Optional[str]:
     - Rate forms: ``m3/...`` / ``M3/...`` -> ``m^3/...``.
     - Energy casing: ``BTU`` -> ``Btu``; ``MMBTU`` -> ``MMBtu``.
     - Pound casing/plurals: ``LBS`` / ``lbs`` -> ``lb``.
-    - Vendor/product-suffixed unit tokens: ``LB_SOYBEANOIL`` -> ``lb``,
-      ``GAL_RBOB`` -> ``gal``.
 
     Other tokens pass through unchanged. Aliases like ``barrel``, ``tonne``,
     ``gallon`` are not handled here -- they are registered as pint aliases
@@ -168,11 +166,6 @@ def to_pint_token(unit: Optional[str]) -> Optional[str]:
         u = "MMBtu"
     if u.upper() == "LBS":
         u = "lb"
-    if "_" in u:
-        prefix = u.split("_", 1)[0].lower()
-        mapped = UNIT_MAP.get(prefix)
-        if mapped is not None:
-            u = mapped
     return u
 
 
