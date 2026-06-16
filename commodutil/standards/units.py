@@ -50,6 +50,10 @@ UNIT_MAP = {
     "mt": "mt",
     "tonne": "mt",
     "tonnes": "mt",
+    "pound": "lb",
+    "pounds": "lb",
+    "lb": "lb",
+    "lbs": "lb",
 }
 
 
@@ -129,6 +133,7 @@ def to_pint_token(unit: Optional[str]) -> Optional[str]:
       / ``CUBIC_METER`` / ``m3`` (case-insensitive exact match) -> ``m^3``.
     - Rate forms: ``m3/...`` / ``M3/...`` -> ``m^3/...``.
     - Energy casing: ``BTU`` -> ``Btu``; ``MMBTU`` -> ``MMBtu``.
+    - Pound casing/plurals: ``LBS`` / ``lbs`` -> ``lb``.
 
     Other tokens pass through unchanged. Aliases like ``barrel``, ``tonne``,
     ``gallon`` are not handled here -- they are registered as pint aliases
@@ -159,6 +164,8 @@ def to_pint_token(unit: Optional[str]) -> Optional[str]:
         u = "Btu"
     if u == "MMBTU":
         u = "MMBtu"
+    if u.upper() == "LBS":
+        u = "lb"
     return u
 
 

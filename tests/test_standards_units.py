@@ -66,11 +66,20 @@ def test_unit_map_metric_ton_variants():
     assert UNIT_MAP["tonnes"] == "mt"
 
 
-def test_unit_map_canonical_set_only_three():
-    """UNIT_MAP normalises to exactly the canonical units bbl / gal / mt."""
+def test_unit_map_pound_variants():
     from commodutil.standards.units import UNIT_MAP
 
-    assert set(UNIT_MAP.values()) == {"bbl", "gal", "mt"}
+    assert UNIT_MAP["pound"] == "lb"
+    assert UNIT_MAP["pounds"] == "lb"
+    assert UNIT_MAP["lb"] == "lb"
+    assert UNIT_MAP["lbs"] == "lb"
+
+
+def test_unit_map_canonical_set():
+    """UNIT_MAP normalises to the canonical physical quote units."""
+    from commodutil.standards.units import UNIT_MAP
+
+    assert set(UNIT_MAP.values()) == {"bbl", "gal", "mt", "lb"}
 
 
 def test_canonical_quantity_unit_normalizes_common_labels():
@@ -118,6 +127,13 @@ def test_to_pint_token_energy_casing():
 
     assert to_pint_token("BTU") == "Btu"
     assert to_pint_token("MMBTU") == "MMBtu"
+
+
+def test_to_pint_token_pound_casing():
+    from commodutil.standards.units import to_pint_token
+
+    assert to_pint_token("LBS") == "lb"
+    assert to_pint_token("lbs") == "lb"
 
 
 def test_to_pint_token_whitespace_stripped():
