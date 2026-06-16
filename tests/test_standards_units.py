@@ -134,6 +134,7 @@ def test_to_pint_token_pound_casing():
 
     assert to_pint_token("LBS") == "lb"
     assert to_pint_token("lbs") == "lb"
+    assert to_pint_token("LB_SOYBEANOIL") == "lb"
 
 
 def test_to_pint_token_whitespace_stripped():

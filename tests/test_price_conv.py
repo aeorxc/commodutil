@@ -211,51 +211,17 @@ def test_usc_per_pound_to_usd_per_pound_no_fx_required():
     assert out == pytest.approx(0.7126, rel=1e-9)
 
 
-def test_price_unit_from_quote_normalizes_pound_aliases():
-    assert convfactors.price_unit_from_quote("USc", "LBS") == "USc/lb"
-    assert convfactors.price_unit_from_quote("USD", "LB_SOYBEANOIL") == "USD/lb"
-    assert convfactors.normalize_price_unit("USD/LB_SOYBEANOIL") == "USD/lb"
-
-
-def test_convert_price_from_quote_returns_conversion_metadata():
-    out, source_unit, target_unit, converted = convfactors.convert_price_from_quote(
-        71.26,
-        "USc",
-        "LBS",
-        "USD/LB_SOYBEANOIL",
-    )
-
-    assert out == pytest.approx(0.7126, rel=1e-9)
-    assert source_unit == "USc/lb"
-    assert target_unit == "USD/lb"
-    assert converted is True
-
-
-def test_convert_price_unit_uses_explicit_source_price_unit():
-    out, source_unit, target_unit, converted = convfactors.convert_price_unit(
+def test_convert_price_accepts_soybean_oil_pound_price_unit_alias():
+    assert convfactors.convert_price(
         71.26,
         "USc/LBS",
         "USD/LB_SOYBEANOIL",
-    )
-
-    assert out == pytest.approx(0.7126, rel=1e-9)
-    assert source_unit == "USc/lb"
-    assert target_unit == "USD/lb"
-    assert converted is True
-
-
-def test_convert_price_from_major_currency_quote_unit_does_not_infer_cents():
-    out, source_unit, target_unit, converted = convfactors.convert_price_from_quote(
+    ) == pytest.approx(0.7126, rel=1e-9)
+    assert convfactors.convert_price(
         71.26,
-        "USD",
-        "LBS",
+        "USD/LBS",
         "USD/LB_SOYBEANOIL",
-    )
-
-    assert out == pytest.approx(71.26, rel=1e-9)
-    assert source_unit == "USD/lb"
-    assert target_unit == "USD/lb"
-    assert converted is False
+    ) == pytest.approx(71.26, rel=1e-9)
 
 
 def test_bug2_gbp_pence_to_gbp_no_fx_required():

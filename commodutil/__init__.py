@@ -27,13 +27,9 @@ _LAZY_EXPORTS = {
     "Commodity": "commodutil.convfactors",
     "convert": "commodutil.convfactors",
     "convert_price": "commodutil.convfactors",
-    "convert_price_unit": "commodutil.convfactors",
     "convfactor": "commodutil.convfactors",
     "list_commodities": "commodutil.convfactors",
     "list_units": "commodutil.convfactors",
-    "convert_price_from_quote": "commodutil.convfactors",
-    "normalize_price_unit": "commodutil.convfactors",
-    "price_unit_from_quote": "commodutil.convfactors",
     # standards.currency (stdlib-only -- cheap, no pint)
     "FRACTIONAL_TO_MAJOR": "commodutil.standards.currency",
     "VALID_CURRENCY_TOKENS": "commodutil.standards.currency",
