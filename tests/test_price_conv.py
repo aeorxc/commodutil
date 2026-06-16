@@ -206,6 +206,11 @@ def test_bug2_usc_to_usd_no_fx_required():
     assert out == pytest.approx(0.005, rel=1e-9)
 
 
+def test_usc_per_pound_to_usd_per_pound_no_fx_required():
+    out = convfactors.convert_price(71.26, "USc/LBS", "USD/lb")
+    assert out == pytest.approx(0.7126, rel=1e-9)
+
+
 def test_bug2_gbp_pence_to_gbp_no_fx_required():
     """Bug 2: GBp -> GBP is a pure /100 scale (no FX)."""
     out = convfactors.convert_price(50.0, "GBp/therm", "GBP/therm")
