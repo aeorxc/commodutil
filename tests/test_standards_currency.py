@@ -7,6 +7,7 @@ from commodutil.standards.currency import (
     VALID_CURRENCY_TOKENS,
     fractional_to_major,
     is_fractional_currency,
+    normalize_currency_token,
     required_fx_pair,
     split_currency_unit,
     to_symbol,
@@ -38,6 +39,21 @@ def test_fractional_to_major():
     assert fractional_to_major("$") == "USD"
     # Empty
     assert fractional_to_major("") == ""
+
+
+def test_normalize_currency_token():
+    assert normalize_currency_token("USD") == "USD"
+    assert normalize_currency_token("usd") == "USD"
+    assert normalize_currency_token("$") == "$"
+    assert normalize_currency_token("USC") == "USc"
+    assert normalize_currency_token("U.S. cents") == "USc"
+    assert normalize_currency_token("GBX") == "GBp"
+    assert normalize_currency_token("pence") == "GBp"
+    assert normalize_currency_token("RMB") == "CNY"
+    assert normalize_currency_token("us dollars and cents") == "USD"
+    assert normalize_currency_token("bbl") is None
+    assert normalize_currency_token("") is None
+    assert normalize_currency_token(None) is None
 
 
 def test_fractional_currency_cac_auc_correctly_routed():
@@ -155,6 +171,7 @@ def test_legacy_convfactors_currency_shims_are_gone():
         "FRACTIONAL_TO_MAJOR",
         "fractional_to_major",
         "is_fractional_currency",
+        "normalize_currency_token",
         "split_currency_unit",
         "_split_currency_unit",
         "_FRACTIONAL_CURRENCY_DIVISORS",
