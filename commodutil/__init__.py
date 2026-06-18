@@ -35,6 +35,7 @@ _LAZY_EXPORTS = {
     "VALID_CURRENCY_TOKENS": "commodutil.standards.currency",
     "fractional_to_major": "commodutil.standards.currency",
     "is_fractional_currency": "commodutil.standards.currency",
+    "normalize_currency_token": "commodutil.standards.currency",
     "split_currency_unit": "commodutil.standards.currency",
     # standards.units (stdlib-only -- cheap, no pint)
     "canonical_quantity_unit": "commodutil.standards.units",

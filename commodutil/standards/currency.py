@@ -80,10 +80,54 @@ _VALID_CURRENCY_TOKENS = {
     "$",
 }
 
+_CURRENCY_TOKEN_LOOKUP = {token.upper(): token for token in _VALID_CURRENCY_TOKENS}
+_CURRENCY_TOKEN_ALIASES = {
+    "USC": "USc",
+    "US CENTS": "USc",
+    "U S CENTS": "USc",
+    "GBX": "GBp",
+    "GBPENCE": "GBp",
+    "GB PENCE": "GBp",
+    "PENCE": "GBp",
+    "RMB": "CNY",
+}
+
 # Public aliases — these are the import names downstream code should use.
 VALID_CURRENCY_TOKENS = _VALID_CURRENCY_TOKENS
 FRACTIONAL_TO_MAJOR = _FRACTIONAL_TO_MAJOR
 FRACTIONAL_CURRENCY_DIVISORS = _FRACTIONAL_CURRENCY_DIVISORS
+
+
+def _normalized_currency_lookup_key(token: str) -> str:
+    return " ".join(str(token).replace(".", " ").strip().upper().split())
+
+
+def normalize_currency_token(token: Optional[str]) -> Optional[str]:
+    """Return the canonical commodutil currency token for common aliases.
+
+    The canonical tokens remain ``VALID_CURRENCY_TOKENS``. This helper accepts
+    mixed case and legacy/fractional aliases used in vendor specs, such as
+    ``USC``/``US cents`` -> ``USc`` and ``GBX``/``pence`` -> ``GBp``. Unknown
+    values return ``None`` so callers can distinguish currency-like tokens
+    from physical units.
+    """
+    if token is None:
+        return None
+    cleaned = str(token).strip()
+    if not cleaned:
+        return None
+    if cleaned in _VALID_CURRENCY_TOKENS:
+        return cleaned
+
+    lower = cleaned.lower()
+    mapped = CURRENCY_MAP.get(lower)
+    if mapped:
+        return mapped
+
+    lookup_key = _normalized_currency_lookup_key(cleaned)
+    return _CURRENCY_TOKEN_LOOKUP.get(lookup_key) or _CURRENCY_TOKEN_ALIASES.get(
+        lookup_key
+    )
 
 
 def is_fractional_currency(token: str) -> bool:
@@ -240,6 +284,7 @@ __all__ = [
     "FRACTIONAL_TO_MAJOR",
     "FRACTIONAL_CURRENCY_DIVISORS",
     "CURRENCY_MAP",
+    "normalize_currency_token",
     "is_fractional_currency",
     "fractional_to_major",
     "split_currency_unit",
