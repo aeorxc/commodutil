@@ -454,25 +454,13 @@ class CommodityConverter:
         return from_per_day / to_per_day
 
     def _is_energy(self, unit: str) -> bool:
-        try:
-            (1 * self.ureg(unit)).to("J")
-            return True
-        except DimensionalityError:
-            return False
+        return self.ureg(unit).check("[energy]")
 
     def _is_mass(self, unit: str) -> bool:
-        try:
-            (1 * self.ureg(unit)).to("kg")
-            return True
-        except DimensionalityError:
-            return False
+        return self.ureg(unit).check("[mass]")
 
     def _is_volume(self, unit: str) -> bool:
-        try:
-            (1 * self.ureg(unit)).to("m^3")
-            return True
-        except DimensionalityError:
-            return False
+        return self.ureg(unit).check("[length]**3")
 
     @property
     def available_commodities(self) -> list:
