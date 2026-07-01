@@ -1,7 +1,9 @@
 """Tests for commodutil.standards.units."""
 
 from commodutil.standards.units import (
+    canonical_price_unit_token,
     canonical_quantity_unit,
+    canonical_unit_token,
     default_unit_for_commodity,
     quantity_unit_from_price_unit,
 )
@@ -101,22 +103,49 @@ def test_quantity_unit_from_price_unit_uses_quote_denominator():
     assert quantity_unit_from_price_unit("bbl/day") is None
 
 
-def test_canonical_quantity_unit_normalizes_common_labels():
-    assert canonical_quantity_unit("BBL") == "bbl"
-    assert canonical_quantity_unit("barrels") == "bbl"
-    assert canonical_quantity_unit("GAL") == "gal"
-    assert canonical_quantity_unit("Metric Tonnes") == "mt"
-    assert canonical_quantity_unit("mmbtu") is None
-    assert canonical_quantity_unit(None) is None
+# ---- Public token tests ----
 
 
-def test_quantity_unit_from_price_unit_uses_quote_denominator():
-    assert quantity_unit_from_price_unit("USD/MT") == "mt"
-    assert quantity_unit_from_price_unit("usd/mt") == "mt"
-    assert quantity_unit_from_price_unit("USc/GAL") == "gal"
-    assert quantity_unit_from_price_unit("$/BBL") == "bbl"
-    assert quantity_unit_from_price_unit("BBL") == "bbl"
-    assert quantity_unit_from_price_unit("bbl/day") is None
+def test_canonical_unit_token_normalizes_public_market_units():
+    assert canonical_unit_token("barrel") == "bbl"
+    assert canonical_unit_token("BBL") == "bbl"
+    assert canonical_unit_token("metric tonnes") == "mt"
+    assert canonical_unit_token("MT") == "mt"
+    assert canonical_unit_token("mmbtu") == "MMBtu"
+    assert canonical_unit_token("MWH") == "MWh"
+    assert canonical_unit_token("m3") == "m^3"
+    assert canonical_unit_token("M3") == "m^3"
+
+
+def test_canonical_unit_token_preserves_unknown_spelling():
+    assert canonical_unit_token("  WeirdUnit  ") == "WeirdUnit"
+    assert canonical_unit_token("") is None
+    assert canonical_unit_token(None) is None
+
+
+def test_canonical_price_unit_token_normalizes_currency_and_unit():
+    assert canonical_price_unit_token("USD/BBL") == "USD/bbl"
+    assert canonical_price_unit_token("USC/GAL") == "USc/gal"
+    assert canonical_price_unit_token("EUR/MWH") == "EUR/MWh"
+    assert canonical_price_unit_token("usd/metric tonnes") == "USD/mt"
+    assert canonical_price_unit_token("US cents / gallon") == "USc/gal"
+
+
+def test_canonical_price_unit_token_preserves_unknown_fragments():
+    assert canonical_price_unit_token("FOO/BBL") == "FOO/bbl"
+    assert canonical_price_unit_token("USD/StrangeUnit") == "USD/StrangeUnit"
+    assert canonical_price_unit_token("StrangeUnit") == "StrangeUnit"
+    assert canonical_price_unit_token(None) is None
+
+
+def test_public_facades_export_unit_token_helpers():
+    import commodutil
+    import commodutil.standards as standards
+
+    assert standards.canonical_unit_token("BBL") == "bbl"
+    assert standards.canonical_price_unit_token("USC/GAL") == "USc/gal"
+    assert commodutil.canonical_unit_token("MT") == "mt"
+    assert commodutil.canonical_price_unit_token("EUR/MWH") == "EUR/MWh"
 
 
 # ---- to_pint_token tests ----

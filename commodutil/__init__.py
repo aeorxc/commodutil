@@ -38,7 +38,9 @@ _LAZY_EXPORTS = {
     "normalize_currency_token": "commodutil.standards.currency",
     "split_currency_unit": "commodutil.standards.currency",
     # standards.units (stdlib-only -- cheap, no pint)
+    "canonical_price_unit_token": "commodutil.standards.units",
     "canonical_quantity_unit": "commodutil.standards.units",
+    "canonical_unit_token": "commodutil.standards.units",
     "quantity_unit_from_price_unit": "commodutil.standards.units",
     # dates
     "curmon": "commodutil.dates",

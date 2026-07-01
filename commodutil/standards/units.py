@@ -26,7 +26,11 @@ from __future__ import annotations
 
 from typing import Optional
 
-from commodutil.standards.currency import VALID_CURRENCY_TOKENS, split_currency_unit
+from commodutil.standards.currency import (
+    VALID_CURRENCY_TOKENS,
+    normalize_currency_token,
+    split_currency_unit,
+)
 
 
 # ---- Alias -> canonical normalisation ----
@@ -54,6 +58,29 @@ UNIT_MAP = {
     "pounds": "lb",
     "lb": "lb",
     "lbs": "lb",
+}
+
+
+# Public market/metadata unit tokens. ``bbl`` is the petroleum/oil barrel
+# (42 US gal: NIST/EIA; UCUM ``[bbl_us]``), not Pint's generic barrel.
+_PUBLIC_UNIT_MAP = {
+    **UNIT_MAP,
+    "btu": "Btu",
+    "mmbtu": "MMBtu",
+    "mm btu": "MMBtu",
+    "mwh": "MWh",
+    "mw h": "MWh",
+    "m3": "m^3",
+    "m^3": "m^3",
+    "m**3": "m^3",
+    "cubic meter": "m^3",
+    "cubic meters": "m^3",
+    "cubic metre": "m^3",
+    "cubic metres": "m^3",
+    "cubic_meter": "m^3",
+    "cubic_meters": "m^3",
+    "cubic_metre": "m^3",
+    "cubic_metres": "m^3",
 }
 
 
@@ -96,6 +123,22 @@ def canonical_quantity_unit(unit: object) -> Optional[str]:
     return UNIT_MAP.get(text)
 
 
+def canonical_unit_token(unit: object) -> Optional[str]:
+    """Return the canonical public token for a bare market unit string.
+
+    This is pure string vocabulary for metadata/public quote labels. Known
+    aliases normalise to commodutil public tokens (for example ``BBL`` ->
+    ``bbl`` and ``MWH`` -> ``MWh``). Unknown tokens are only stripped and then
+    returned with their original spelling.
+    """
+    if unit is None:
+        return None
+    cleaned = str(unit).strip()
+    if not cleaned:
+        return None
+    return _PUBLIC_UNIT_MAP.get(cleaned.lower(), cleaned)
+
+
 def quantity_unit_from_price_unit(price_unit: object) -> Optional[str]:
     """Return the denominator quantity unit from a price-unit string.
 
@@ -122,6 +165,30 @@ def quantity_unit_from_price_unit(price_unit: object) -> Optional[str]:
     if "/" in unit_text:
         return None
     return canonical_quantity_unit(unit_text)
+
+
+def canonical_price_unit_token(price_unit: object) -> Optional[str]:
+    """Return the canonical public token for a price-unit string.
+
+    Known currency/scale tokens are normalised with
+    ``commodutil.standards.currency.normalize_currency_token``; known bare
+    units use ``canonical_unit_token``. Unknown currency or unit fragments are
+    stripped and preserved rather than inferred.
+    """
+    if price_unit is None:
+        return None
+    cleaned = str(price_unit).strip()
+    if not cleaned:
+        return None
+    if "/" not in cleaned:
+        return canonical_unit_token(cleaned)
+
+    currency_text, _, unit_text = cleaned.partition("/")
+    currency_text = currency_text.strip()
+    unit_text = unit_text.strip()
+    currency_token = normalize_currency_token(currency_text) or currency_text
+    unit_token = canonical_unit_token(unit_text) or unit_text
+    return f"{currency_token}/{unit_token}"
 
 
 # ---- Pint-token normalisation ----
@@ -179,7 +246,9 @@ def to_pint_token(unit: Optional[str]) -> Optional[str]:
 
 __all__ = [
     "UNIT_MAP",
+    "canonical_price_unit_token",
     "canonical_quantity_unit",
+    "canonical_unit_token",
     "default_unit_for_commodity",
     "quantity_unit_from_price_unit",
     "to_pint_token",
