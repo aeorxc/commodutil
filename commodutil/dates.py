@@ -2,6 +2,8 @@ import datetime
 import re
 from datetime import datetime, date, time, timedelta
 
+from dateutil.relativedelta import relativedelta
+
 
 def _curmon():
     return datetime.now().month
@@ -20,11 +22,11 @@ def _curmonyear_str():
 
 
 def _last_day_of_prev_month():
-    return date.today().replace(day=1) - timedelta(days=1)
+    return date.today().replace(day=1) - relativedelta(days=1)
 
 
 def _start_day_of_prev_month():
-    return date.today().replace(day=1) - timedelta(days=_last_day_of_prev_month().day)
+    return date.today().replace(day=1) - relativedelta(months=1)
 
 
 def _prevmon():

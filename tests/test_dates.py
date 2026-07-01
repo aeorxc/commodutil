@@ -29,6 +29,22 @@ class TestDates(unittest.TestCase):
         self.assertEqual(res["FB"], "FB")
         self.assertEqual(res["FP 2021"], 2021)
 
+    def test_prev_month_helpers_parity(self):
+        # Independent expected computation of the previous-month values, mirroring
+        # the pre-relativedelta arithmetic, to guard against any drift.
+        import datetime as _dt
+
+        first_of_this_month = _dt.date.today().replace(day=1)
+        expected_last = first_of_this_month - _dt.timedelta(days=1)
+        expected_start = expected_last.replace(day=1)
+
+        self.assertEqual(dates.last_day_of_prev_month, expected_last)
+        self.assertEqual(dates.start_day_of_prev_month, expected_start)
+        self.assertEqual(dates.prevmon, expected_start.month)
+        self.assertEqual(
+            dates.prevmon_str, "%s-%s" % (expected_start.year, expected_start.month)
+        )
+
     def test_time_until_end_of_day_runs(self):
         # regression: dates.py imported the stdlib `time` module, so `time.min`
         # raised AttributeError. It must reference datetime.time instead.

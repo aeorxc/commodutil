@@ -19,6 +19,7 @@ dependencies = [
     "pandas",
     "dask[delayed]",
     "pint",
+    "python-dateutil",
 ]
 
 [project.urls]
