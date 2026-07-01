@@ -1,7 +1,6 @@
 import datetime
 import re
-import time
-from datetime import datetime, date, timedelta
+from datetime import datetime, date, time, timedelta
 
 
 def _curmon():
