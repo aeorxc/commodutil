@@ -101,6 +101,24 @@ def test_quantity_unit_from_price_unit_uses_quote_denominator():
     assert quantity_unit_from_price_unit("bbl/day") is None
 
 
+def test_canonical_quantity_unit_normalizes_common_labels():
+    assert canonical_quantity_unit("BBL") == "bbl"
+    assert canonical_quantity_unit("barrels") == "bbl"
+    assert canonical_quantity_unit("GAL") == "gal"
+    assert canonical_quantity_unit("Metric Tonnes") == "mt"
+    assert canonical_quantity_unit("mmbtu") is None
+    assert canonical_quantity_unit(None) is None
+
+
+def test_quantity_unit_from_price_unit_uses_quote_denominator():
+    assert quantity_unit_from_price_unit("USD/MT") == "mt"
+    assert quantity_unit_from_price_unit("usd/mt") == "mt"
+    assert quantity_unit_from_price_unit("USc/GAL") == "gal"
+    assert quantity_unit_from_price_unit("$/BBL") == "bbl"
+    assert quantity_unit_from_price_unit("BBL") == "bbl"
+    assert quantity_unit_from_price_unit("bbl/day") is None
+
+
 # ---- to_pint_token tests ----
 
 
