@@ -3,24 +3,70 @@ import re
 import time
 from datetime import datetime, date, timedelta
 
-curmon = datetime.now().month
-curyear = datetime.now().year
-curmonyear = datetime(curyear, curmon, 1)
-curmonyear_str = "%s-%s" % (curyear, curmon)  # get pandas time filtering
 
-last_day_of_prev_month = date.today().replace(day=1) - timedelta(days=1)
-start_day_of_prev_month = date.today().replace(day=1) - timedelta(
-    days=last_day_of_prev_month.day
-)
+def _curmon():
+    return datetime.now().month
 
-prevmon = start_day_of_prev_month.month
-prevmon_str = "%s-%s" % (
-    start_day_of_prev_month.year,
-    start_day_of_prev_month.month,
-)  # get pandas time filtering
 
-nextyear = curyear + 1
-prevyear = curyear - 1
+def _curyear():
+    return datetime.now().year
+
+
+def _curmonyear():
+    return datetime(_curyear(), _curmon(), 1)
+
+
+def _curmonyear_str():
+    return "%s-%s" % (_curyear(), _curmon())  # get pandas time filtering
+
+
+def _last_day_of_prev_month():
+    return date.today().replace(day=1) - timedelta(days=1)
+
+
+def _start_day_of_prev_month():
+    return date.today().replace(day=1) - timedelta(days=_last_day_of_prev_month().day)
+
+
+def _prevmon():
+    return _start_day_of_prev_month().month
+
+
+def _prevmon_str():
+    sdpm = _start_day_of_prev_month()
+    return "%s-%s" % (sdpm.year, sdpm.month)  # get pandas time filtering
+
+
+def _nextyear():
+    return _curyear() + 1
+
+
+def _prevyear():
+    return _curyear() - 1
+
+
+# Compute "current date" values live on each attribute access (PEP 562) so that a
+# long-running process (Prefect worker, Dash app) that imports this module once still
+# sees the correct month/year after a boundary, instead of a stale import-time snapshot.
+_DYNAMIC = {
+    "curmon": _curmon,
+    "curyear": _curyear,
+    "curmonyear": _curmonyear,
+    "curmonyear_str": _curmonyear_str,
+    "last_day_of_prev_month": _last_day_of_prev_month,
+    "start_day_of_prev_month": _start_day_of_prev_month,
+    "prevmon": _prevmon,
+    "prevmon_str": _prevmon_str,
+    "nextyear": _nextyear,
+    "prevyear": _prevyear,
+}
+
+
+def __getattr__(name):
+    try:
+        return _DYNAMIC[name]()
+    except KeyError:
+        raise AttributeError(name)
 
 
 def find_year(df, use_delta=False):
@@ -38,7 +84,7 @@ def find_year(df, use_delta=False):
         if colyear:
             res[colname] = colyear
             if colyear and use_delta:
-                delta = colyear - curyear
+                delta = colyear - _curyear()
                 res[colname] = delta
         else:
             res[colname] = colname
