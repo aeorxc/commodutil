@@ -33,6 +33,10 @@ from commodutil.standards.currency import (
     split_currency_unit,
     to_symbol,
 )
+from commodutil.standards.price_units import (
+    resolve_price_unit,
+    resolve_price_unit_from_attrs,
+)
 from commodutil.standards.regions import (
     CRUDE_GRADE_REGIONS,
     REGION_PATTERNS,
@@ -75,6 +79,9 @@ __all__ = [
     "required_fx_pair",
     "split_currency_unit",
     "to_symbol",
+    # price_units
+    "resolve_price_unit",
+    "resolve_price_unit_from_attrs",
     # regions
     "CRUDE_GRADE_REGIONS",
     "REGION_PATTERNS",

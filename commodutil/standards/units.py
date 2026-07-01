@@ -26,7 +26,7 @@ from __future__ import annotations
 
 from typing import Optional
 
-from commodutil.standards.currency import split_currency_unit
+from commodutil.standards.currency import VALID_CURRENCY_TOKENS, split_currency_unit
 
 
 # ---- Alias -> canonical normalisation ----
@@ -79,11 +79,14 @@ def default_unit_for_commodity(commodity: Optional[str]) -> str:
     return _DEFAULT_UNIT.get(str(commodity).lower(), "bbl")
 
 
-def canonical_quantity_unit(unit: object) -> str | None:
-    """Return the canonical quantity unit token for free-form unit text.
+# ---- Quantity-unit parsing ----
+
+
+def canonical_quantity_unit(unit: object) -> Optional[str]:
+    """Return the canonical physical quantity token for free-form unit text.
 
     This intentionally covers quoted physical units only: ``bbl``, ``gal``,
-    and ``mt``. Rate periods and currencies are outside this vocabulary.
+    and ``mt``. Currencies and rate periods are outside this vocabulary.
     """
     if unit is None:
         return None
@@ -93,26 +96,31 @@ def canonical_quantity_unit(unit: object) -> str | None:
     return UNIT_MAP.get(text)
 
 
-def quantity_unit_from_price_unit(price_unit: object) -> str | None:
+def quantity_unit_from_price_unit(price_unit: object) -> Optional[str]:
     """Return the denominator quantity unit from a price-unit string.
 
     Examples:
-        ``USD/MT`` -> ``mt``
-        ``USc/GAL`` -> ``gal``
-        ``$/BBL`` -> ``bbl``
+      * ``USD/MT`` -> ``mt``
+      * ``USc/GAL`` -> ``gal``
+      * ``$/BBL`` -> ``bbl``
 
-    Bare quantity units are also accepted. Bare rate units such as
-    ``bbl/day`` return ``None`` because the denominator is a time period, not
-    a physical quantity.
+    Bare quantity units are accepted. Bare rate units such as ``bbl/day``
+    return ``None`` because the denominator is a time period, not a physical
+    quantity.
     """
     if price_unit is None:
         return None
     text = str(price_unit).strip()
     if not text:
         return None
-    _, unit_text = split_currency_unit(text)
+
+    _currency, unit_text = split_currency_unit(text)
+    if not _currency and "/" in text:
+        head, _, tail = text.partition("/")
+        if head.strip().lower() in {token.lower() for token in VALID_CURRENCY_TOKENS}:
+            unit_text = tail.strip()
     if "/" in unit_text:
-        _, _, unit_text = text.partition("/")
+        return None
     return canonical_quantity_unit(unit_text)
 
 
