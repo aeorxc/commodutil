@@ -75,9 +75,10 @@ class TestUtils:
         res = convfactors.convert(43.38, "GJ", "mt", "diesel")
         assert res == pytest.approx(1.0, abs=0.01)
 
-        # Test commodity without energy content raises error
+        # Test commodity without energy content raises error (vgo has none;
+        # crude/naphtha now carry canonical energy_content)
         with pytest.raises(ValueError, match="No energy content"):
-            convfactors.convert(1, "m^3", "GJ", "crude")
+            convfactors.convert(1, "m^3", "GJ", "vgo")
 
         # Test gaseous natural gas energy conversion
         res = convfactors.convert(1000, "m^3", "GJ", "natural_gas")

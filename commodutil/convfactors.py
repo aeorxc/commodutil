@@ -102,14 +102,16 @@ class Commodity:
 COMMODITIES = {
     # Crude oil (BP approximate conversion factors)
     # 1 mt ≈ 7.33 bbl and ≈ 1.165 kL => density ≈ 0.85809 kg/L
-    "crude": Commodity("crude", 0.85809151 * ureg.kg / ureg.L, None),
+    "crude": Commodity(
+        "crude", 0.85809151 * ureg.kg / ureg.L, 39.043 * ureg.GJ / ureg.m**3
+    ),  # BP crude ~45.5 GJ/t gross
     # Light ends - tuned to match kbbl/kt figures exactly
     "gasoline": Commodity(
         "gasoline", 0.755079324 * ureg.kg / ureg.L, 33.7898 * ureg.GJ / ureg.m**3
     ),  # BP: 44.75 GJ/t
     "naphtha": Commodity(
-        "naphtha", 0.706720311 * ureg.kg / ureg.L, None
-    ),  # 8.90 kbbl/kt
+        "naphtha", 0.706720311 * ureg.kg / ureg.L, 31.732 * ureg.GJ / ureg.m**3
+    ),  # 8.90 kbbl/kt; ~44.9 GJ/t gross
     "ethanol": Commodity(
         "ethanol", 0.755079324 * ureg.kg / ureg.L, 21 * ureg.GJ / ureg.m**3
     ),  # 8.33 kbbl/kt

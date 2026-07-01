@@ -350,3 +350,12 @@ def test_bug5_commodity_accepts_density_none():
     # Direct construction with density=None works.
     c = Commodity(name="test", density=None, energy_content=None)
     assert c.density is None
+
+
+def test_crude_naphtha_energy_content_enabled():
+    # crude/naphtha gained canonical BP/IEA energy_content; volume<->energy
+    # conversions that previously raised ("No energy content defined") now work.
+    crude_gj = convfactors.convert(1.0, "bbl", "GJ", "crude")
+    assert crude_gj == pytest.approx(0.158987294928 * 39.043, rel=1e-6)
+    naphtha_gj = convfactors.convert(1.0, "bbl", "GJ", "naphtha")
+    assert naphtha_gj == pytest.approx(0.158987294928 * 31.732, rel=1e-6)
