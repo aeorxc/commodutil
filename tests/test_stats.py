@@ -106,25 +106,34 @@ class TestForwards(unittest.TestCase):
         self.assertAlmostEqual(res.percentile, 1.0, 6)
 
     def test_reindex_year_point_stats_table_groups(self):
-        idx = pd.date_range(f"{dates.curyear}-01-01", f"{dates.curyear}-01-10", freq="D")
-        df = pd.DataFrame(
-            {
-                # Group A (3 years -> should be included with min_columns=3)
-                "JunAug 2024": np.full(len(idx), 10.0),
-                "JunAug 2025": np.full(len(idx), 11.0),
-                "JunAug 2026": np.full(len(idx), 12.0),
-                # Group B (2 years -> should be excluded with min_columns=3)
-                "DecJan 2025": np.full(len(idx), 5.0),
-                "DecJan 2026": np.full(len(idx), 6.0),
-            },
-            index=idx,
-        )
+        frames = []
+        for y, value in [
+            (dates.curyear - 2, 10.0),
+            (dates.curyear - 1, 11.0),
+            (dates.curyear, 12.0),
+        ]:
+            idx = pd.date_range(f"{y}-01-01", f"{y}-01-10", freq="D")
+            frames.append(pd.DataFrame({f"JunAug {y}": value}, index=idx))
+
+        for y, value in [(dates.curyear - 1, 5.0), (dates.curyear, 6.0)]:
+            idx = pd.date_range(f"{y}-01-01", f"{y}-01-10", freq="D")
+            frames.append(pd.DataFrame({f"DecJan {y}": value}, index=idx))
+
+        df = pd.concat(frames, axis=1, join="outer")
 
         table = stats.reindex_year_point_stats_table(df, lookback_years=2, min_columns=3)
         self.assertIn("JunAug", table.index)
         self.assertNotIn("DecJan", table.index)
         self.assertIn("zscore", table.columns)
         self.assertEqual(int(table.loc["JunAug", "prompt_year"]), dates.curyear)
+
+        expired = stats.reindex_year_point_stats_table(
+            df,
+            asof=f"{dates.curyear}-07-01",
+            lookback_years=2,
+            min_columns=3,
+        )
+        self.assertNotIn("JunAug", expired.index)
 
     def test_prompt_strip_point_stats_asof(self):
         idx = pd.date_range("2024-01-01", periods=10, freq="B")

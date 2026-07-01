@@ -500,7 +500,17 @@ def reindex_year_point_stats_table(
             continue
         groups.setdefault(key, []).append(col)
 
-    ref_date = datetime.now() if asof is None else pd.Timestamp(asof).to_pydatetime()
+    effective_asof = pd.Timestamp(asof) if asof is not None else None
+    if effective_asof is None:
+        dft_for_asof = transforms.reindex_year(df)
+        if dft_for_asof is not None and not dft_for_asof.empty:
+            effective_asof = pd.Timestamp(dft_for_asof.index.max())
+
+    ref_date = (
+        effective_asof.to_pydatetime()
+        if effective_asof is not None and not pd.isna(effective_asof)
+        else datetime.now()
+    )
 
     rows: list[dict] = []
     for key, cols in groups.items():
@@ -512,7 +522,7 @@ def reindex_year_point_stats_table(
             continue
         stats_res = reindex_year_point_stats(
             df[cols],
-            asof=asof,
+            asof=effective_asof,
             lookback_years=lookback_years,
             within_days=within_days,
             trim_expiry=trim_expiry,
