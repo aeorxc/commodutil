@@ -270,97 +270,91 @@ class CommodityConverter:
 
         return result
 
+    @lru_cache(maxsize=128)
+    def _commodity_context(self, name: str) -> pint.Context:
+        """Build (and cache) a pint Context expressing a commodity's dimensional
+        transformations.
+
+        A commodity's physical properties define which cross-dimension jumps are
+        legal:
+          - ``density`` (kg/m^3) enables ``[mass] <-> [volume]``.
+          - ``energy_content`` (J/m^3) enables ``[volume] <-> [energy]``.
+        pint composes the registered transformations into a graph and finds the
+        conversion path itself, so ``[mass] <-> [energy]`` chains for free when
+        both properties exist — no manual branching needed.
+
+        Properties that are ``None`` register no transformation, so pint simply
+        finds no path and raises ``DimensionalityError`` (translated to a domain
+        ``ValueError`` by the caller). This is how density=None commodities
+        (natural_gas, naphtha, vgo) reject any mass<->volume(<->energy) jump.
+        """
+        comm = self.get_commodity(name)
+        ctx = pint.Context(comm.name)
+        if comm.density is not None:
+            d = comm.density.to("kg/m^3")
+            ctx.add_transformation("[mass]", "[volume]", lambda ureg, x, d=d: x / d)
+            ctx.add_transformation("[volume]", "[mass]", lambda ureg, x, d=d: x * d)
+        if comm.energy_content is not None:
+            e = comm.energy_content.to("J/m^3")
+            ctx.add_transformation("[volume]", "[energy]", lambda ureg, x, e=e: x * e)
+            ctx.add_transformation("[energy]", "[volume]", lambda ureg, x, e=e: x / e)
+        return ctx
+
     def _convert_scalar(
         self, value: float, from_unit: str, to_unit: str, commodity: Optional[str]
     ) -> float:
-        """Convert a scalar value across mass/volume/energy using commodity context when needed."""
+        """Convert a scalar value across mass/volume/energy using a commodity's
+        pint Context when a cross-dimension jump is needed."""
         from_unit = _to_pint_token(from_unit)
         to_unit = _to_pint_token(to_unit)
         qty = value * self.ureg(from_unit)
 
-        # Try direct conversion first
+        # Same-dimension conversion (e.g. kt->mt, bbl->L): no commodity needed.
         try:
             return qty.to(to_unit).magnitude
         except DimensionalityError:
             pass
 
-        # Determine unit types
+        # Cross-dimensional: needs commodity physical properties. Decide the
+        # right error up front when no commodity was supplied (mirrors the
+        # historical messages the callers/tests grep for).
         is_from_energy = self._is_energy(from_unit)
         is_to_energy = self._is_energy(to_unit)
-        is_from_mass = self._is_mass(from_unit)
-        is_to_mass = self._is_mass(to_unit)
-        is_from_volume = self._is_volume(from_unit)
-        is_to_volume = self._is_volume(to_unit)
+        involves_energy = is_from_energy or is_to_energy
 
-        # Energy conversions
-        if is_from_energy or is_to_energy:
-            if not commodity:
+        if not commodity:
+            if involves_energy:
                 raise ValueError("Commodity required for energy conversion")
-            comm = self.get_commodity(commodity)
-            if not comm.energy_content:
-                raise ValueError(f"No energy content defined for {commodity}")
-
-            ec = comm.energy_content.to("J/m^3")
-
-            if is_from_energy:
-                energy_J = qty.to("J")
-                # Energy -> Volume or Mass
-                volume_m3 = (energy_J / ec).to("m^3")
-                if is_to_volume:
-                    return volume_m3.to(to_unit).magnitude
-                elif is_to_mass:
-                    if comm.density is None:
-                        raise ValueError(
-                            f"Mass<->volume conversion not supported for {commodity!r} "
-                            f"(no density defined); cannot convert energy to mass"
-                        )
-                    density_kg_m3 = comm.density.to("kg/m^3")
-                    mass_kg = (volume_m3 * density_kg_m3).to("kg")
-                    return mass_kg.to(to_unit).magnitude
-                else:
-                    raise ValueError(f"Cannot convert energy to {to_unit}")
-            else:
-                # Volume/Mass -> Energy
-                if is_from_mass:
-                    if comm.density is None:
-                        raise ValueError(
-                            f"Mass<->volume conversion not supported for {commodity!r} "
-                            f"(no density defined); cannot convert mass to energy"
-                        )
-                    density_kg_m3 = comm.density.to("kg/m^3")
-                    mass_kg = qty.to("kg")
-                    volume_m3 = (mass_kg / density_kg_m3).to("m^3")
-                elif is_from_volume:
-                    volume_m3 = qty.to("m^3")
-                else:
-                    raise ValueError(f"Cannot convert {from_unit} to energy")
-                energy_J = (volume_m3 * ec).to("J")
-                return energy_J.to(to_unit).magnitude
-
-        # Mass <-> Volume conversions require density
-        if (is_from_mass and is_to_volume) or (is_from_volume and is_to_mass):
-            if not commodity:
+            is_from_mass = self._is_mass(from_unit)
+            is_to_mass = self._is_mass(to_unit)
+            is_from_volume = self._is_volume(from_unit)
+            is_to_volume = self._is_volume(to_unit)
+            if (is_from_mass and is_to_volume) or (is_from_volume and is_to_mass):
                 raise ValueError(f"Commodity required for {from_unit} to {to_unit}")
-            comm = self.get_commodity(commodity)
-            if comm.density is None:
+            raise ValueError(
+                f"Cannot convert from {from_unit} to {to_unit} - incompatible dimensions"
+            )
+
+        # Let the commodity's context find the conversion path (including
+        # mass<->energy chaining). A missing property leaves no path -> pint
+        # raises DimensionalityError, which we translate to the domain error.
+        comm = self.get_commodity(commodity)
+        ctx = self._commodity_context(commodity)
+        try:
+            return qty.to(to_unit, ctx).magnitude
+        except DimensionalityError as exc:
+            if involves_energy and comm.energy_content is None:
+                raise ValueError(f"No energy content defined for {commodity}") from exc
+            if comm.density is None and (
+                self._is_mass(from_unit) or self._is_mass(to_unit)
+            ):
                 raise ValueError(
                     f"Mass<->volume conversion not supported for {commodity!r} "
                     f"(no density defined)"
-                )
-            density_kg_L = comm.density.to("kg/L")
-            density_kg_m3 = comm.density.to("kg/m^3")
-            if is_from_mass and is_to_volume:
-                mass_kg = qty.to("kg")
-                volume_L = (mass_kg / density_kg_L).to("L")
-                return volume_L.to(to_unit).magnitude
-            else:
-                volume_L = qty.to("L")
-                mass_kg = (volume_L * density_kg_L).to("kg")
-                return mass_kg.to(to_unit).magnitude
-
-        raise ValueError(
-            f"Cannot convert from {from_unit} to {to_unit} - incompatible dimensions"
-        )
+                ) from exc
+            raise ValueError(
+                f"Cannot convert from {from_unit} to {to_unit} - incompatible dimensions"
+            ) from exc
 
     def _convert_series(
         self,
