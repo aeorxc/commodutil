@@ -45,10 +45,10 @@ def resolve_price_unit(
     Precedence:
     1. ``source_price_unit`` when already ``CCY/unit`` with a valid currency.
     2. ``quote_unit`` when it is already ``CCY/unit`` with a valid currency.
-    3. ``currency/contract_unit``.
-    4. ``currency/quote_unit`` when ``contract_unit`` is absent.
-    5. ``contract_unit``.
-    6. ``quote_unit``.
+    3. ``currency/quote_unit`` when ``quote_unit`` is a bare unit.
+    4. ``currency/contract_unit``.
+    5. ``quote_unit``.
+    6. ``contract_unit``.
     """
     source_price = _clean_token(source_price_unit)
     quote = _clean_token(quote_unit)
@@ -65,13 +65,13 @@ def resolve_price_unit(
         if qualified_quote:
             return qualified_quote
 
+    if ccy in VALID_CURRENCY_TOKENS and quote and "/" not in quote:
+        return f"{ccy}/{quote}"
     if ccy in VALID_CURRENCY_TOKENS and contract:
         return f"{ccy}/{contract}"
-    if ccy in VALID_CURRENCY_TOKENS and quote and not contract:
-        return f"{ccy}/{quote}"
-    if contract:
-        return contract
-    return quote
+    if quote:
+        return quote
+    return contract
 
 
 def _metadata_value(attrs: Any, name: str) -> Any:
