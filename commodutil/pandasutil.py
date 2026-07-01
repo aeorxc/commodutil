@@ -1,7 +1,6 @@
 import re
 from functools import reduce
 
-import numpy as np
 import pandas as pd
 
 
@@ -38,15 +37,11 @@ def fillna_downbet(df):
     """
     Fill weekends/holidays in timeseries but don't extend values beyond the last non-NaN entry.
     """
-    df = df.copy()
-    for col in df.columns:
-        # Drop all NaNs at once, vectorized and fast
-        non_nans = df[col].dropna()
-        if len(non_nans) > 1:
-            start, end = non_nans.index[0], non_nans.index[-1]
-            # Perform ffill only on the portion that has data
-            df.loc[start:end, col] = df.loc[start:end, col].ffill()
-    return df
+    # ffill(limit_area="inside") only fills gaps between existing valid values,
+    # never before the first or after the last non-NaN — equivalent to the old
+    # per-column ffill over [first_valid:last_valid]. Returns a new frame, so the
+    # input is not mutated. Requires pandas>=2.1.
+    return df.ffill(limit_area="inside")
 
 
 def sql_insert_statement_from_dataframe(df, table_name, print_statemnt=False):

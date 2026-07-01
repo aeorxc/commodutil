@@ -16,7 +16,7 @@ classifiers = [
     "Operating System :: OS Independent",
 ]
 dependencies = [
-    "pandas",
+    "pandas>=2.1",
     "dask[delayed]",
     "pint",
     "python-dateutil",
