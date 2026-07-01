@@ -16,7 +16,17 @@ from commodutil.standards.units import to_pint_token as _to_pint_token
 
 logger = logging.getLogger(__name__)
 
-# Initialize pint with custom definitions
+# Initialize pint with custom definitions.
+#
+# NOTE: kept case-sensitive on purpose. `pint.UnitRegistry(case_sensitive=False)`
+# looks tempting (it would drop the hand-registered casing aliases below), but it
+# is UNSAFE for this registry: pint's case-folded lookup makes our domain units
+# collide with SI units that differ only by case -- `kt`/`mt`/`gal` vs `kT`/`mT`
+# (kilo/milli-tesla, T = tesla) and `Gal` (galileo, cm/s^2), while lowercase
+# `mw`/`mwh` resolve to milli-watt instead of mega-. Collision winners are chosen
+# from a set and are NON-DETERMINISTIC (PYTHONHASHSEED-dependent), so `kt`->`km3`
+# etc. intermittently raise "incompatible dimensions". We therefore register the
+# exact spellings we need explicitly and leave the registry case-sensitive.
 ureg = pint.UnitRegistry()
 
 # Define oil & gas specific units.
