@@ -255,7 +255,7 @@ def monthly_mean(df):
 
     Group by month-start and mean over that month, then pivot by month/year.
     """
-    monthly_mean = df.groupby(pd.Grouper(freq="MS")).mean()
+    monthly_mean = df.resample("MS").mean()
     month_pivot = (
         monthly_mean.groupby([monthly_mean.index.month, monthly_mean.index.year])
         .sum()

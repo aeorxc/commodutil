@@ -96,3 +96,23 @@ class TestTransforms(unittest.TestCase):
 
 if __name__ == "__main__":
     unittest.main()
+
+
+def test_monthly_mean_resample_parity():
+    # df.resample("MS").mean() is identical to groupby(Grouper(freq="MS")).mean()
+    # (resample is implemented as that Grouper groupby). Pin the full
+    # monthly_mean output against the old inner implementation.
+    import numpy as np
+    import pandas as pd
+
+    from commodutil import transforms
+
+    idx = pd.date_range("2020-01-01", "2021-06-30", freq="3D")
+    df = pd.DataFrame({"x": np.arange(len(idx), dtype=float)}, index=idx)
+    df.iloc[5:15] = np.nan  # gap that can empty a month bin
+
+    def _old(d):
+        mm = d.groupby(pd.Grouper(freq="MS")).mean()
+        return mm.groupby([mm.index.month, mm.index.year]).sum().unstack()
+
+    pd.testing.assert_frame_equal(transforms.monthly_mean(df), _old(df))
