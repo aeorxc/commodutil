@@ -623,12 +623,11 @@ def convert_price(
             f"convert_price currently only supports USD/* as target; got '{to_unit}'"
         )
 
-    # Unit-leg conversion (no FX yet — uses commodity factors)
+    # Unit-leg conversion (no FX yet — uses commodity factors).
+    # convfactor returns a nonzero float or raises, so no None/zero guard is
+    # needed here.
     factor = convfactor(from_bare_unit, to_bare_unit, commodity)
-    if factor is None or factor == 0:
-        unit_converted = value
-    else:
-        unit_converted = value / factor
+    unit_converted = value / factor
 
     # Same-base fractional case: USc -> USD, GBp -> GBP, EUc -> EUR, JPy -> JPY.
     # This is a pure /100 scale (or *100 in the reverse direction) — no FX
