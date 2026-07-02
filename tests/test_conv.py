@@ -57,22 +57,28 @@ class TestUtils:
         assert res["2020-01"].iloc[0] == pytest.approx(0.208054, abs=1e-3)
 
     def test_energy_conversions(self):
-        """Test energy to volume/mass conversions"""
-        # Volume to energy (diesel has 36.624 GJ/m³)
+        """Test energy to volume/mass conversions.
+
+        Diesel energy_content is now GROSS/HHV (EIA distillate 5.770 MMBtu/bbl
+        = 38.290 GJ/m^3 = 45.353 GJ/t), superseding the old BP NCV 36.624
+        GJ/m^3 / 43.38 GJ/t. See convfactors.py basis-policy block and
+        conversion-architecture-plan.md decision 2b.
+        """
+        # Volume to energy (diesel gross HHV 38.290 GJ/m³)
         res = convfactors.convert(1, "m^3", "GJ", "diesel")
-        assert res == pytest.approx(36.624, abs=0.01)
+        assert res == pytest.approx(38.290, abs=0.01)
 
         # Energy to volume
-        res = convfactors.convert(36.624, "GJ", "m^3", "diesel")
+        res = convfactors.convert(38.290, "GJ", "m^3", "diesel")
         assert res == pytest.approx(1.0, abs=0.01)
 
-        # Mass to energy (diesel: 0.844 kg/L, 36.624 GJ/m³)
-        # 1 mt = 1.184 m³ = 43.38 GJ
+        # Mass to energy (diesel: 0.844 kg/L, 38.290 GJ/m³)
+        # 1 mt = 1.184 m³ = 45.353 GJ (gross)
         res = convfactors.convert(1, "mt", "GJ", "diesel")
-        assert res == pytest.approx(43.38, abs=0.01)
+        assert res == pytest.approx(45.353, abs=0.01)
 
         # Energy to mass
-        res = convfactors.convert(43.38, "GJ", "mt", "diesel")
+        res = convfactors.convert(45.353, "GJ", "mt", "diesel")
         assert res == pytest.approx(1.0, abs=0.01)
 
         # Test commodity without energy content raises error (vgo has none;
