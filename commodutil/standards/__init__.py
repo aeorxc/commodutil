@@ -33,6 +33,9 @@ from commodutil.standards.currency import (
     split_currency_unit,
     to_symbol,
 )
+from commodutil.standards.price_unit import (
+    PriceUnit,
+)
 from commodutil.standards.price_units import (
     resolve_price_unit,
     resolve_price_unit_from_attrs,
@@ -81,6 +84,8 @@ __all__ = [
     "required_fx_pair",
     "split_currency_unit",
     "to_symbol",
+    # price_unit
+    "PriceUnit",
     # price_units
     "resolve_price_unit",
     "resolve_price_unit_from_attrs",
