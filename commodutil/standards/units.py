@@ -31,57 +31,25 @@ from commodutil.standards.currency import (
     normalize_currency_token,
     split_currency_unit,
 )
+from commodutil.standards.unit_registry import (
+    ENCODING_REPAIRS as _ENCODING_REPAIRS,
+)
+from commodutil.standards.unit_registry import (
+    PUBLIC_UNIT_MAP as _PUBLIC_UNIT_MAP,
+)
+from commodutil.standards.unit_registry import (
+    UNIT_MAP as UNIT_MAP,
+)
 
 
 # ---- Alias -> canonical normalisation ----
-
-# Maps lowercase aliases (singular / plural / abbreviated forms) to the
-# canonical unit token used by downstream code. Used by vendor-spec
-# parsers (e.g. curvemetadata.ice_util.parse_unit). Keys are matched
-# case-insensitively at call time -- callers should lowercase input.
-UNIT_MAP = {
-    "barrel": "bbl",
-    "barrels": "bbl",
-    "bbl": "bbl",
-    "bbls": "bbl",
-    "gallon": "gal",
-    "gallons": "gal",
-    "gal": "gal",
-    "metric ton": "mt",
-    "metric tons": "mt",
-    "metric tonne": "mt",
-    "metric tonnes": "mt",
-    "mt": "mt",
-    "tonne": "mt",
-    "tonnes": "mt",
-    "pound": "lb",
-    "pounds": "lb",
-    "lb": "lb",
-    "lbs": "lb",
-}
-
-
-# Public market/metadata unit tokens. ``bbl`` is the petroleum/oil barrel
-# (42 US gal: NIST/EIA; UCUM ``[bbl_us]``), not Pint's generic barrel.
-_PUBLIC_UNIT_MAP = {
-    **UNIT_MAP,
-    "btu": "Btu",
-    "mmbtu": "MMBtu",
-    "mm btu": "MMBtu",
-    "mwh": "MWh",
-    "mw h": "MWh",
-    "m3": "m^3",
-    "m^3": "m^3",
-    "m**3": "m^3",
-    "cubic meter": "m^3",
-    "cubic meters": "m^3",
-    "cubic metre": "m^3",
-    "cubic metres": "m^3",
-    "cubic_meter": "m^3",
-    "cubic_meters": "m^3",
-    "cubic_metre": "m^3",
-    "cubic_metres": "m^3",
-}
+#
+# UNIT_MAP (the bbl/gal/mt/lb vendor-spec vocabulary, consumed by
+# curvemetadata.ice_util.parse_unit) and _PUBLIC_UNIT_MAP (the wider public /
+# metadata spelling map) are DERIVED from the single unit registry table in
+# commodutil.standards.unit_registry. To add a unit spelling, add it to a
+# UnitRow there — not here. Keys are matched case-insensitively at call time
+# (callers lower-case their input).
 
 
 # ---- Default unit per commodity ----
@@ -218,15 +186,10 @@ def to_pint_token(unit: Optional[str]) -> Optional[str]:
     if unit is None:
         return unit
     u = unit.strip()
-    # Fix cubic meter notations and encoding issues
-    replacements = {
-        "m��": "m^3",  # UTF-8 mojibake of m^3 written as "m??"
-        "m³": "m^3",
-        "m**3": "m^3",
-        "cubic_meter": "m^3",
-        "CUBIC_METER": "m^3",
-    }
-    for bad, good in replacements.items():
+    # Fix cubic meter notations and encoding issues. The repair table lives in
+    # the unit registry (single source of unit-vocabulary data); applied here as
+    # ordered substring replacements.
+    for bad, good in _ENCODING_REPAIRS.items():
         u = u.replace(bad, good)
 
     # Additional robust normalizations using ASCII-only fallbacks
