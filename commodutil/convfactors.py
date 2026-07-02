@@ -13,6 +13,7 @@ from functools import lru_cache
 
 from commodutil.standards import currency as _currency
 from commodutil.standards.price_unit import PriceUnit
+from commodutil.standards.unit_registry import PINT_DEFINITIONS as _PINT_DEFINITIONS
 from commodutil.standards.units import to_pint_token as _to_pint_token
 
 logger = logging.getLogger(__name__)
@@ -32,48 +33,19 @@ ureg = pint.UnitRegistry()
 
 # Define oil & gas specific units.
 #
-# Pint already ships a `barrel` unit but its default (US dry barrel,
-# ~119.24 L) is NOT the oil/petroleum barrel. Rather than silently
-# clobbering pint's default (which would mean downstream callers using
-# `ureg.barrel` for non-oil contexts get the wrong answer), we register
-# a distinct `oil_barrel` (158.987294928 L = 42 US gallons) and route
-# the `bbl` alias to it. `ureg.barrel` retains pint's default meaning.
-ureg.define("oil_barrel = 158.987294928 liter = bbl")
-ureg.define("gallon = 3.785411784 liter = gal")
-ureg.define("metric_ton = 1000 kilogram = mt")
-ureg.define("kiloton = 1000 metric_ton = kt")
-ureg.define("cubic_kilometer = 1e9 meter**3 = km3")  # 1 km^3 = 1 billion m^3
-ureg.define("gigajoule = 1e9 joule = gj = GJ")
-ureg.define("petajoule = 1e15 joule = pj = PJ")
-ureg.define("billion_cubic_meter = 1e9 meter**3 = bcm = BCM")
-ureg.define("billion_cubic_foot = 1e9 foot**3 = bcf = BCF")
-ureg.define("tonne_of_oil_equivalent = 41.868e9 joule = toe = TOE")
-ureg.define("million_tonne_of_oil_equivalent = 1e6 tonne_of_oil_equivalent = Mtoe")
-ureg.define("barrel_of_oil_equivalent = 6.119e9 joule = boe = BOE")
-ureg.define("million_barrel_of_oil_equivalent = 1e6 barrel_of_oil_equivalent = Mboe")
-ureg.define("megatonne = 1e6 metric_ton = Mt")
-# Pint defines `Btu` (= 1055.056 J) and `therm` (= 1e5 Btu) but NOT `MMBtu`.
-# The natgas / NGL pages quote in $/MMBtu, so register it explicitly (and the
-# normalize_unit helper already maps 'MMBTU' -> 'MMBtu').
-ureg.define("million_british_thermal_unit = 1e6 Btu = MMBtu")
-
-# Case-insensitive aliases for the most-quoted energy / power units.
-# Pint is case-sensitive by default, so `ureg('mmbtu')` or `ureg('mw')` raise
-# UndefinedUnitError even though `MMBtu` / `MW` work. Callers (Power Query, ad-hoc
-# scripts, copy-pasted Platts symbols) very commonly use the lowercase / all-caps
-# / underscored forms, so register them explicitly here.
-#
-# Energy: MMBtu + therm + Btu spellings (MMBtu is defined above; therm + Btu are
-# in pint's defaults). `million_btu` is the long-form alias.
-ureg.define("@alias million_british_thermal_unit = mmbtu = MMBTU = million_btu")
-ureg.define("@alias therm = Therm = THERM")
-ureg.define("@alias british_thermal_unit = btu")
-# Power / energy: MW and MWh are SI-prefix forms of `watt` / `watt_hour`, so they
-# cannot be aliased via `@alias`. Register lowercase / all-caps spellings as
-# standalone units with the same magnitude.
-ureg.define("mw = 1e6 watt")
-ureg.define("mwh = 1e6 watt * hour")
-ureg.define("MWH = 1e6 watt * hour")
+# The exact pint definitions (and their required ordering) live as the
+# `pint_specs` of each row in commodutil.standards.unit_registry; they are
+# applied here in registry order. This includes the load-bearing re-routes and
+# case spellings that keep this registry correct:
+#   * `oil_barrel` (158.987294928 L = 42 US gal) with `bbl` routed to it —
+#     pint's default `barrel` is the US dry barrel (~119.24 L), left untouched.
+#   * `metric_ton = mt` — pint's `mt` would otherwise be milli-tonne.
+#   * MMBtu, plus case aliases (mmbtu/MMBTU, therm/THERM, btu) and lowercase /
+#     all-caps power spellings (mw, mwh, MWH) — the registry stays CASE-SENSITIVE
+#     (kt/kilotesla etc. collide non-deterministically under case-folding).
+# To add or change a unit definition, edit its UnitRow in the registry.
+for _definition in _PINT_DEFINITIONS:
+    ureg.define(_definition)
 
 
 @dataclass
