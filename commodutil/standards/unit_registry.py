@@ -46,6 +46,11 @@ class UnitRow:
                            inheritance, PUBLIC_UNIT_MAP).
     public_only_spellings  lower-case spellings that go into PUBLIC_UNIT_MAP only.
     pint_specs             exact strings passed to ``ureg.define(...)``, in order.
+    substring_risky        UNIT_MAP spellings on this row that are short/ambiguous
+                           as SUBSTRINGS (e.g. ``'mw'`` inside ``'mwh'``). Consumers
+                           that match UNIT_MAP entries as substrings (curvemetadata
+                           ``parse_unit``) should enforce word boundaries for these;
+                           exposed as ``RISKY_SUBSTRING_SPELLINGS``.
     """
 
     canonical: str
@@ -53,6 +58,7 @@ class UnitRow:
     unit_map_spellings: Tuple[str, ...] = ()
     public_only_spellings: Tuple[str, ...] = ()
     pint_specs: Tuple[str, ...] = ()
+    substring_risky: Tuple[str, ...] = ()
 
 
 # The one table. Order is load-bearing for PINT_DEFINITIONS (see module docstring).
@@ -95,9 +101,12 @@ UNIT_ROWS: Tuple[UnitRow, ...] = (
     UnitRow(
         "GJ",
         "energy",
-        # curvemetadata: gj / gigajoule / gigajoules
-        public_only_spellings=("gj", "gigajoule", "gigajoules"),
+        # ICE gap fix: 'gj' promoted into UNIT_MAP so curvemetadata parse_unit
+        # catches "100 GJs". curvemetadata: gigajoule / gigajoules.
+        unit_map_spellings=("gj",),
+        public_only_spellings=("gigajoule", "gigajoules"),
         pint_specs=("gigajoule = 1e9 joule = gj = GJ",),
+        substring_risky=("gj",),
     ),
     UnitRow("PJ", "energy", pint_specs=("petajoule = 1e15 joule = pj = PJ",)),
     UnitRow(
@@ -139,8 +148,11 @@ UNIT_ROWS: Tuple[UnitRow, ...] = (
     UnitRow(
         "MMBtu",
         "energy",
-        # curvemetadata: adds "million british thermal units"
-        public_only_spellings=("mmbtu", "mm btu", "million british thermal units"),
+        # ICE gap fix: 'mmbtu' promoted into UNIT_MAP so curvemetadata parse_unit
+        # catches "2500 MMBtus" / "100 MMBtus per lot".
+        # curvemetadata: adds "million british thermal units".
+        unit_map_spellings=("mmbtu",),
+        public_only_spellings=("mm btu", "million british thermal units"),
         pint_specs=(
             "million_british_thermal_unit = 1e6 Btu = MMBtu",
             "@alias million_british_thermal_unit = mmbtu = MMBTU = million_btu",
@@ -153,13 +165,27 @@ UNIT_ROWS: Tuple[UnitRow, ...] = (
         public_only_spellings=("btu",),
         pint_specs=("@alias british_thermal_unit = btu",),
     ),
-    UnitRow("MW", "power", pint_specs=("mw = 1e6 watt",)),
+    # NOTE: MWh is listed BEFORE MW so that in UNIT_MAP iteration order the
+    # longer 'mwh' spelling precedes the shorter (substring-risky) 'mw' — a
+    # substring matcher then resolves "100 MWh" to MWh, not MW. mw/mwh/MWH pint
+    # defs are mutually independent, so this ordering is pint-safe.
     UnitRow(
         "MWh",
         "energy",
-        # curvemetadata: adds "megawatt hour" / "megawatt hours"
-        public_only_spellings=("mwh", "mw h", "megawatt hour", "megawatt hours"),
+        # ICE gap fix: 'mwh' promoted into UNIT_MAP.
+        # curvemetadata: adds "megawatt hour" / "megawatt hours".
+        unit_map_spellings=("mwh",),
+        public_only_spellings=("mw h", "megawatt hour", "megawatt hours"),
         pint_specs=("mwh = 1e6 watt * hour", "MWH = 1e6 watt * hour"),
+    ),
+    UnitRow(
+        "MW",
+        "power",
+        # ICE gap fix: 'mw' (power capacity, "1 MW") into UNIT_MAP. Substring-
+        # risky ('mw' inside 'mwh') — MWh row above wins by ordering.
+        unit_map_spellings=("mw",),
+        pint_specs=("mw = 1e6 watt",),
+        substring_risky=("mw",),
     ),
     # ---- vocabulary-only rows (unit resolved by pint's own defaults) ----
     UnitRow(
@@ -170,6 +196,9 @@ UNIT_ROWS: Tuple[UnitRow, ...] = (
     UnitRow(
         "m^3",
         "volume",
+        # ICE gap fix: 'cubic met' promoted into UNIT_MAP as a PREFIX spelling
+        # that a substring matcher uses to catch cubic met{er,re,ers,res}.
+        unit_map_spellings=("cubic met",),
         public_only_spellings=(
             "m3",
             "m^3",
@@ -196,6 +225,28 @@ UNIT_ROWS: Tuple[UnitRow, ...] = (
             "kilogrammes",
         ),
     ),
+    # ---- structural / non-physical vocabulary-only tokens (ICE) ----
+    # No pint specs: these carry no conversion factor. They exist only so a
+    # source_price_unit can compose currency-qualified strings like 'USc/RIN'
+    # (see convfactors.convert_currency_leg, oilrisk ARTIS USc/RIN flows) and so
+    # freight-priced ICE rows get a denominator instead of being dropped.
+    UnitRow(
+        "RIN",
+        "credit",  # biofuel Renewable Identification Number; dimensionless credit
+        unit_map_spellings=("rin",),
+        substring_risky=("rin",),
+    ),
+    UnitRow(
+        "FEU",
+        "container",  # forty-foot equivalent unit (container freight)
+        unit_map_spellings=("feu", "forty foot"),
+        substring_risky=("feu",),
+    ),
+    UnitRow(
+        "day",
+        "time",  # freight FFA charter day (rate denominator, not a quantity)
+        unit_map_spellings=("charter day",),
+    ),
 )
 
 
@@ -220,10 +271,20 @@ def _build_pint_definitions() -> Tuple[str, ...]:
     return tuple(spec for row in UNIT_ROWS for spec in row.pint_specs)
 
 
+def _build_risky_substring_spellings() -> frozenset:
+    return frozenset(s for row in UNIT_ROWS for s in row.substring_risky)
+
+
 # Derived, import-time products of the one table.
 UNIT_MAP: Dict[str, str] = _build_unit_map()
 PUBLIC_UNIT_MAP: Dict[str, str] = _build_public_unit_map()
 PINT_DEFINITIONS: Tuple[str, ...] = _build_pint_definitions()
+
+# UNIT_MAP spellings that are ambiguous as bare substrings (e.g. 'mw' inside
+# 'mwh'). Substring-matching consumers (curvemetadata parse_unit) should require
+# a word boundary for these. UNIT_MAP iteration order already places safer,
+# longer spellings first (e.g. 'mwh' before 'mw').
+RISKY_SUBSTRING_SPELLINGS: frozenset = _build_risky_substring_spellings()
 
 
 # Encoding / notation repairs used by ``standards.units.to_pint_token`` to turn
@@ -245,5 +306,6 @@ __all__ = [
     "UNIT_MAP",
     "PUBLIC_UNIT_MAP",
     "PINT_DEFINITIONS",
+    "RISKY_SUBSTRING_SPELLINGS",
     "ENCODING_REPAIRS",
 ]

@@ -78,10 +78,29 @@ def test_unit_map_pound_variants():
 
 
 def test_unit_map_canonical_set():
-    """UNIT_MAP normalises to the canonical physical quote units."""
+    """UNIT_MAP canonical set.
+
+    The ICE unit-parse gap fix widened UNIT_MAP beyond bbl/gal/mt/lb to also
+    carry the physical energy/power quote units (MMBtu/GJ/MWh/MW/m^3) and the
+    structural non-physical denominators (RIN/FEU/day) that ICE bronze rows
+    quote, so curvemetadata parse_unit stops dropping them.
+    """
     from commodutil.standards.units import UNIT_MAP
 
-    assert set(UNIT_MAP.values()) == {"bbl", "gal", "mt", "lb"}
+    assert set(UNIT_MAP.values()) == {
+        "bbl",
+        "gal",
+        "mt",
+        "lb",
+        "GJ",
+        "MMBtu",
+        "MWh",
+        "MW",
+        "m^3",
+        "RIN",
+        "FEU",
+        "day",
+    }
 
 
 def test_canonical_quantity_unit_normalizes_common_labels():
@@ -89,7 +108,8 @@ def test_canonical_quantity_unit_normalizes_common_labels():
     assert canonical_quantity_unit("barrels") == "bbl"
     assert canonical_quantity_unit("GAL") == "gal"
     assert canonical_quantity_unit("Metric Tonnes") == "mt"
-    assert canonical_quantity_unit("mmbtu") is None
+    # ICE gap fix: 'mmbtu' is now a recognised UNIT_MAP quote unit.
+    assert canonical_quantity_unit("mmbtu") == "MMBtu"
     assert canonical_quantity_unit(None) is None
 
 

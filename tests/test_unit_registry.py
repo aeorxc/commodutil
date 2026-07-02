@@ -21,7 +21,11 @@ from commodutil.standards import unit_registry as registry
 from commodutil.standards import units
 
 
-# Historical literals captured BEFORE the registry refactor (the contract).
+# The contract for UNIT_MAP. The bbl/gal/mt/lb block is the historical literal
+# (Phase 3.2). The trailing block was ADDED for the ICE unit-parse gap fix:
+# denominator-less active ICE rows quote MMBtu/GJ/MWh/m^3/MW (and freight/RIN)
+# in bronze raw text that the bbl/gal/mt/lb vocabulary dropped. This frozen
+# expectation is updated deliberately here so the change is explicit + reviewed.
 _FROZEN_UNIT_MAP = {
     "barrel": "bbl",
     "barrels": "bbl",
@@ -41,6 +45,17 @@ _FROZEN_UNIT_MAP = {
     "pounds": "lb",
     "lb": "lb",
     "lbs": "lb",
+    # ICE gap fix — physical energy/power spellings:
+    "gj": "GJ",
+    "mmbtu": "MMBtu",
+    "mwh": "MWh",
+    "mw": "MW",
+    "cubic met": "m^3",  # prefix catching cubic met{er,re,ers,res}
+    # ICE gap fix — structural / non-physical denominators (no conversion):
+    "rin": "RIN",
+    "feu": "FEU",
+    "forty foot": "FEU",
+    "charter day": "day",
 }
 
 _FROZEN_PUBLIC_UNIT_MAP = {
@@ -83,9 +98,11 @@ _FROZEN_PINT_DEFINITIONS = [
     "@alias million_british_thermal_unit = mmbtu = MMBTU = million_btu",
     "@alias therm = Therm = THERM",
     "@alias british_thermal_unit = btu",
-    "mw = 1e6 watt",
+    # ICE gap fix: MWh row now precedes MW row (so 'mwh' sorts before 'mw' in
+    # UNIT_MAP); mw/mwh/MWH pint defs are independent so this is pint-safe.
     "mwh = 1e6 watt * hour",
     "MWH = 1e6 watt * hour",
+    "mw = 1e6 watt",
 ]
 
 # Additive curvemetadata spellings absorbed in Item 2 (Phase 2.1).
@@ -263,3 +280,67 @@ def test_public_helper_functions_behaviour():
     assert units.quantity_unit_from_price_unit("bbl/day") is None
     assert units.default_unit_for_commodity("natgas") == "mmbtu"
     assert units.default_unit_for_commodity("crude") == "bbl"
+
+
+# ---- ICE unit-parse gap fix ----
+
+
+def _naive_substring_resolve(text):
+    """Mimic curvemetadata parse_unit's substring-first match over UNIT_MAP, to
+    prove intended resolution follows from correct vocab + ordering (the actual
+    word-boundary enforcement lives in curvemetadata parse_unit)."""
+    lowered = text.lower()
+    for spelling, canonical in units.UNIT_MAP.items():
+        if spelling in lowered:
+            return canonical
+    return None
+
+
+def test_ice_raw_examples_resolve():
+    cases = {
+        "2500 MMBtus": "MMBtu",
+        "100 MMBtus per lot": "MMBtu",
+        "100 GJs": "GJ",
+        "1 MW": "MW",
+        "100 MWh": "MWh",  # must NOT resolve to MW
+        "5000 cubic metres": "m^3",
+        "50000 cubic meters": "m^3",
+        "USc per RIN": "RIN",
+        "1 FEU": "FEU",
+        "forty foot container": "FEU",
+        "hire per charter day": "day",
+    }
+    for raw, expected in cases.items():
+        assert _naive_substring_resolve(raw) == expected, raw
+
+
+def test_mwh_ordered_before_mw_in_unit_map():
+    keys = list(units.UNIT_MAP)
+    assert keys.index("mwh") < keys.index("mw"), (
+        "'mwh' must precede 'mw' so substring matching resolves MWh, not MW"
+    )
+
+
+def test_risky_substring_spellings_exposed():
+    assert registry.RISKY_SUBSTRING_SPELLINGS == frozenset({"mw", "gj", "rin", "feu"})
+    # Every risky spelling is a real UNIT_MAP entry.
+    for spelling in registry.RISKY_SUBSTRING_SPELLINGS:
+        assert spelling in units.UNIT_MAP
+
+
+def test_non_physical_rows_have_no_pint_specs():
+    # RIN/FEU/day carry no conversion factor and must not leak into the pint
+    # definitions (which would try to ureg.define an undefined dimension).
+    for canonical in ("RIN", "FEU", "day"):
+        row = next(r for r in registry.UNIT_ROWS if r.canonical == canonical)
+        assert row.pint_specs == ()
+    joined = " ".join(registry.PINT_DEFINITIONS)
+    for token in ("RIN", "FEU", "rin", "feu", "charter day"):
+        assert token not in joined
+
+
+def test_ice_spellings_resolve_via_canonical_helpers():
+    assert units.canonical_quantity_unit("mmbtu") == "MMBtu"
+    assert units.canonical_quantity_unit("mwh") == "MWh"
+    assert units.canonical_quantity_unit("rin") == "RIN"
+    assert units.canonical_quantity_unit("mw") == "MW"
