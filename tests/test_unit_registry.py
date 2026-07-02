@@ -45,17 +45,28 @@ _FROZEN_UNIT_MAP = {
     "pounds": "lb",
     "lb": "lb",
     "lbs": "lb",
-    # ICE gap fix — physical energy/power spellings:
+    # ICE gap fix — physical energy/power spellings (singular + explicit plural,
+    # because curvemetadata parse_unit matches on word boundaries):
     "gj": "GJ",
+    "gjs": "GJ",
     "mmbtu": "MMBtu",
+    "mmbtus": "MMBtu",
     "mwh": "MWh",
+    "mwhs": "MWh",
     "mw": "MW",
-    "cubic met": "m^3",  # prefix catching cubic met{er,re,ers,res}
+    "mws": "MW",
+    "cubic meter": "m^3",
+    "cubic meters": "m^3",
+    "cubic metre": "m^3",
+    "cubic metres": "m^3",
     # ICE gap fix — structural / non-physical denominators (no conversion):
     "rin": "RIN",
+    "rins": "RIN",
     "feu": "FEU",
+    "feus": "FEU",
     "forty foot": "FEU",
     "charter day": "day",
+    "charter days": "day",
 }
 
 _FROZEN_PUBLIC_UNIT_MAP = {
@@ -285,33 +296,57 @@ def test_public_helper_functions_behaviour():
 # ---- ICE unit-parse gap fix ----
 
 
-def _naive_substring_resolve(text):
-    """Mimic curvemetadata parse_unit's substring-first match over UNIT_MAP, to
-    prove intended resolution follows from correct vocab + ordering (the actual
-    word-boundary enforcement lives in curvemetadata parse_unit)."""
+def _word_boundary_resolve(text):
+    """Model curvemetadata parse_unit's word-boundary + longest-first matcher
+    over UNIT_MAP: a spelling matches only when not flanked by [a-z0-9], and the
+    LONGEST matching spelling wins. This mirrors the real (parallel-repo) parser,
+    so these tests actually validate the vocabulary the ICE corpus needs — a
+    naive-substring model would falsely pass (e.g. 'mmbtu' inside 'mmbtus')."""
     lowered = text.lower()
+    best = None
     for spelling, canonical in units.UNIT_MAP.items():
-        if spelling in lowered:
-            return canonical
-    return None
+        if re.search(rf"(?<![a-z0-9]){re.escape(spelling)}(?![a-z0-9])", lowered):
+            if best is None or len(spelling) > len(best[0]):
+                best = (spelling, canonical)
+    return best[1] if best else None
 
 
 def test_ice_raw_examples_resolve():
+    # The diagnostic corpus, resolved under WORD-BOUNDARY matching.
     cases = {
+        # singular
+        "1 MMBtu": "MMBtu",
+        "1 MW": "MW",
+        "100 MWh": "MWh",  # 'mw' cannot match inside 'mwh' under word boundary
+        # plural (the whole point of the spec correction) — these would return
+        # None if only singular spellings were registered.
         "2500 MMBtus": "MMBtu",
         "100 MMBtus per lot": "MMBtu",
+        "100 MMBTus": "MMBtu",
+        "25,000 MMBtus": "MMBtu",
         "100 GJs": "GJ",
-        "1 MW": "MW",
-        "100 MWh": "MWh",  # must NOT resolve to MW
+        "50,000 RINs": "RIN",
+        "3 FEUs": "FEU",
+        "30 charter days": "day",
+        # spelled-out volume
         "5000 cubic metres": "m^3",
         "50000 cubic meters": "m^3",
+        # structural singular
         "USc per RIN": "RIN",
         "1 FEU": "FEU",
         "forty foot container": "FEU",
         "hire per charter day": "day",
     }
     for raw, expected in cases.items():
-        assert _naive_substring_resolve(raw) == expected, raw
+        assert _word_boundary_resolve(raw) == expected, raw
+
+
+def test_singular_only_would_miss_plural_regression():
+    # Guard the spec correction: 'mmbtu' alone must NOT satisfy "2500 MMBtus"
+    # under word boundaries — the explicit plural 'mmbtus' is what does.
+    assert not re.search(r"(?<![a-z0-9])mmbtu(?![a-z0-9])", "2500 mmbtus")
+    assert re.search(r"(?<![a-z0-9])mmbtus(?![a-z0-9])", "2500 mmbtus")
+    assert "mmbtus" in units.UNIT_MAP and units.UNIT_MAP["mmbtus"] == "MMBtu"
 
 
 def test_mwh_ordered_before_mw_in_unit_map():

@@ -101,9 +101,10 @@ UNIT_ROWS: Tuple[UnitRow, ...] = (
     UnitRow(
         "GJ",
         "energy",
-        # ICE gap fix: 'gj' promoted into UNIT_MAP so curvemetadata parse_unit
-        # catches "100 GJs". curvemetadata: gigajoule / gigajoules.
-        unit_map_spellings=("gj",),
+        # ICE gap fix: 'gj' + plural 'gjs' in UNIT_MAP. curvemetadata parse_unit
+        # uses word-boundary matching, so 'gj' does NOT match "100 GJs" (trailing
+        # s) — the plural must be listed explicitly. curvemetadata: gigajoule(s).
+        unit_map_spellings=("gj", "gjs"),
         public_only_spellings=("gigajoule", "gigajoules"),
         pint_specs=("gigajoule = 1e9 joule = gj = GJ",),
         substring_risky=("gj",),
@@ -148,10 +149,11 @@ UNIT_ROWS: Tuple[UnitRow, ...] = (
     UnitRow(
         "MMBtu",
         "energy",
-        # ICE gap fix: 'mmbtu' promoted into UNIT_MAP so curvemetadata parse_unit
-        # catches "2500 MMBtus" / "100 MMBtus per lot".
+        # ICE gap fix: 'mmbtu' + plural 'mmbtus' in UNIT_MAP so word-boundary
+        # parse_unit catches "2500 MMBtus" / "100 MMBtus per lot" / "25,000
+        # MMBtus" (the 752-row plural category) as well as the singular.
         # curvemetadata: adds "million british thermal units".
-        unit_map_spellings=("mmbtu",),
+        unit_map_spellings=("mmbtu", "mmbtus"),
         public_only_spellings=("mm btu", "million british thermal units"),
         pint_specs=(
             "million_british_thermal_unit = 1e6 Btu = MMBtu",
@@ -172,18 +174,19 @@ UNIT_ROWS: Tuple[UnitRow, ...] = (
     UnitRow(
         "MWh",
         "energy",
-        # ICE gap fix: 'mwh' promoted into UNIT_MAP.
+        # ICE gap fix: 'mwh' + plural 'mwhs' into UNIT_MAP.
         # curvemetadata: adds "megawatt hour" / "megawatt hours".
-        unit_map_spellings=("mwh",),
+        unit_map_spellings=("mwh", "mwhs"),
         public_only_spellings=("mw h", "megawatt hour", "megawatt hours"),
         pint_specs=("mwh = 1e6 watt * hour", "MWH = 1e6 watt * hour"),
     ),
     UnitRow(
         "MW",
         "power",
-        # ICE gap fix: 'mw' (power capacity, "1 MW") into UNIT_MAP. Substring-
-        # risky ('mw' inside 'mwh') — MWh row above wins by ordering.
-        unit_map_spellings=("mw",),
+        # ICE gap fix: 'mw' + plural 'mws' (power capacity, "1 MW"). Under
+        # word-boundary matching 'mw' cannot match inside 'mwh'/'mwhs' anyway;
+        # MWh is still listed first as belt-and-braces.
+        unit_map_spellings=("mw", "mws"),
         pint_specs=("mw = 1e6 watt",),
         substring_risky=("mw",),
     ),
@@ -196,17 +199,20 @@ UNIT_ROWS: Tuple[UnitRow, ...] = (
     UnitRow(
         "m^3",
         "volume",
-        # ICE gap fix: 'cubic met' promoted into UNIT_MAP as a PREFIX spelling
-        # that a substring matcher uses to catch cubic met{er,re,ers,res}.
-        unit_map_spellings=("cubic met",),
-        public_only_spellings=(
-            "m3",
-            "m^3",
-            "m**3",
+        # ICE gap fix: the spelled-out cubic-metre forms (singular + plural) go
+        # into UNIT_MAP. A prefix like 'cubic met' does NOT work under
+        # word-boundary matching (trailing letters kill the lookahead), so each
+        # form is listed explicitly.
+        unit_map_spellings=(
             "cubic meter",
             "cubic meters",
             "cubic metre",
             "cubic metres",
+        ),
+        public_only_spellings=(
+            "m3",
+            "m^3",
+            "m**3",
             "cubic_meter",
             "cubic_meters",
             "cubic_metre",
@@ -233,19 +239,21 @@ UNIT_ROWS: Tuple[UnitRow, ...] = (
     UnitRow(
         "RIN",
         "credit",  # biofuel Renewable Identification Number; dimensionless credit
-        unit_map_spellings=("rin",),
+        # plural 'rins' explicit for word-boundary parse ("50,000 RINs").
+        unit_map_spellings=("rin", "rins"),
         substring_risky=("rin",),
     ),
     UnitRow(
         "FEU",
         "container",  # forty-foot equivalent unit (container freight)
-        unit_map_spellings=("feu", "forty foot"),
+        # plural 'feus' explicit; 'forty foot' stays boundary-delimited in text.
+        unit_map_spellings=("feu", "feus", "forty foot"),
         substring_risky=("feu",),
     ),
     UnitRow(
         "day",
         "time",  # freight FFA charter day (rate denominator, not a quantity)
-        unit_map_spellings=("charter day",),
+        unit_map_spellings=("charter day", "charter days"),
     ),
 )
 
