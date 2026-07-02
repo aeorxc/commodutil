@@ -353,9 +353,13 @@ def test_bug5_commodity_accepts_density_none():
 
 
 def test_crude_naphtha_energy_content_enabled():
-    # crude/naphtha gained canonical BP/IEA energy_content; volume<->energy
-    # conversions that previously raised ("No energy content defined") now work.
+    # crude/naphtha carry canonical energy_content; volume<->energy conversions
+    # that previously raised ("No energy content defined") work.
+    # crude stays on its BP world-crude gross basis (39.043 GJ/m^3); naphtha was
+    # rebased to GROSS/HHV (EIA petrochemical naphtha 5.248 MMBtu/bbl =
+    # 34.826266 GJ/m^3, was BP NCV 31.732). See convfactors.py basis-policy
+    # block and conversion-architecture-plan.md decision 2b.
     crude_gj = convfactors.convert(1.0, "bbl", "GJ", "crude")
     assert crude_gj == pytest.approx(0.158987294928 * 39.043, rel=1e-6)
     naphtha_gj = convfactors.convert(1.0, "bbl", "GJ", "naphtha")
-    assert naphtha_gj == pytest.approx(0.158987294928 * 31.732, rel=1e-6)
+    assert naphtha_gj == pytest.approx(0.158987294928 * 34.826266, rel=1e-6)
