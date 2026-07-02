@@ -297,34 +297,32 @@ class CommodityConverter:
         if isinstance(to_unit, PriceUnit):
             to_unit = str(to_unit)
 
-        # Normalize and parse units to handle daily/monthly rates
+        # Normalize, then split rate units with the single PriceUnit parser
+        # (quantity leg + rate period). No private rate parser anymore.
         from_unit = _to_pint_token(from_unit)
         to_unit = _to_pint_token(to_unit)
-        from_rate = self._parse_rate_unit(from_unit)
-        to_rate = self._parse_rate_unit(to_unit)
+        from_pu = PriceUnit.parse(from_unit)
+        to_pu = PriceUnit.parse(to_unit)
+        from_base = _to_pint_token(from_pu.quantity_unit)
+        to_base = _to_pint_token(to_pu.quantity_unit)
+        from_period = from_pu.period
+        to_period = to_pu.period
 
-        # Get base units
-        from_base = from_rate["base"]
-        to_base = to_rate["base"]
-
-        # Create quantity
         if isinstance(value, pd.Series):
-            result = self._convert_series(
-                value,
-                from_base,
-                to_base,
-                commodity,
-                from_rate["period"],
-                to_rate["period"],
+            # Series keeps the calendar-aware days_in_month path (pint's
+            # fixed-length month can't express it).
+            return self._convert_series(
+                value, from_base, to_base, commodity, from_period, to_period
             )
-        else:
-            result = self._convert_scalar(value, from_base, to_base, commodity)
-            if from_rate["period"] or to_rate["period"]:
-                factor = self._rate_factor_scalar(
-                    from_rate["period"], to_rate["period"]
-                )
-                result = result * factor
 
+        # Scalar: the base-unit factor goes through the SAME _convert_scalar path
+        # as a non-rate conversion (so a rate result is consistent-by-construction
+        # with the base one), multiplied by the period ratio. That ratio comes
+        # from pint's own calendar month/year lengths, replacing the deleted
+        # hand-rolled duplicates of those constants.
+        result = self._convert_scalar(value, from_base, to_base, commodity)
+        if from_period or to_period:
+            result = result * self._period_rate_factor(from_period, to_period)
         return result
 
     @lru_cache(maxsize=128)
@@ -449,7 +447,7 @@ class CommodityConverter:
         """Convert a pandas Series with optional rate handling.
 
         - Month conversions use the index's actual days_in_month when available.
-        - Other time conversions use standard averages (365.25 days/year, 30.4375 days/month).
+        - Other time conversions use pint's calendar period lengths.
         """
         result = series.copy()
 
@@ -466,9 +464,9 @@ class CommodityConverter:
                     else:
                         result = result / series.index.days_in_month
                 else:
-                    # Fallback to scalar factor for other period conversions
-                    factor = self._rate_factor_scalar(from_period, to_period)
-                    result = result * factor
+                    # Other period conversions (e.g. year<->day): pint's ratio
+                    # of period lengths.
+                    result = result * self._period_rate_factor(from_period, to_period)
 
         # Apply unit conversion
         factor_units = self._convert_scalar(1.0, from_unit, to_unit, commodity)
@@ -476,53 +474,24 @@ class CommodityConverter:
 
         return result
 
-    def _parse_rate_unit(self, unit: str) -> dict:
-        """Parse units like 'bbl/day' or 'kt/month'."""
-        if "/" in unit:
-            base, period = unit.split("/", 1)
-            base = _to_pint_token(base)
-            period = period.strip().lower().rstrip("s")  # day(s), month(s), year(s)
-            return {"base": base, "period": period}
-        return {"base": _to_pint_token(unit), "period": None}
-
-    def _rate_factor_scalar(
+    def _period_rate_factor(
         self, from_period: Optional[str], to_period: Optional[str]
     ) -> float:
-        """Scalar factor to convert between rate periods for scalars.
+        """Ratio converting a per-``from_period`` rate to per-``to_period``,
+        derived from pint's calendar period lengths (day/month/year) — the
+        single source that replaces the deleted hand-rolled constants. A
+        ``None`` period on either side is a no-op (1.0), matching historical
+        behaviour.
 
-        Uses average calendar lengths when months/years are involved.
-        - Average days per year: 365.25
-        - Average days per month: 365.25 / 12 = 30.4375
+        Feeds both the scalar path (period factor) and the Series non-month
+        path; the calendar-aware month<->day Series case is handled separately
+        with days_in_month.
         """
-        if from_period == to_period:
+        if from_period == to_period or from_period is None or to_period is None:
             return 1.0
-        if from_period is None and to_period is None:
-            return 1.0
-        if from_period is None or to_period is None:
-            # Ambiguous to add/remove a time dimension for scalar; no-op to preserve behavior
-            return 1.0
-
-        avg_days_per_year = 365.25
-        avg_days_per_month = avg_days_per_year / 12.0
-
-        # Helper to express rates as per-day factors
-        def per_day_factor(period: str) -> float:
-            if period == "day":
-                return 1.0
-            if period == "year":
-                return 1.0 / avg_days_per_year
-            if period == "month":
-                return 1.0 / avg_days_per_month
-            # Fallback to Pint if it's a known time unit
-            try:
-                return (1 * (self.ureg(period) ** -1)).to(self.ureg.day**-1).magnitude
-            except Exception:
-                raise ValueError(f"Unsupported rate period: {period}")
-
-        from_per_day = per_day_factor(from_period)
-        to_per_day = per_day_factor(to_period)
-        # Convert from per-from_period to per-to_period
-        return from_per_day / to_per_day
+        from_days = (1 * self.ureg(from_period)).to("day").magnitude
+        to_days = (1 * self.ureg(to_period)).to("day").magnitude
+        return to_days / from_days
 
     def _is_energy(self, unit: str) -> bool:
         return self.ureg(unit).check("[energy]")

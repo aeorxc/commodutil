@@ -62,7 +62,7 @@ class PriceUnit:
             currency = str(self.currency).strip()
             object.__setattr__(self, "currency", currency or None)
         if self.period is not None:
-            # Mirror convfactors._parse_rate_unit: day(s)/month(s)/year(s).
+            # Rate-period normalisation: day(s)/month(s)/year(s) -> singular.
             period = str(self.period).strip().lower().rstrip("s")
             object.__setattr__(self, "period", period or None)
 
@@ -104,8 +104,8 @@ class PriceUnit:
 
     @staticmethod
     def _split_period(bare: str) -> tuple[str, Optional[str]]:
-        """Split a bare unit into (quantity_unit, period), mirroring
-        convfactors._parse_rate_unit's period handling."""
+        """Split a bare unit into (quantity_unit, period) with day(s)/month(s)/
+        year(s) rate-period normalisation."""
         if "/" in bare:
             base, _, period = bare.partition("/")
             period = period.strip().lower().rstrip("s")
