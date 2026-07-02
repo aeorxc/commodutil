@@ -585,6 +585,84 @@ def convfactor(
 # wanting currency vocabulary should import from commodutil.standards.currency.
 
 
+def align_fx(
+    fx: pd.Series,
+    index: pd.Index,
+    policy: str = "strict",
+    max_staleness: pd.Timedelta = pd.Timedelta(days=7),
+) -> pd.Series:
+    """Align an FX Series onto ``index`` for a price conversion.
+
+    Extracted verbatim from ``convert_price`` (Phase 3.4) so new code can compose
+    FX alignment explicitly; ``convert_price`` delegates here, so behaviour and
+    error/warning text are unchanged.
+
+    - ``policy='strict'`` (default): forward-fill FX onto ``index`` bounded by
+      ``max_staleness``; any target date left uncovered (pre-FX-start, or stale
+      past the limit) raises ``ValueError`` rather than silently back-filling or
+      extrapolating.
+    - ``policy='ffill'``: permissive — union the indices, ffill across the union,
+      reindex back, and fill any residual NaN with the most-recent non-null FX.
+      Emits a logging warning (future-leakage risk in backtests). Raises only if
+      the FX series is entirely NaN.
+    """
+    target_idx = index
+
+    if policy == "strict":
+        # Bounded ffill: only forward-fill within `max_staleness`. Anything
+        # uncovered (e.g. value-dates before fx.index.min() or stale past
+        # the limit) stays NaN and triggers a loud raise — no silent
+        # back-fill, no silent stale extrapolation.
+        union_idx = fx.index.union(target_idx)
+        fx_union = fx.reindex(union_idx).sort_index().ffill()
+        # Track how stale each ffilled value is and zero-out anything older
+        # than max_staleness.
+        valid_mask = ~fx.reindex(union_idx).isna()
+        last_valid_pos = pd.Series(union_idx, index=union_idx).where(valid_mask).ffill()
+        staleness = pd.Series(union_idx, index=union_idx) - last_valid_pos
+        fx_union = fx_union.where(staleness <= max_staleness)
+        fx_aligned = fx_union.reindex(target_idx)
+        if fx_aligned.isna().any():
+            missing = target_idx[fx_aligned.isna()]
+            first_missing = missing[0]
+            first_missing_str = (
+                first_missing.date()
+                if hasattr(first_missing, "date")
+                else first_missing
+            )
+            raise ValueError(
+                f"FX missing or stale (>{max_staleness}) for "
+                f"{len(missing)} target date(s) (first: {first_missing_str}). "
+                f"Pass ffill_policy='ffill' to fill with the last non-null "
+                f"FX (BACKTEST FUTURE LEAKAGE RISK)."
+            )
+    elif policy == "ffill":
+        logger.warning(
+            "convert_price: ffill_policy='ffill' — pre-FX-start dates will "
+            "be back-filled with the latest FX. Future-leakage risk in "
+            "backtests; prefer 'strict' for historical research."
+        )
+        if not target_idx.isin(fx.index).all():
+            union_idx = fx.index.union(target_idx)
+            fx_aligned = fx.reindex(union_idx).ffill().reindex(target_idx)
+        else:
+            fx_aligned = fx.reindex(target_idx).ffill()
+        if fx_aligned.isna().any():
+            fx_nonnull = fx.dropna()
+            if fx_nonnull.size == 0:
+                raise ValueError(
+                    "FX series is entirely NaN; refusing the silent "
+                    "multiply-by-1.0 fallback."
+                )
+            fx_aligned = fx_aligned.fillna(fx_nonnull.iloc[-1])
+    else:
+        raise ValueError(
+            f"Unknown ffill_policy: {policy!r} (expected 'strict' or 'ffill')"
+        )
+
+    return fx_aligned
+
+
 def convert_price(
     value: Union[float, pd.Series],
     from_unit: Union[str, PriceUnit],
@@ -713,62 +791,9 @@ def convert_price(
     fractional_divisor = _currency.FRACTIONAL_CURRENCY_DIVISORS.get(from_ccy, 1.0)
 
     if isinstance(unit_converted, pd.Series) and isinstance(fx, pd.Series):
-        target_idx = unit_converted.index
-
-        if ffill_policy == "strict":
-            # Bounded ffill: only forward-fill within `max_staleness`. Anything
-            # uncovered (e.g. value-dates before fx.index.min() or stale past
-            # the limit) stays NaN and triggers a loud raise — no silent
-            # back-fill, no silent stale extrapolation.
-            union_idx = fx.index.union(target_idx)
-            fx_union = fx.reindex(union_idx).sort_index().ffill()
-            # Track how stale each ffilled value is and zero-out anything older
-            # than max_staleness.
-            valid_mask = ~fx.reindex(union_idx).isna()
-            last_valid_pos = (
-                pd.Series(union_idx, index=union_idx).where(valid_mask).ffill()
-            )
-            staleness = pd.Series(union_idx, index=union_idx) - last_valid_pos
-            fx_union = fx_union.where(staleness <= max_staleness)
-            fx_aligned = fx_union.reindex(target_idx)
-            if fx_aligned.isna().any():
-                missing = target_idx[fx_aligned.isna()]
-                first_missing = missing[0]
-                first_missing_str = (
-                    first_missing.date()
-                    if hasattr(first_missing, "date")
-                    else first_missing
-                )
-                raise ValueError(
-                    f"FX missing or stale (>{max_staleness}) for "
-                    f"{len(missing)} target date(s) (first: {first_missing_str}). "
-                    f"Pass ffill_policy='ffill' to fill with the last non-null "
-                    f"FX (BACKTEST FUTURE LEAKAGE RISK)."
-                )
-        elif ffill_policy == "ffill":
-            logger.warning(
-                "convert_price: ffill_policy='ffill' — pre-FX-start dates will "
-                "be back-filled with the latest FX. Future-leakage risk in "
-                "backtests; prefer 'strict' for historical research."
-            )
-            if not target_idx.isin(fx.index).all():
-                union_idx = fx.index.union(target_idx)
-                fx_aligned = fx.reindex(union_idx).ffill().reindex(target_idx)
-            else:
-                fx_aligned = fx.reindex(target_idx).ffill()
-            if fx_aligned.isna().any():
-                fx_nonnull = fx.dropna()
-                if fx_nonnull.size == 0:
-                    raise ValueError(
-                        "FX series is entirely NaN; refusing the silent "
-                        "multiply-by-1.0 fallback."
-                    )
-                fx_aligned = fx_aligned.fillna(fx_nonnull.iloc[-1])
-        else:
-            raise ValueError(
-                f"Unknown ffill_policy: {ffill_policy!r} (expected 'strict' or 'ffill')"
-            )
-
+        fx_aligned = align_fx(
+            fx, unit_converted.index, policy=ffill_policy, max_staleness=max_staleness
+        )
         return unit_converted * fx_aligned / fractional_divisor
 
     return unit_converted * fx / fractional_divisor
@@ -858,6 +883,103 @@ def convert_currency_leg(
             f"(source currency '{from_ccy}' is non-USD)"
         )
     return value * fx / from_pu.fractional_divisor
+
+
+@dataclass(frozen=True)
+class ConversionResult:
+    """Result of :func:`convert_price_result`.
+
+    - ``value``: the converted price (float or pandas Series).
+    - ``applied``: True when a non-identity conversion route ran (from/to differ);
+      False for an identity ('unchanged') or a kept-raw error.
+    - ``note``: which route produced ``value`` — e.g.
+      ``'convert_price:USD/mt->USD/bbl[diesel]'``, ``'currency_leg:USc/RIN->USD/RIN'``,
+      ``'unchanged'``, or ``'kept-raw:<error>'``.
+    """
+
+    value: Union[float, pd.Series]
+    applied: bool
+    note: str
+
+
+def convert_price_result(
+    value: Union[float, pd.Series],
+    from_unit: Union[str, PriceUnit],
+    to_unit: Union[str, PriceUnit],
+    commodity: Optional[str] = None,
+    fx: Union[float, pd.Series, None] = None,
+    ffill_policy: str = "strict",
+    max_staleness: pd.Timedelta = pd.Timedelta(days=7),
+    on_error: str = "raise",
+) -> ConversionResult:
+    """Result-bearing wrapper over :func:`convert_price`: returns a
+    :class:`ConversionResult` (value, applied, note) instead of a bare value.
+
+    Both oilrisk price loaders (``artis.py`` and
+    ``load_marketplace_price_snapshots.py``) independently invented exactly this
+    ``(value, changed?, source_note)`` shape around convert_price; this is the
+    shared primitive they unify onto in Phase 4.2.
+
+    Same parameters as :func:`convert_price`, plus:
+      * ``on_error='raise'`` (default): a conversion failure propagates, so plain
+        use stays strict.
+      * ``on_error='keep'``: on failure (and when no currency-leg fallback
+        applies) return the ORIGINAL ``value`` with ``applied=False`` and a
+        ``'kept-raw:...'`` note — the keep-raw semantic oilrisk wants for rows it
+        can't convert but must not drop.
+
+    Fallback: if the full conversion fails but both units are currency-qualified
+    with equal quantity denominators, the currency leg alone is applied via
+    :func:`convert_currency_leg` (e.g. ``'USc/RIN'->'USD/RIN'``), with a
+    ``'currency_leg:...'`` note — mirroring the fallback oilrisk's artis.py does
+    at its call site so Phase 4.2 can delete that logic there.
+    """
+    if on_error not in ("raise", "keep"):
+        raise ValueError(f"on_error must be 'raise' or 'keep', got {on_error!r}")
+
+    from_pu = (
+        from_unit if isinstance(from_unit, PriceUnit) else PriceUnit.parse(from_unit)
+    )
+    to_pu = to_unit if isinstance(to_unit, PriceUnit) else PriceUnit.parse(to_unit)
+    label = f"{from_pu}->{to_pu}"
+    if commodity:
+        label += f"[{commodity}]"
+
+    # Identity: same currency + unit + period -> nothing to do.
+    if from_pu == to_pu:
+        return ConversionResult(value=value, applied=False, note="unchanged")
+
+    try:
+        out = convert_price(
+            value,
+            from_pu,
+            to_pu,
+            commodity,
+            fx=fx,
+            ffill_policy=ffill_policy,
+            max_staleness=max_staleness,
+        )
+        return ConversionResult(value=out, applied=True, note=f"convert_price:{label}")
+    except Exception as exc:
+        # Currency-leg fallback: the full conversion failed, but if both sides
+        # are currency-qualified with equal denominators the currency scale is
+        # still well-defined (e.g. convert_price can't do convfactor('RIN',
+        # 'RIN'), but 'USc/RIN'->'USD/RIN' is a clean /100).
+        if (
+            from_pu.is_currency_qualified
+            and to_pu.is_currency_qualified
+            and from_pu.quantity_leg() == to_pu.quantity_leg()
+        ):
+            try:
+                out = convert_currency_leg(value, from_pu, to_pu, fx=fx)
+                return ConversionResult(
+                    value=out, applied=True, note=f"currency_leg:{label}"
+                )
+            except Exception:
+                pass  # fall through to on_error handling
+        if on_error == "keep":
+            return ConversionResult(value=value, applied=False, note=f"kept-raw:{exc}")
+        raise
 
 
 def list_commodities():
