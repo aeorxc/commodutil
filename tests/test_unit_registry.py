@@ -297,11 +297,10 @@ def test_public_helper_functions_behaviour():
 
 
 def _word_boundary_resolve(text):
-    """Model curvemetadata parse_unit's word-boundary + longest-first matcher
-    over UNIT_MAP: a spelling matches only when not flanked by [a-z0-9], and the
-    LONGEST matching spelling wins. This mirrors the real (parallel-repo) parser,
-    so these tests actually validate the vocabulary the ICE corpus needs — a
-    naive-substring model would falsely pass (e.g. 'mmbtu' inside 'mmbtus')."""
+    """Model curvemetadata's WORD-BOUNDARY + longest-first parse_unit (the
+    parallel-repo parser, and the lead's authoritative integration check): a
+    spelling matches only when not flanked by [a-z0-9], and the LONGEST match
+    wins. A naive-substring model would falsely pass (e.g. 'mmbtu' in 'mmbtus')."""
     lowered = text.lower()
     best = None
     for spelling, canonical in units.UNIT_MAP.items():
@@ -311,34 +310,50 @@ def _word_boundary_resolve(text):
     return best[1] if best else None
 
 
-def test_ice_raw_examples_resolve():
-    # The diagnostic corpus, resolved under WORD-BOUNDARY matching.
-    cases = {
-        # singular
-        "1 MMBtu": "MMBtu",
-        "1 MW": "MW",
-        "100 MWh": "MWh",  # 'mw' cannot match inside 'mwh' under word boundary
-        # plural (the whole point of the spec correction) — these would return
-        # None if only singular spellings were registered.
-        "2500 MMBtus": "MMBtu",
-        "100 MMBtus per lot": "MMBtu",
-        "100 MMBTus": "MMBtu",
-        "25,000 MMBtus": "MMBtu",
-        "100 GJs": "GJ",
-        "50,000 RINs": "RIN",
-        "3 FEUs": "FEU",
-        "30 charter days": "day",
-        # spelled-out volume
-        "5000 cubic metres": "m^3",
-        "50000 cubic meters": "m^3",
-        # structural singular
-        "USc per RIN": "RIN",
-        "1 FEU": "FEU",
-        "forty foot container": "FEU",
-        "hire per charter day": "day",
-    }
-    for raw, expected in cases.items():
-        assert _word_boundary_resolve(raw) == expected, raw
+def _naive_substring_resolve(text):
+    """Model the currently checked-in curvemetadata parse_unit: first UNIT_MAP
+    spelling that appears as a plain substring (dict-insertion order). ICE
+    vocabulary must resolve correctly under this mode too (relies on 'mwh'
+    preceding 'mw')."""
+    lowered = text.lower()
+    for spelling, canonical in units.UNIT_MAP.items():
+        if spelling in lowered:
+            return canonical
+    return None
+
+
+# The diagnostic corpus (incl. the lead's cross-repo integration set). Every
+# case must resolve under BOTH matching modes.
+_ICE_CORPUS = {
+    "1 MMBtu": "MMBtu",
+    "1 MW": "MW",
+    "100 MWh": "MWh",  # 'mw' must not win inside 'mwh'
+    "2500 MMBtus": "MMBtu",  # 752-row plural category
+    "100 MMBtus per lot": "MMBtu",
+    "100 MMBTus": "MMBtu",
+    "25,000 MMBtus": "MMBtu",
+    "100 GJs": "GJ",
+    "50,000 RINs": "RIN",
+    "One cent (Eur 0.01) per cubic metre": "m^3",
+    "5000 cubic metres": "m^3",
+    "50000 cubic meters": "m^3",
+    "3 FEUs": "FEU",
+    "30 charter days": "day",
+    "USc per RIN": "RIN",
+    "1 FEU": "FEU",
+    "forty foot container": "FEU",
+    "hire per charter day": "day",
+}
+
+
+def test_ice_raw_examples_resolve_word_boundary():
+    for raw, expected in _ICE_CORPUS.items():
+        assert _word_boundary_resolve(raw) == expected, f"word-boundary: {raw!r}"
+
+
+def test_ice_raw_examples_resolve_naive_substring():
+    for raw, expected in _ICE_CORPUS.items():
+        assert _naive_substring_resolve(raw) == expected, f"naive: {raw!r}"
 
 
 def test_singular_only_would_miss_plural_regression():
