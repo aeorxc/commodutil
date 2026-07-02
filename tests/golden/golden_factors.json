@@ -1002,6 +1002,537 @@
     "butane::therm::therm": {
       "value": 1.0
     },
+    "coal::GJ::GJ": {
+      "value": 1.0
+    },
+    "coal::GJ::L": {
+      "error": {
+        "message": "Cannot convert from GJ to L - incompatible dimensions",
+        "type": "ValueError"
+      }
+    },
+    "coal::GJ::MMBtu": {
+      "value": 0.9478169879134377
+    },
+    "coal::GJ::MWh": {
+      "value": 0.2777777777777778
+    },
+    "coal::GJ::bbl": {
+      "error": {
+        "message": "Cannot convert from GJ to bbl - incompatible dimensions",
+        "type": "ValueError"
+      }
+    },
+    "coal::GJ::gal": {
+      "error": {
+        "message": "Cannot convert from GJ to gal - incompatible dimensions",
+        "type": "ValueError"
+      }
+    },
+    "coal::GJ::kg": {
+      "value": 37.91181711339425
+    },
+    "coal::GJ::kt": {
+      "value": 3.7911817113394244e-05
+    },
+    "coal::GJ::m^3": {
+      "error": {
+        "message": "Cannot convert from GJ to m^3 - incompatible dimensions",
+        "type": "ValueError"
+      }
+    },
+    "coal::GJ::mt": {
+      "value": 0.037911817113394246
+    },
+    "coal::GJ::therm": {
+      "value": 9.478169879134377
+    },
+    "coal::L::GJ": {
+      "error": {
+        "message": "Cannot convert from L to GJ - incompatible dimensions",
+        "type": "ValueError"
+      }
+    },
+    "coal::L::L": {
+      "value": 1.0
+    },
+    "coal::L::MMBtu": {
+      "error": {
+        "message": "Cannot convert from L to MMBtu - incompatible dimensions",
+        "type": "ValueError"
+      }
+    },
+    "coal::L::MWh": {
+      "error": {
+        "message": "Cannot convert from L to MWh - incompatible dimensions",
+        "type": "ValueError"
+      }
+    },
+    "coal::L::bbl": {
+      "value": 0.006289810770432105
+    },
+    "coal::L::gal": {
+      "value": 0.26417205235814845
+    },
+    "coal::L::kg": {
+      "error": {
+        "message": "Mass<->volume conversion not supported for 'coal' (no density defined)",
+        "type": "ValueError"
+      }
+    },
+    "coal::L::kt": {
+      "error": {
+        "message": "Mass<->volume conversion not supported for 'coal' (no density defined)",
+        "type": "ValueError"
+      }
+    },
+    "coal::L::m^3": {
+      "value": 0.0010000000000000002
+    },
+    "coal::L::mt": {
+      "error": {
+        "message": "Mass<->volume conversion not supported for 'coal' (no density defined)",
+        "type": "ValueError"
+      }
+    },
+    "coal::L::therm": {
+      "error": {
+        "message": "Cannot convert from L to therm - incompatible dimensions",
+        "type": "ValueError"
+      }
+    },
+    "coal::MMBtu::GJ": {
+      "value": 1.055056
+    },
+    "coal::MMBtu::L": {
+      "error": {
+        "message": "Cannot convert from MMBtu to L - incompatible dimensions",
+        "type": "ValueError"
+      }
+    },
+    "coal::MMBtu::MMBtu": {
+      "value": 1.0
+    },
+    "coal::MMBtu::MWh": {
+      "value": 0.2930711111111111
+    },
+    "coal::MMBtu::bbl": {
+      "error": {
+        "message": "Cannot convert from MMBtu to bbl - incompatible dimensions",
+        "type": "ValueError"
+      }
+    },
+    "coal::MMBtu::gal": {
+      "error": {
+        "message": "Cannot convert from MMBtu to gal - incompatible dimensions",
+        "type": "ValueError"
+      }
+    },
+    "coal::MMBtu::kg": {
+      "value": 39.99909011638928
+    },
+    "coal::MMBtu::kt": {
+      "value": 3.999909011638928e-05
+    },
+    "coal::MMBtu::m^3": {
+      "error": {
+        "message": "Cannot convert from MMBtu to m^3 - incompatible dimensions",
+        "type": "ValueError"
+      }
+    },
+    "coal::MMBtu::mt": {
+      "value": 0.03999909011638928
+    },
+    "coal::MMBtu::therm": {
+      "value": 10.0
+    },
+    "coal::MWh::GJ": {
+      "value": 3.6
+    },
+    "coal::MWh::L": {
+      "error": {
+        "message": "Cannot convert from MWh to L - incompatible dimensions",
+        "type": "ValueError"
+      }
+    },
+    "coal::MWh::MMBtu": {
+      "value": 3.412141156488376
+    },
+    "coal::MWh::MWh": {
+      "value": 1.0
+    },
+    "coal::MWh::bbl": {
+      "error": {
+        "message": "Cannot convert from MWh to bbl - incompatible dimensions",
+        "type": "ValueError"
+      }
+    },
+    "coal::MWh::gal": {
+      "error": {
+        "message": "Cannot convert from MWh to gal - incompatible dimensions",
+        "type": "ValueError"
+      }
+    },
+    "coal::MWh::kg": {
+      "value": 136.4825416082193
+    },
+    "coal::MWh::kt": {
+      "value": 0.0001364825416082193
+    },
+    "coal::MWh::m^3": {
+      "error": {
+        "message": "Cannot convert from MWh to m^3 - incompatible dimensions",
+        "type": "ValueError"
+      }
+    },
+    "coal::MWh::mt": {
+      "value": 0.1364825416082193
+    },
+    "coal::MWh::therm": {
+      "value": 34.121411564883765
+    },
+    "coal::bbl::GJ": {
+      "error": {
+        "message": "Cannot convert from bbl to GJ - incompatible dimensions",
+        "type": "ValueError"
+      }
+    },
+    "coal::bbl::L": {
+      "value": 158.987294928
+    },
+    "coal::bbl::MMBtu": {
+      "error": {
+        "message": "Cannot convert from bbl to MMBtu - incompatible dimensions",
+        "type": "ValueError"
+      }
+    },
+    "coal::bbl::MWh": {
+      "error": {
+        "message": "Cannot convert from bbl to MWh - incompatible dimensions",
+        "type": "ValueError"
+      }
+    },
+    "coal::bbl::bbl": {
+      "value": 1.0
+    },
+    "coal::bbl::gal": {
+      "value": 42.000000000000014
+    },
+    "coal::bbl::kg": {
+      "error": {
+        "message": "Mass<->volume conversion not supported for 'coal' (no density defined)",
+        "type": "ValueError"
+      }
+    },
+    "coal::bbl::kt": {
+      "error": {
+        "message": "Mass<->volume conversion not supported for 'coal' (no density defined)",
+        "type": "ValueError"
+      }
+    },
+    "coal::bbl::m^3": {
+      "value": 0.15898729492800004
+    },
+    "coal::bbl::mt": {
+      "error": {
+        "message": "Mass<->volume conversion not supported for 'coal' (no density defined)",
+        "type": "ValueError"
+      }
+    },
+    "coal::bbl::therm": {
+      "error": {
+        "message": "Cannot convert from bbl to therm - incompatible dimensions",
+        "type": "ValueError"
+      }
+    },
+    "coal::gal::GJ": {
+      "error": {
+        "message": "Cannot convert from gal to GJ - incompatible dimensions",
+        "type": "ValueError"
+      }
+    },
+    "coal::gal::L": {
+      "value": 3.7854117840000003
+    },
+    "coal::gal::MMBtu": {
+      "error": {
+        "message": "Cannot convert from gal to MMBtu - incompatible dimensions",
+        "type": "ValueError"
+      }
+    },
+    "coal::gal::MWh": {
+      "error": {
+        "message": "Cannot convert from gal to MWh - incompatible dimensions",
+        "type": "ValueError"
+      }
+    },
+    "coal::gal::bbl": {
+      "value": 0.023809523809523808
+    },
+    "coal::gal::gal": {
+      "value": 1.0
+    },
+    "coal::gal::kg": {
+      "error": {
+        "message": "Mass<->volume conversion not supported for 'coal' (no density defined)",
+        "type": "ValueError"
+      }
+    },
+    "coal::gal::kt": {
+      "error": {
+        "message": "Mass<->volume conversion not supported for 'coal' (no density defined)",
+        "type": "ValueError"
+      }
+    },
+    "coal::gal::m^3": {
+      "value": 0.0037854117840000006
+    },
+    "coal::gal::mt": {
+      "error": {
+        "message": "Mass<->volume conversion not supported for 'coal' (no density defined)",
+        "type": "ValueError"
+      }
+    },
+    "coal::gal::therm": {
+      "error": {
+        "message": "Cannot convert from gal to therm - incompatible dimensions",
+        "type": "ValueError"
+      }
+    },
+    "coal::kg::GJ": {
+      "value": 0.026377000000000008
+    },
+    "coal::kg::L": {
+      "error": {
+        "message": "Mass<->volume conversion not supported for 'coal' (no density defined)",
+        "type": "ValueError"
+      }
+    },
+    "coal::kg::MMBtu": {
+      "value": 0.02500056869019275
+    },
+    "coal::kg::MWh": {
+      "value": 0.007326944444444444
+    },
+    "coal::kg::bbl": {
+      "error": {
+        "message": "Mass<->volume conversion not supported for 'coal' (no density defined)",
+        "type": "ValueError"
+      }
+    },
+    "coal::kg::gal": {
+      "error": {
+        "message": "Mass<->volume conversion not supported for 'coal' (no density defined)",
+        "type": "ValueError"
+      }
+    },
+    "coal::kg::kg": {
+      "value": 1.0
+    },
+    "coal::kg::kt": {
+      "value": 1e-06
+    },
+    "coal::kg::m^3": {
+      "error": {
+        "message": "Mass<->volume conversion not supported for 'coal' (no density defined)",
+        "type": "ValueError"
+      }
+    },
+    "coal::kg::mt": {
+      "value": 0.001
+    },
+    "coal::kg::therm": {
+      "value": 0.25000568690192754
+    },
+    "coal::kt::GJ": {
+      "value": 26377.0
+    },
+    "coal::kt::L": {
+      "error": {
+        "message": "Mass<->volume conversion not supported for 'coal' (no density defined)",
+        "type": "ValueError"
+      }
+    },
+    "coal::kt::MMBtu": {
+      "value": 25000.56869019275
+    },
+    "coal::kt::MWh": {
+      "value": 7326.944444444444
+    },
+    "coal::kt::bbl": {
+      "error": {
+        "message": "Mass<->volume conversion not supported for 'coal' (no density defined)",
+        "type": "ValueError"
+      }
+    },
+    "coal::kt::gal": {
+      "error": {
+        "message": "Mass<->volume conversion not supported for 'coal' (no density defined)",
+        "type": "ValueError"
+      }
+    },
+    "coal::kt::kg": {
+      "value": 1000000.0
+    },
+    "coal::kt::kt": {
+      "value": 1.0
+    },
+    "coal::kt::m^3": {
+      "error": {
+        "message": "Mass<->volume conversion not supported for 'coal' (no density defined)",
+        "type": "ValueError"
+      }
+    },
+    "coal::kt::mt": {
+      "value": 1000.0
+    },
+    "coal::kt::therm": {
+      "value": 250005.6869019275
+    },
+    "coal::m^3::GJ": {
+      "error": {
+        "message": "Cannot convert from m^3 to GJ - incompatible dimensions",
+        "type": "ValueError"
+      }
+    },
+    "coal::m^3::L": {
+      "value": 999.9999999999999
+    },
+    "coal::m^3::MMBtu": {
+      "error": {
+        "message": "Cannot convert from m^3 to MMBtu - incompatible dimensions",
+        "type": "ValueError"
+      }
+    },
+    "coal::m^3::MWh": {
+      "error": {
+        "message": "Cannot convert from m^3 to MWh - incompatible dimensions",
+        "type": "ValueError"
+      }
+    },
+    "coal::m^3::bbl": {
+      "value": 6.289810770432103
+    },
+    "coal::m^3::gal": {
+      "value": 264.1720523581484
+    },
+    "coal::m^3::kg": {
+      "error": {
+        "message": "Mass<->volume conversion not supported for 'coal' (no density defined)",
+        "type": "ValueError"
+      }
+    },
+    "coal::m^3::kt": {
+      "error": {
+        "message": "Mass<->volume conversion not supported for 'coal' (no density defined)",
+        "type": "ValueError"
+      }
+    },
+    "coal::m^3::m^3": {
+      "value": 1.0
+    },
+    "coal::m^3::mt": {
+      "error": {
+        "message": "Mass<->volume conversion not supported for 'coal' (no density defined)",
+        "type": "ValueError"
+      }
+    },
+    "coal::m^3::therm": {
+      "error": {
+        "message": "Cannot convert from m^3 to therm - incompatible dimensions",
+        "type": "ValueError"
+      }
+    },
+    "coal::mt::GJ": {
+      "value": 26.377
+    },
+    "coal::mt::L": {
+      "error": {
+        "message": "Mass<->volume conversion not supported for 'coal' (no density defined)",
+        "type": "ValueError"
+      }
+    },
+    "coal::mt::MMBtu": {
+      "value": 25.00056869019275
+    },
+    "coal::mt::MWh": {
+      "value": 7.326944444444445
+    },
+    "coal::mt::bbl": {
+      "error": {
+        "message": "Mass<->volume conversion not supported for 'coal' (no density defined)",
+        "type": "ValueError"
+      }
+    },
+    "coal::mt::gal": {
+      "error": {
+        "message": "Mass<->volume conversion not supported for 'coal' (no density defined)",
+        "type": "ValueError"
+      }
+    },
+    "coal::mt::kg": {
+      "value": 1000.0
+    },
+    "coal::mt::kt": {
+      "value": 0.001
+    },
+    "coal::mt::m^3": {
+      "error": {
+        "message": "Mass<->volume conversion not supported for 'coal' (no density defined)",
+        "type": "ValueError"
+      }
+    },
+    "coal::mt::mt": {
+      "value": 1.0
+    },
+    "coal::mt::therm": {
+      "value": 250.0056869019275
+    },
+    "coal::therm::GJ": {
+      "value": 0.1055056
+    },
+    "coal::therm::L": {
+      "error": {
+        "message": "Cannot convert from therm to L - incompatible dimensions",
+        "type": "ValueError"
+      }
+    },
+    "coal::therm::MMBtu": {
+      "value": 0.09999999999999999
+    },
+    "coal::therm::MWh": {
+      "value": 0.029307111111111107
+    },
+    "coal::therm::bbl": {
+      "error": {
+        "message": "Cannot convert from therm to bbl - incompatible dimensions",
+        "type": "ValueError"
+      }
+    },
+    "coal::therm::gal": {
+      "error": {
+        "message": "Cannot convert from therm to gal - incompatible dimensions",
+        "type": "ValueError"
+      }
+    },
+    "coal::therm::kg": {
+      "value": 3.999909011638928
+    },
+    "coal::therm::kt": {
+      "value": 3.999909011638928e-06
+    },
+    "coal::therm::m^3": {
+      "error": {
+        "message": "Cannot convert from therm to m^3 - incompatible dimensions",
+        "type": "ValueError"
+      }
+    },
+    "coal::therm::mt": {
+      "value": 0.003999909011638928
+    },
+    "coal::therm::therm": {
+      "value": 1.0
+    },
     "crude::GJ::GJ": {
       "value": 1.0
     },

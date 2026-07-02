@@ -363,3 +363,44 @@ def test_crude_naphtha_energy_content_enabled():
     assert crude_gj == pytest.approx(0.158987294928 * 39.043, rel=1e-6)
     naphtha_gj = convfactors.convert(1.0, "bbl", "GJ", "naphtha")
     assert naphtha_gj == pytest.approx(0.158987294928 * 34.826266, rel=1e-6)
+
+
+# ---------------------------------------------------------------------------
+# Coal: mass-basis energy_content (GJ/t) with density=None. Exercises the
+# [energy]/[mass] branch of _commodity_context added for API2 thermal coal.
+# ---------------------------------------------------------------------------
+
+
+def test_coal_mass_basis_mt_to_energy():
+    # API2 gross ~25.0 MMBtu/t (6,300 kcal/kg GAR -> 26.377 GJ/t).
+    mmbtu = convfactors.convert(1.0, "mt", "MMBtu", "coal")
+    assert mmbtu == pytest.approx(25.0, abs=0.05)
+    assert convfactors.convert(1.0, "mt", "GJ", "coal") == pytest.approx(
+        26.377, abs=0.01
+    )
+    # Round-trips back through the direct mass<->energy transformation.
+    assert convfactors.convert(mmbtu, "MMBtu", "mt", "coal") == pytest.approx(
+        1.0, rel=1e-9
+    )
+    # And the price form: 80 $/t / 25.0 MMBtu/t ~ 3.20 $/MMBtu.
+    out = convfactors.convert_price(80.0, "USD/mt", "USD/MMBtu", "coal")
+    assert out == pytest.approx(80.0 / 25.0, abs=0.02)
+
+
+def test_coal_mt_to_bbl_raises_no_density():
+    # density=None: mass<->volume must stay illegal even though energy works.
+    with pytest.raises(ValueError, match="no density defined"):
+        convfactors.convert(1.0, "mt", "bbl", "coal")
+    with pytest.raises(ValueError, match="no density defined"):
+        convfactors.convert_price(80.0, "USD/mt", "USD/bbl", "coal")
+
+
+def test_volume_basis_commodity_unchanged_by_mass_basis_support():
+    # Adding the [energy]/[mass] branch must not disturb volume-basis liquids:
+    # diesel still converts volume<->energy and mass<->energy via density.
+    assert convfactors.convert(1.0, "m^3", "GJ", "diesel") == pytest.approx(
+        38.290312, rel=1e-6
+    )
+    assert convfactors.convert(1.0, "mt", "GJ", "diesel") == pytest.approx(
+        45.353, abs=0.01
+    )

@@ -84,17 +84,31 @@ class Commodity:
     mass<->volume conversion is undefined and must raise).
     Previously this used `0.0 kg/L` as a sentinel; magnitude==0 checks
     were scattered through the codebase. `None` makes the intent explicit.
+
+    `energy_content` may be a pint Quantity of EITHER dimensionality:
+      - `[energy]/[volume]` (e.g. GJ/m^3) — the default for liquids; registers a
+        `[volume] <-> [energy]` transformation (and chains to mass via density).
+      - `[energy]/[mass]` (e.g. GJ/t) — for density-less solids like coal;
+        registers a DIRECT `[mass] <-> [energy]` transformation so `mt <-> MMBtu`
+        works with `density=None`, while `mt <-> bbl` still correctly raises.
+    A bare float is coerced to the volume-basis default (GJ/m^3) for back-compat.
     """
 
     name: str
     density: Optional[pint.Quantity] = None  # kg/L or API gravity; None = not a liquid
-    energy_content: Optional[pint.Quantity] = None  # GJ/m^3 or similar
+    # [energy]/[volume] (GJ/m^3, liquids) OR [energy]/[mass] (GJ/t, e.g. coal)
+    energy_content: Optional[pint.Quantity] = None
 
     def __post_init__(self):
         # Ensure quantities have correct dimensions
         if self.density is not None and not isinstance(self.density, pint.Quantity):
             self.density = self.density * ureg.kg / ureg.liter
-        if self.energy_content and not isinstance(self.energy_content, pint.Quantity):
+        # Bare float -> volume-basis default (GJ/m^3). Callers wanting a mass
+        # basis pass an explicit Quantity (e.g. `26.377 * ureg.GJ / ureg.mt`),
+        # which is left untouched here and dispatched on in _commodity_context.
+        if self.energy_content is not None and not isinstance(
+            self.energy_content, pint.Quantity
+        ):
             self.energy_content = self.energy_content * ureg.GJ / ureg.m**3
 
 
@@ -202,6 +216,19 @@ COMMODITIES = {
     "product_basket": Commodity(
         "product_basket", 0.781 * ureg.kg / ureg.L, 33.642356 * ureg.GJ / ureg.m**3
     ),  # implies 43.08 GJ/t, 5.070 MMBtu/bbl. FLAGGED: weighted product basket, construction (component weights) undocumented -> not changed; should be recomputed from the now-gross component products with documented weights rather than guessed.
+    # Solid fuels: MASS-basis energy_content (GJ/t) with density=None. mt<->energy
+    # (the only meaningful jump, $/t <-> $/MMBtu) works; mt<->bbl stays illegal.
+    "coal": Commodity(
+        "coal",
+        density=None,
+        energy_content=26.377 * ureg.GJ / ureg.mt,
+    ),  # API2 CIF ARA thermal coal. GROSS/HHV basis: traded spec is 6,000 kcal/kg
+    # NAR (net); the gross equivalent is ~6,300 kcal/kg GAR (Argus/CoalIndo NAR/GAR
+    # markers show a ~300 kcal/kg NAR->GAR gap for high-rank export coal, e.g.
+    # 6,200 NAR = 6,500 GAR). 6,300 kcal/kg x 4.1868 kJ/kcal (IT calorie) = 26.377
+    # GJ/t = 25.00 MMBtu/t. Replaces the legacy /27.76 tce divisor in
+    # oilpricingcharts energy_mmbtu (generic tonne-of-coal-equivalent, 7,000 kcal/kg
+    # GCV = 29.29 GJ/t) which understated coal $/MMBtu by ~11%.
 }
 
 # Aliases for compatibility
@@ -325,10 +352,15 @@ class CommodityConverter:
         A commodity's physical properties define which cross-dimension jumps are
         legal:
           - ``density`` (kg/m^3) enables ``[mass] <-> [volume]``.
-          - ``energy_content`` (J/m^3) enables ``[volume] <-> [energy]``.
+          - ``energy_content`` on a VOLUME basis (J/m^3) enables
+            ``[volume] <-> [energy]`` (and chains to ``[mass] <-> [energy]`` via
+            density when present).
+          - ``energy_content`` on a MASS basis (J/kg) enables ``[mass] <-> [energy]``
+            DIRECTLY — for density-less solids (coal) whose only meaningful jump
+            is $/t <-> $/MMBtu. No volume transform is registered, so a
+            mass<->volume jump still finds no path and raises.
         pint composes the registered transformations into a graph and finds the
-        conversion path itself, so ``[mass] <-> [energy]`` chains for free when
-        both properties exist — no manual branching needed.
+        conversion path itself — no manual branching on the path is needed.
 
         Properties that are ``None`` register no transformation, so pint simply
         finds no path and raises ``DimensionalityError`` (translated to a domain
@@ -342,9 +374,28 @@ class CommodityConverter:
             ctx.add_transformation("[mass]", "[volume]", lambda ureg, x, d=d: x / d)
             ctx.add_transformation("[volume]", "[mass]", lambda ureg, x, d=d: x * d)
         if comm.energy_content is not None:
-            e = comm.energy_content.to("J/m^3")
-            ctx.add_transformation("[volume]", "[energy]", lambda ureg, x, e=e: x * e)
-            ctx.add_transformation("[energy]", "[volume]", lambda ureg, x, e=e: x / e)
+            ec = comm.energy_content
+            if ec.check("[energy]/[volume]"):
+                e = ec.to("J/m^3")
+                ctx.add_transformation(
+                    "[volume]", "[energy]", lambda ureg, x, e=e: x * e
+                )
+                ctx.add_transformation(
+                    "[energy]", "[volume]", lambda ureg, x, e=e: x / e
+                )
+            elif ec.check("[energy]/[mass]"):
+                em = ec.to("J/kg")
+                ctx.add_transformation(
+                    "[mass]", "[energy]", lambda ureg, x, em=em: x * em
+                )
+                ctx.add_transformation(
+                    "[energy]", "[mass]", lambda ureg, x, em=em: x / em
+                )
+            else:
+                raise ValueError(
+                    f"{comm.name}: energy_content must be [energy]/[volume] or "
+                    f"[energy]/[mass], got dimensionality {dict(ec.dimensionality)}"
+                )
         return ctx
 
     def _convert_scalar(
