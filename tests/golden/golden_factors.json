@@ -2,7 +2,7 @@
   "_README": "Golden-factor regression fixture for commodutil conversions. Frozen answer key for tests/test_golden_factors.py; DO NOT hand-edit. Regenerate intentionally with: GOLDEN_REGEN=1 python -m pytest tests/test_golden_factors.py (only after a desk-approved factor change; review the diff). value = convfactor/convert/convert_price output; error = pinned exception type + message (treated as API).",
   "convert_price": {
     "1.0::USD/gal::USD/MMBtu::butane::fx=None": {
-      "value": 9.800151507481665
+      "value": 9.648503093875396
     },
     "1.0::USD/gal::USD/MMBtu::ethane::fx=None": {
       "value": 15.126087249285181
@@ -643,7 +643,7 @@
       "value": 1.0
     },
     "butane::GJ::L": {
-      "value": 35.16174402250351
+      "value": 34.617648076989646
     },
     "butane::GJ::MMBtu": {
       "value": 0.9478169879134377
@@ -652,37 +652,37 @@
       "value": 0.2777777777777778
     },
     "butane::GJ::bbl": {
-      "value": 0.22116071625991926
+      "value": 0.2177384557216777
     },
     "butane::GJ::gal": {
-      "value": 9.288750082916613
+      "value": 9.145015140310466
     },
     "butane::GJ::kg": {
-      "value": 20.182841068917014
+      "value": 19.870529996192055
     },
     "butane::GJ::kt": {
-      "value": 2.0182841068917014e-05
+      "value": 1.9870529996192053e-05
     },
     "butane::GJ::m^3": {
-      "value": 0.035161744022503515
+      "value": 0.034617648076989645
     },
     "butane::GJ::mt": {
-      "value": 0.020182841068917014
+      "value": 0.019870529996192054
     },
     "butane::GJ::therm": {
       "value": 9.478169879134377
     },
     "butane::L::GJ": {
-      "value": 0.02844000000000001
+      "value": 0.02888700000000001
     },
     "butane::L::L": {
       "value": 1.0
     },
     "butane::L::MMBtu": {
-      "value": 0.026955915136258175
+      "value": 0.027379589329855483
     },
     "butane::L::MWh": {
-      "value": 0.007900000000000003
+      "value": 0.008024166666666669
     },
     "butane::L::bbl": {
       "value": 0.006289810770432105
@@ -703,13 +703,13 @@
       "value": 0.000574
     },
     "butane::L::therm": {
-      "value": 0.2695591513625818
+      "value": 0.27379589329855486
     },
     "butane::MMBtu::GJ": {
       "value": 1.055056
     },
     "butane::MMBtu::L": {
-      "value": 37.09760900140647
+      "value": 36.523557309516384
     },
     "butane::MMBtu::MMBtu": {
       "value": 1.0
@@ -718,22 +718,22 @@
       "value": 0.2930711111111111
     },
     "butane::MMBtu::bbl": {
-      "value": 0.23333694065432536
+      "value": 0.22972626413989033
     },
     "butane::MMBtu::gal": {
-      "value": 9.800151507481667
+      "value": 9.648503093875398
     },
     "butane::MMBtu::kg": {
-      "value": 21.29402756680731
+      "value": 20.964521895662404
     },
     "butane::MMBtu::kt": {
-      "value": 2.129402756680731e-05
+      "value": 2.0964521895662403e-05
     },
     "butane::MMBtu::m^3": {
-      "value": 0.03709760900140647
+      "value": 0.03652355730951639
     },
     "butane::MMBtu::mt": {
-      "value": 0.02129402756680731
+      "value": 0.020964521895662402
     },
     "butane::MMBtu::therm": {
       "value": 10.0
@@ -742,7 +742,7 @@
       "value": 3.6
     },
     "butane::MWh::L": {
-      "value": 126.58227848101264
+      "value": 124.6235330771627
     },
     "butane::MWh::MMBtu": {
       "value": 3.412141156488376
@@ -751,37 +751,37 @@
       "value": 1.0
     },
     "butane::MWh::bbl": {
-      "value": 0.7961785785357093
+      "value": 0.7838584405980397
     },
     "butane::MWh::gal": {
-      "value": 33.4395002984998
+      "value": 32.92205450511767
     },
     "butane::MWh::kg": {
-      "value": 72.65822784810125
+      "value": 71.5339079862914
     },
     "butane::MWh::kt": {
-      "value": 7.265822784810125e-05
+      "value": 7.153390798629139e-05
     },
     "butane::MWh::m^3": {
-      "value": 0.12658227848101267
+      "value": 0.12462353307716273
     },
     "butane::MWh::mt": {
-      "value": 0.07265822784810125
+      "value": 0.07153390798629139
     },
     "butane::MWh::therm": {
       "value": 34.121411564883765
     },
     "butane::bbl::GJ": {
-      "value": 4.521598667752322
+      "value": 4.5926659885851375
     },
     "butane::bbl::L": {
       "value": 158.987294928
     },
     "butane::bbl::MMBtu": {
-      "value": 4.285648029822418
+      "value": 4.353006843793256
     },
     "butane::bbl::MWh": {
-      "value": 1.2559996299312004
+      "value": 1.2757405523847603
     },
     "butane::bbl::bbl": {
       "value": 1.0
@@ -802,19 +802,19 @@
       "value": 0.09125870728867201
     },
     "butane::bbl::therm": {
-      "value": 42.856480298224184
+      "value": 43.53006843793256
     },
     "butane::gal::GJ": {
-      "value": 0.10765711113696004
+      "value": 0.10934919020440803
     },
     "butane::gal::L": {
       "value": 3.7854117840000003
     },
     "butane::gal::MMBtu": {
-      "value": 0.10203923880529567
+      "value": 0.1036430200903156
     },
     "butane::gal::MWh": {
-      "value": 0.029904753093600002
+      "value": 0.030374775056780004
     },
     "butane::gal::bbl": {
       "value": 0.023809523809523808
@@ -835,19 +835,19 @@
       "value": 0.002172826364016
     },
     "butane::gal::therm": {
-      "value": 1.0203923880529568
+      "value": 1.0364302009031563
     },
     "butane::kg::GJ": {
-      "value": 0.04954703832752616
+      "value": 0.05032578397212546
     },
     "butane::kg::L": {
       "value": 1.742160278745645
     },
     "butane::kg::MMBtu": {
-      "value": 0.046961524627627496
+      "value": 0.04769963297884231
     },
     "butane::kg::MWh": {
-      "value": 0.013763066202090595
+      "value": 0.013979384436701513
     },
     "butane::kg::bbl": {
       "value": 0.010957858485073354
@@ -868,19 +868,19 @@
       "value": 0.001
     },
     "butane::kg::therm": {
-      "value": 0.46961524627627493
+      "value": 0.47699632978842316
     },
     "butane::kt::GJ": {
-      "value": 49547.03832752615
+      "value": 50325.78397212545
     },
     "butane::kt::L": {
       "value": 1742160.2787456447
     },
     "butane::kt::MMBtu": {
-      "value": 46961.52462762749
+      "value": 47699.63297884231
     },
     "butane::kt::MWh": {
-      "value": 13763.066202090597
+      "value": 13979.384436701514
     },
     "butane::kt::bbl": {
       "value": 10957.858485073355
@@ -901,19 +901,19 @@
       "value": 1000.0
     },
     "butane::kt::therm": {
-      "value": 469615.24627627485
+      "value": 476996.3297884231
     },
     "butane::m^3::GJ": {
-      "value": 28.44000000000001
+      "value": 28.887000000000008
     },
     "butane::m^3::L": {
       "value": 999.9999999999999
     },
     "butane::m^3::MMBtu": {
-      "value": 26.955915136258174
+      "value": 27.37958932985548
     },
     "butane::m^3::MWh": {
-      "value": 7.8999999999999995
+      "value": 8.024166666666666
     },
     "butane::m^3::bbl": {
       "value": 6.289810770432103
@@ -934,19 +934,19 @@
       "value": 0.5739999999999998
     },
     "butane::m^3::therm": {
-      "value": 269.55915136258176
+      "value": 273.7958932985548
     },
     "butane::mt::GJ": {
-      "value": 49.547038327526145
+      "value": 50.32578397212544
     },
     "butane::mt::L": {
       "value": 1742.1602787456447
     },
     "butane::mt::MMBtu": {
-      "value": 46.96152462762749
+      "value": 47.69963297884231
     },
     "butane::mt::MWh": {
-      "value": 13.763066202090597
+      "value": 13.979384436701515
     },
     "butane::mt::bbl": {
       "value": 10.957858485073354
@@ -967,13 +967,13 @@
       "value": 1.0
     },
     "butane::mt::therm": {
-      "value": 469.6152462762749
+      "value": 476.9963297884231
     },
     "butane::therm::GJ": {
       "value": 0.1055056
     },
     "butane::therm::L": {
-      "value": 3.7097609001406466
+      "value": 3.6523557309516383
     },
     "butane::therm::MMBtu": {
       "value": 0.09999999999999999
@@ -982,22 +982,22 @@
       "value": 0.029307111111111107
     },
     "butane::therm::bbl": {
-      "value": 0.023333694065432536
+      "value": 0.022972626413989037
     },
     "butane::therm::gal": {
-      "value": 0.9800151507481669
+      "value": 0.9648503093875399
     },
     "butane::therm::kg": {
-      "value": 2.1294027566807308
+      "value": 2.0964521895662402
     },
     "butane::therm::kt": {
-      "value": 2.129402756680731e-06
+      "value": 2.09645218956624e-06
     },
     "butane::therm::m^3": {
-      "value": 0.003709760900140647
+      "value": 0.003652355730951639
     },
     "butane::therm::mt": {
-      "value": 0.002129402756680731
+      "value": 0.0020964521895662403
     },
     "butane::therm::therm": {
       "value": 1.0
@@ -6763,7 +6763,7 @@
       "value": 1.0
     },
     "natural_gasoline::GJ::L": {
-      "value": 31.847133757961778
+      "value": 32.490740139060364
     },
     "natural_gasoline::GJ::MMBtu": {
       "value": 0.9478169879134377
@@ -6772,37 +6772,37 @@
       "value": 0.2777777777777778
     },
     "natural_gasoline::GJ::bbl": {
-      "value": 0.20031244491821987
+      "value": 0.20436060726597258
     },
     "natural_gasoline::GJ::gal": {
-      "value": 8.413122686565236
+      "value": 8.583145505170851
     },
     "natural_gasoline::GJ::kg": {
-      "value": 21.257961783439484
+      "value": 21.68756904282279
     },
     "natural_gasoline::GJ::kt": {
-      "value": 2.1257961783439484e-05
+      "value": 2.168756904282279e-05
     },
     "natural_gasoline::GJ::m^3": {
-      "value": 0.03184713375796178
+      "value": 0.032490740139060365
     },
     "natural_gasoline::GJ::mt": {
-      "value": 0.021257961783439486
+      "value": 0.02168756904282279
     },
     "natural_gasoline::GJ::therm": {
       "value": 9.478169879134377
     },
     "natural_gasoline::L::GJ": {
-      "value": 0.03140000000000001
+      "value": 0.03077800000000001
     },
     "natural_gasoline::L::L": {
       "value": 1.0
     },
     "natural_gasoline::L::MMBtu": {
-      "value": 0.029761453420481955
+      "value": 0.029171911253999795
     },
     "natural_gasoline::L::MWh": {
-      "value": 0.008722222222222225
+      "value": 0.008549444444444446
     },
     "natural_gasoline::L::bbl": {
       "value": 0.006289810770432105
@@ -6823,13 +6823,13 @@
       "value": 0.0006675
     },
     "natural_gasoline::L::therm": {
-      "value": 0.2976145342048196
+      "value": 0.291719112539998
     },
     "natural_gasoline::MMBtu::GJ": {
       "value": 1.055056
     },
     "natural_gasoline::MMBtu::L": {
-      "value": 33.600509554140125
+      "value": 34.27955032815647
     },
     "natural_gasoline::MMBtu::MMBtu": {
       "value": 1.0
@@ -6838,22 +6838,22 @@
       "value": 0.2930711111111111
     },
     "natural_gasoline::MMBtu::bbl": {
-      "value": 0.21134084688563734
+      "value": 0.21561188485960792
     },
     "natural_gasoline::MMBtu::gal": {
-      "value": 8.876315569196771
+      "value": 9.055699164103535
     },
     "natural_gasoline::MMBtu::kg": {
-      "value": 22.42834012738853
+      "value": 22.88159984404444
     },
     "natural_gasoline::MMBtu::kt": {
-      "value": 2.242834012738853e-05
+      "value": 2.288159984404444e-05
     },
     "natural_gasoline::MMBtu::m^3": {
-      "value": 0.03360050955414012
+      "value": 0.03427955032815647
     },
     "natural_gasoline::MMBtu::mt": {
-      "value": 0.02242834012738853
+      "value": 0.02288159984404444
     },
     "natural_gasoline::MMBtu::therm": {
       "value": 10.0
@@ -6862,7 +6862,7 @@
       "value": 3.6
     },
     "natural_gasoline::MWh::L": {
-      "value": 114.6496815286624
+      "value": 116.9666645006173
     },
     "natural_gasoline::MWh::MMBtu": {
       "value": 3.412141156488376
@@ -6871,37 +6871,37 @@
       "value": 1.0
     },
     "natural_gasoline::MWh::bbl": {
-      "value": 0.7211248017055915
+      "value": 0.7356981861575012
     },
     "natural_gasoline::MWh::gal": {
-      "value": 30.28724167163485
+      "value": 30.89932381861506
     },
     "natural_gasoline::MWh::kg": {
-      "value": 76.52866242038215
+      "value": 78.07524855416204
     },
     "natural_gasoline::MWh::kt": {
-      "value": 7.652866242038215e-05
+      "value": 7.807524855416205e-05
     },
     "natural_gasoline::MWh::m^3": {
-      "value": 0.11464968152866241
+      "value": 0.11696666450061732
     },
     "natural_gasoline::MWh::mt": {
-      "value": 0.07652866242038214
+      "value": 0.07807524855416205
     },
     "natural_gasoline::MWh::therm": {
       "value": 34.121411564883765
     },
     "natural_gasoline::bbl::GJ": {
-      "value": 4.992201060739202
+      "value": 4.8933109632939855
     },
     "natural_gasoline::bbl::L": {
       "value": 158.987294928
     },
     "natural_gasoline::bbl::MMBtu": {
-      "value": 4.7316929724481
+      "value": 4.637963258153109
     },
     "natural_gasoline::bbl::MWh": {
-      "value": 1.3867225168720003
+      "value": 1.3592530453594402
     },
     "natural_gasoline::bbl::bbl": {
       "value": 1.0
@@ -6922,19 +6922,19 @@
       "value": 0.10612401936444
     },
     "natural_gasoline::bbl::therm": {
-      "value": 47.31692972448099
+      "value": 46.379632581531084
     },
     "natural_gasoline::gal::GJ": {
-      "value": 0.11886193001760004
+      "value": 0.11650740388795204
     },
     "natural_gasoline::gal::L": {
       "value": 3.7854117840000003
     },
     "natural_gasoline::gal::MMBtu": {
-      "value": 0.11265935648685949
+      "value": 0.11042769662269304
     },
     "natural_gasoline::gal::MWh": {
-      "value": 0.03301720278266667
+      "value": 0.032363167746653335
     },
     "natural_gasoline::gal::bbl": {
       "value": 0.023809523809523808
@@ -6955,19 +6955,19 @@
       "value": 0.0025267623658200003
     },
     "natural_gasoline::gal::therm": {
-      "value": 1.126593564868595
+      "value": 1.1042769662269305
     },
     "natural_gasoline::kg::GJ": {
-      "value": 0.04704119850187268
+      "value": 0.046109363295880175
     },
     "natural_gasoline::kg::L": {
       "value": 1.4981273408239701
     },
     "natural_gasoline::kg::MMBtu": {
-      "value": 0.04458644707188308
+      "value": 0.04370323783370757
     },
     "natural_gasoline::kg::MWh": {
-      "value": 0.013066999583853519
+      "value": 0.012808156471077822
     },
     "natural_gasoline::kg::bbl": {
       "value": 0.009422937483793414
@@ -6988,19 +6988,19 @@
       "value": 0.001
     },
     "natural_gasoline::kg::therm": {
-      "value": 0.4458644707188308
+      "value": 0.43703237833707564
     },
     "natural_gasoline::kt::GJ": {
-      "value": 47041.19850187267
+      "value": 46109.36329588016
     },
     "natural_gasoline::kt::L": {
       "value": 1498127.34082397
     },
     "natural_gasoline::kt::MMBtu": {
-      "value": 44586.44707188308
+      "value": 43703.237833707564
     },
     "natural_gasoline::kt::MWh": {
-      "value": 13066.999583853518
+      "value": 12808.156471077822
     },
     "natural_gasoline::kt::bbl": {
       "value": 9422.937483793417
@@ -7021,19 +7021,19 @@
       "value": 1000.0
     },
     "natural_gasoline::kt::therm": {
-      "value": 445864.4707188307
+      "value": 437032.3783370756
     },
     "natural_gasoline::m^3::GJ": {
-      "value": 31.40000000000001
+      "value": 30.77800000000001
     },
     "natural_gasoline::m^3::L": {
       "value": 999.9999999999999
     },
     "natural_gasoline::m^3::MMBtu": {
-      "value": 29.76145342048195
+      "value": 29.17191125399979
     },
     "natural_gasoline::m^3::MWh": {
-      "value": 8.722222222222221
+      "value": 8.549444444444443
     },
     "natural_gasoline::m^3::bbl": {
       "value": 6.289810770432103
@@ -7054,19 +7054,19 @@
       "value": 0.6674999999999999
     },
     "natural_gasoline::m^3::therm": {
-      "value": 297.6145342048195
+      "value": 291.7191125399979
     },
     "natural_gasoline::mt::GJ": {
-      "value": 47.041198501872664
+      "value": 46.10936329588016
     },
     "natural_gasoline::mt::L": {
       "value": 1498.1273408239701
     },
     "natural_gasoline::mt::MMBtu": {
-      "value": 44.58644707188308
+      "value": 43.70323783370756
     },
     "natural_gasoline::mt::MWh": {
-      "value": 13.06699958385352
+      "value": 12.808156471077824
     },
     "natural_gasoline::mt::bbl": {
       "value": 9.422937483793415
@@ -7087,13 +7087,13 @@
       "value": 1.0
     },
     "natural_gasoline::mt::therm": {
-      "value": 445.8644707188307
+      "value": 437.0323783370756
     },
     "natural_gasoline::therm::GJ": {
       "value": 0.1055056
     },
     "natural_gasoline::therm::L": {
-      "value": 3.360050955414012
+      "value": 3.427955032815647
     },
     "natural_gasoline::therm::MMBtu": {
       "value": 0.09999999999999999
@@ -7102,22 +7102,22 @@
       "value": 0.029307111111111107
     },
     "natural_gasoline::therm::bbl": {
-      "value": 0.021134084688563738
+      "value": 0.021561188485960794
     },
     "natural_gasoline::therm::gal": {
-      "value": 0.8876315569196772
+      "value": 0.9055699164103537
     },
     "natural_gasoline::therm::kg": {
-      "value": 2.242834012738853
+      "value": 2.288159984404444
     },
     "natural_gasoline::therm::kt": {
-      "value": 2.242834012738853e-06
+      "value": 2.2881599844044443e-06
     },
     "natural_gasoline::therm::m^3": {
-      "value": 0.0033600509554140125
+      "value": 0.0034279550328156472
     },
     "natural_gasoline::therm::mt": {
-      "value": 0.002242834012738853
+      "value": 0.0022881599844044444
     },
     "natural_gasoline::therm::therm": {
       "value": 1.0

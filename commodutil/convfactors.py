@@ -204,14 +204,14 @@ COMMODITIES = {
         "propane", 0.507 * ureg.kg / ureg.L, 25.5375 * ureg.GJ / ureg.m**3
     ),  # HHV; implies 3.848 MMBtu/bbl vs EIA propane 3.841 (-0.2%, within tol) -> left as-is
     "butane": Commodity(
-        "butane", 0.574 * ureg.kg / ureg.L, 28.4400 * ureg.GJ / ureg.m**3
-    ),  # HHV; implies 4.286 MMBtu/bbl vs EIA n-butane 4.353 (-1.57%, >1%) -> FLAGGED, left unchanged pending desk (EIA-aligned value would be 28.887)
+        "butane", 0.574 * ureg.kg / ureg.L, 28.887 * ureg.GJ / ureg.m**3
+    ),  # HHV; EIA MER App A n-butane 4.353 MMBtu/bbl gross (was 28.44 -> 4.286 MMBtu/bbl, -1.57% off EIA; aligned 2026-07 per EIA-gross basis decision)
     "isobutane": Commodity(
         "isobutane", 0.557 * ureg.kg / ureg.L, 27.7700 * ureg.GJ / ureg.m**3
     ),  # HHV; implies 4.185 MMBtu/bbl vs EIA isobutane 4.183 (-0.0%, within tol) -> left as-is
     "natural_gasoline": Commodity(
-        "natural_gasoline", 0.6675 * ureg.kg / ureg.L, 31.4 * ureg.GJ / ureg.m**3
-    ),  # HHV; implies 4.732 MMBtu/bbl vs EIA pentanes-plus 4.638 (+1.98%, >1%) -> FLAGGED, left unchanged pending desk (EIA-aligned value would be 30.778)
+        "natural_gasoline", 0.6675 * ureg.kg / ureg.L, 30.778 * ureg.GJ / ureg.m**3
+    ),  # HHV; EIA MER App A pentanes-plus 4.638 MMBtu/bbl gross (was 31.4 -> 4.732 MMBtu/bbl, +1.98% off EIA; aligned 2026-07 per EIA-gross basis decision)
     # BP product basket (optional reference)
     "product_basket": Commodity(
         "product_basket", 0.781 * ureg.kg / ureg.L, 33.642356 * ureg.GJ / ureg.m**3
