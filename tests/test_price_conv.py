@@ -40,9 +40,10 @@ def test_convert_price_ethane_gal_to_mmbtu():
 
 
 def test_convert_price_butane_gal_to_mmbtu():
-    # n-butane HHV ~ 103,000 BTU/gal -> multiplier ~9.8
+    # n-butane rebased to EIA gross 4.353 MMBtu/bbl (~103,600 Btu/gal) ->
+    # multiplier ~9.65 (was ~9.8 on the old 28.44 GJ/m^3 folklore value).
     out = convfactors.convert_price(1.0, "gal", "MMBtu", "butane")
-    assert out == pytest.approx(9.8, rel=2e-2)
+    assert out == pytest.approx(9.65, rel=1e-2)
 
 
 def test_convert_price_propane_gal_to_mt():

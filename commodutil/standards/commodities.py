@@ -61,6 +61,13 @@ COMMODITY_KEYWORDS = [
     ("Propane", "NGL", ["propane"]),
     ("NGL", "NGL", ["ngl"]),
     ("FFA", "Freight", ["freight", "ffa"]),
+    # Coal (API2 gross basis, added to COMMODITIES 2026-07). Group "Coal" is not
+    # in commodity_groups.COMMODITY_GROUPS (closed set mirroring the legacy
+    # MetadataDB2 CHECK constraint) — that tuple is deliberately NOT extended.
+    # Gold's commodity_group column is free-form and already carries values
+    # outside the closed set (e.g. 'Emissions'); no live consumer validates
+    # groups (2026-07 census).
+    ("Coal", "Coal", ["api2", "api4", "coal"]),
 ]
 
 COMMODITY_CONVERSION_MAP = {
@@ -86,6 +93,9 @@ COMMODITY_CONVERSION_MAP = {
     "Propane": "propane",
     "NGL": "lpg",
     "Ethane": "ethane",
+    # Coal (API2 gross basis) added to COMMODITIES 2026-07; keywords entry above
+    # enables display-name inference ("API2 Rotterdam Coal Futures" -> Coal).
+    "Coal": "coal",
 }
 
 

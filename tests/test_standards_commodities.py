@@ -129,6 +129,26 @@ def test_normalize_commodity_for_conversion_empty():
     assert normalize_commodity_for_conversion("") is None
 
 
+def test_normalize_commodity_for_conversion_coal():
+    # 'Coal' routes to the COMMODITIES 'coal' entry (API2 gross, added 2026-07),
+    # both via explicit metadata (gold commodity='Coal') and display-name
+    # inference (API2/API4/coal keywords).
+    assert normalize_commodity_for_conversion("Coal") == "coal"
+    assert normalize_commodity_for_conversion("API2 Rotterdam Coal Futures") == "coal"
+    from commodutil.standards.commodities import infer_commodity_and_group
+
+    assert infer_commodity_and_group("Rotterdam Coal (API2) Futures") == (
+        "Coal",
+        "Coal",
+    )
+    # Substring guard: 'api2' must not hijack unrelated names, and existing
+    # commodities keep winning their own keywords.
+    assert infer_commodity_and_group("ICE Brent Crude Futures") == (
+        "Brent",
+        "Crude Oil",
+    )
+
+
 def test_normalize_commodity_for_conversion_unknown_falls_back_to_slug():
     # No COMMODITY_KEYWORDS hit -> normalised slug fallback (lowercased,
     # separators collapsed to underscores).
