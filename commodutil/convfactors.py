@@ -12,6 +12,7 @@ import pandas as pd
 from functools import lru_cache
 
 from commodutil.standards import currency as _currency
+from commodutil.standards.price_unit import PriceUnit
 from commodutil.standards.units import to_pint_token as _to_pint_token
 
 logger = logging.getLogger(__name__)
@@ -294,8 +295,8 @@ class CommodityConverter:
     def convert(
         self,
         value: Union[float, pd.Series],
-        from_unit: str,
-        to_unit: str,
+        from_unit: Union[str, PriceUnit],
+        to_unit: Union[str, PriceUnit],
         commodity: Optional[str] = None,
     ) -> Union[float, pd.Series]:
         """
@@ -314,6 +315,16 @@ class CommodityConverter:
             # With pandas Series and daily rates
             convert(series, 'kt/month', 'bbl/day', commodity='gasoline')
         """
+        # Accept PriceUnit | str at the boundary: a PriceUnit collapses to its
+        # canonical string form, which the existing rate/pint logic then handles
+        # unchanged (convert/convfactor operate on bare & rate units, never on
+        # currency-qualified ones). str(PriceUnit) is byte-identical to the
+        # equivalent canonical string, so numeric behaviour is unchanged.
+        if isinstance(from_unit, PriceUnit):
+            from_unit = str(from_unit)
+        if isinstance(to_unit, PriceUnit):
+            to_unit = str(to_unit)
+
         # Normalize and parse units to handle daily/monthly rates
         from_unit = _to_pint_token(from_unit)
         to_unit = _to_pint_token(to_unit)
@@ -605,13 +616,22 @@ converter = CommodityConverter()
 
 
 # Convenience functions for direct use
-def convert(value, from_unit: str, to_unit: str, commodity: Optional[str] = None):
-    """Convert values between units"""
+def convert(
+    value,
+    from_unit: Union[str, PriceUnit],
+    to_unit: Union[str, PriceUnit],
+    commodity: Optional[str] = None,
+):
+    """Convert values between units. Units may be strings or ``PriceUnit``."""
     return converter.convert(value, from_unit, to_unit, commodity)
 
 
-def convfactor(from_unit: str, to_unit: str, commodity: Optional[str] = None) -> float:
-    """Get conversion factor between units"""
+def convfactor(
+    from_unit: Union[str, PriceUnit],
+    to_unit: Union[str, PriceUnit],
+    commodity: Optional[str] = None,
+) -> float:
+    """Get conversion factor between units. Units may be strings or ``PriceUnit``."""
     return converter.convert(1.0, from_unit, to_unit, commodity)
 
 
@@ -626,8 +646,8 @@ def convfactor(from_unit: str, to_unit: str, commodity: Optional[str] = None) ->
 
 def convert_price(
     value: Union[float, pd.Series],
-    from_unit: str,
-    to_unit: str,
+    from_unit: Union[str, PriceUnit],
+    to_unit: Union[str, PriceUnit],
     commodity: Optional[str] = None,
     fx: Union[float, pd.Series, None] = None,
     ffill_policy: str = "strict",
@@ -682,8 +702,20 @@ def convert_price(
         fx_series = pd.Series([1.07, 1.08, 1.06], index=p.index)
         convert_price(p, 'EUR/MWh', 'USD/MMBtu', fx=fx_series)
     """
-    from_ccy, from_bare_unit = _currency.split_currency_unit(from_unit)
-    to_ccy, to_bare_unit = _currency.split_currency_unit(to_unit)
+    # Parse each side once at the boundary into a PriceUnit and read its legs,
+    # instead of re-splitting raw strings. PriceUnit.parse is built on
+    # split_currency_unit, so (currency, quantity_leg) is byte-identical to the
+    # previous split_currency_unit(...) result — behaviour and error strings are
+    # unchanged. from_unit/to_unit are re-bound to the canonical string form for
+    # use in the error messages / examples below.
+    from_pu = (
+        from_unit if isinstance(from_unit, PriceUnit) else PriceUnit.parse(from_unit)
+    )
+    to_pu = to_unit if isinstance(to_unit, PriceUnit) else PriceUnit.parse(to_unit)
+    from_unit = str(from_pu)
+    to_unit = str(to_pu)
+    from_ccy, from_bare_unit = (from_pu.currency or ""), from_pu.quantity_leg()
+    to_ccy, to_bare_unit = (to_pu.currency or ""), to_pu.quantity_leg()
 
     # Resolve the underlying "major" currency on each side for same-base detection
     # (e.g. USc and USD share major USD — pure scale, no FX needed).
@@ -799,6 +831,92 @@ def convert_price(
         return unit_converted * fx_aligned / fractional_divisor
 
     return unit_converted * fx / fractional_divisor
+
+
+def convert_currency_leg(
+    value: Union[float, pd.Series],
+    from_unit: Union[str, PriceUnit],
+    to_unit: Union[str, PriceUnit],
+    fx: Union[float, pd.Series, None] = None,
+) -> Union[float, pd.Series]:
+    """Convert ONLY the currency leg of a price whose quantity denominator is
+    unchanged.
+
+    This is the separable-currency-leg helper from the conversion architecture
+    plan (Phase 3.1). Unlike :func:`convert_price`, it performs NO physical-unit
+    conversion and never calls :func:`convfactor`, so it works when the quantity
+    denominator is non-physical or unknown to pint — e.g. ``'USc/RIN' ->
+    'USD/RIN'`` (a pure ``/100`` scale). ``convert_price`` cannot do that today
+    because it tries to compute ``convfactor('RIN', 'RIN')`` and raises on the
+    unknown unit.
+
+    It reimplements, as a first-class API, the broad-except ``/100.0`` currency
+    fallback shim in ``oilrisk``'s ``artis.py`` (lines ~75-98): scale a
+    fractional-currency quote (USc, GBp, ...) to its major unit without needing a
+    commodity or a physical factor.
+
+    Rules:
+      * The two quantity denominators must be **string-equal** after parsing
+        (``from`` and ``to`` refer to the same thing priced per identical unit);
+        otherwise ``ValueError``. No physical-unit validation is performed.
+      * Same-base fractional (``USc``->``USD``, ``GBp``->``GBP``): pure divisor
+        scale, no ``fx`` needed.
+      * No source currency, or source already the USD major: no-op (returns
+        ``value`` unchanged).
+      * Cross major-currency (e.g. ``EUR``->``USD``): ``fx`` is required (quoted
+        target-per-source) or ``ValueError`` is raised. ``fx`` is applied
+        element-wise; index-aligned FX Series are the caller's responsibility
+        (use :func:`convert_price` for the strict/ffill staleness machinery).
+      * Target currency is restricted to USD (matching ``convert_price``),
+        except pure same-base fractional scaling like ``GBp``->``GBP``.
+
+    Examples:
+        convert_currency_leg(250.0, 'USc/RIN', 'USD/RIN')   # -> 2.5  (/100)
+        convert_currency_leg(50.0, 'GBp/therm', 'GBP/therm')  # -> 0.5
+        convert_currency_leg(10.0, 'EUR/RIN', 'USD/RIN', fx=1.07)  # -> 10.7
+    """
+    from_pu = (
+        from_unit if isinstance(from_unit, PriceUnit) else PriceUnit.parse(from_unit)
+    )
+    to_pu = to_unit if isinstance(to_unit, PriceUnit) else PriceUnit.parse(to_unit)
+
+    # Quantity denominators must match exactly — string equality only, so a
+    # non-physical denominator like 'RIN' is fine (no pint lookup).
+    if from_pu.quantity_leg() != to_pu.quantity_leg():
+        raise ValueError(
+            f"convert_currency_leg requires identical quantity denominators; "
+            f"got '{from_pu.quantity_leg()}' vs '{to_pu.quantity_leg()}'"
+        )
+
+    from_ccy = from_pu.currency or ""
+    to_ccy = to_pu.currency or ""
+    from_major = from_pu.major_currency or ""
+    to_major = to_pu.major_currency or ""
+
+    same_base_fractional = bool(from_ccy and to_ccy and from_major == to_major)
+
+    # USD-only currency target, except pure same-base fractional scaling.
+    if to_ccy and to_major != "USD" and not same_base_fractional:
+        raise ValueError(
+            f"convert_currency_leg currently only supports USD/* as target; "
+            f"got '{to_pu}'"
+        )
+
+    # Same-base fractional (USc->USD, GBp->GBP, ...): pure divisor scale.
+    if same_base_fractional:
+        return value * (to_pu.fractional_divisor / from_pu.fractional_divisor)
+
+    # No source currency, or already USD major: currency leg is a no-op.
+    if not from_ccy or from_major == "USD":
+        return value
+
+    # Cross major-currency: an FX leg is required.
+    if fx is None:
+        raise ValueError(
+            f"FX rate required to convert {from_pu} -> {to_pu} "
+            f"(source currency '{from_ccy}' is non-USD)"
+        )
+    return value * fx / from_pu.fractional_divisor
 
 
 def list_commodities():
