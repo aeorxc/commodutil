@@ -13,6 +13,7 @@ from dataclasses import dataclass
 import pandas as pd
 from functools import lru_cache
 
+from commodutil.standards.commodities import COMMODITY_ALIASES as _COMMODITY_ALIASES
 from commodutil.standards.price_unit import PriceUnit
 from commodutil.standards.unit_registry import PINT_DEFINITIONS as _PINT_DEFINITIONS
 from commodutil.standards.units import to_pint_token as _to_pint_token
@@ -205,47 +206,12 @@ COMMODITIES = {
     # GCV = 29.29 GJ/t) which understated coal $/MMBtu by ~11%.
 }
 
-# Aliases for compatibility
-ALIASES = {
-    # Common synonyms and marketing terms
-    "ulsd": "diesel",
-    "gasoil": "diesel",
-    "gas_oil": "diesel",
-    "gas oil": "diesel",
-    "go": "diesel",
-    "kerosene": "jet",
-    # Motor gasoline
-    "gas": "gasoline",
-    "mogas": "gasoline",
-    # Fuel oil
-    "fueloil": "fuel_oil",
-    "fuel oil": "fuel_oil",
-    "fo": "fuel_oil",
-    # Crude
-    "crude oil": "crude",
-    "crudeoil": "crude",
-    # LPG and nat gas
-    # Note: 'propane'/'butane'/'isobutane'/'natural_gasoline' are now first-class
-    # entries in COMMODITIES (added 2026-05 for $/gal<->$/MMBtu work on the
-    # MB OPIS NGL futures). The legacy 'propane -> lpg' alias is gone; existing
-    # callers using commodity='lpg' for a generic LPG blend still work via the
-    # 'lpg' entry. NGL-species aliases below cover common spellings.
-    "n_butane": "butane",
-    "n-butane": "butane",
-    "normal_butane": "butane",
-    "normal butane": "butane",
-    "iso_butane": "isobutane",
-    "iso-butane": "isobutane",
-    "i_butane": "isobutane",
-    "i-butane": "isobutane",
-    "natgaso": "natural_gasoline",
-    "nat_gasoline": "natural_gasoline",
-    "pentanes_plus": "natural_gasoline",
-    "lng": "natgas",  # LNG (liquefied natural gas)
-    "ng": "natural_gas",  # pipeline natural gas (gaseous)
-    "naturalgas": "natural_gas",
-    "nat_gas": "natural_gas",
-}
+# Alias -> canonical COMMODITIES key, for CommodityConverter's synonym/spelling
+# resolution. Derived (defensive copy) from the sole owner,
+# commodutil.standards.commodities.COMMODITY_ALIASES, which groups the spellings
+# by target; edit them there. tests/test_aliases.py freezes this mapping against
+# a literal snapshot so any owner edit that changes it fails loudly.
+ALIASES = dict(_COMMODITY_ALIASES)
 
 
 class CommodityConverter:

@@ -110,6 +110,73 @@ COMMODITY_CONVERSION_MAP = {
 }
 
 
+# -----------------------------------------------------------------------------
+# Commodity aliases: exact-key spelling/synonym table for
+# commodutil.convfactors.CommodityConverter (which resolves
+# aliases.get(name.lower(), name) before COMMODITIES lookup). This is the SOLE
+# owner of the alias data; convfactors.ALIASES is a derived view of
+# COMMODITY_ALIASES below (see convfactors.py).
+#
+# Deliberately grouped by canonical target (the natural axis for maintenance:
+# "what are the accepted spellings of butane?") and flattened programmatically
+# into COMMODITY_ALIASES. Every value MUST be a key in
+# commodutil.convfactors.COMMODITIES; the freeze test asserts this (it cannot
+# be checked here without importing convfactors, which would cycle).
+#
+# INTENTIONALLY INDEPENDENT of COMMODITY_KEYWORDS above. That table is a
+# free-text *substring* inference vocabulary (brent/wti/jkm/ttf/rbob/api2...)
+# used to classify descriptions; this is an *exact whole-string* alias lookup
+# for convert(). They diverge on purpose:
+#   * COMMODITY_KEYWORDS routes "Natural Gas" -> "natgas" (the LNG entry) for
+#     inference, whereas the gaseous-pipeline aliases here (ng/naturalgas/
+#     nat_gas) resolve to the distinct "natural_gas" COMMODITIES entry.
+#   * COMMODITY_KEYWORDS carries ~37 substrings that are canonical names or
+#     exchange tickers, not convert() aliases.
+# Only 5 spellings overlap both tables; deriving this table from
+# COMMODITY_KEYWORDS would over-generate and couple alias resolution to
+# inference-vocabulary edits, so the two are kept separate by design.
+_ALIAS_SPELLINGS: dict[str, list[str]] = {
+    # Middle distillates
+    "diesel": ["ulsd", "gasoil", "gas_oil", "gas oil", "go"],
+    "jet": ["kerosene"],
+    # Motor gasoline
+    "gasoline": ["gas", "mogas"],
+    # Fuel oil
+    "fuel_oil": ["fueloil", "fuel oil", "fo"],
+    # Crude
+    "crude": ["crude oil", "crudeoil"],
+    # NGL species. 'propane'/'butane'/'isobutane'/'natural_gasoline' became
+    # first-class COMMODITIES entries (2026-05, $/gal<->$/MMBtu for MB OPIS NGL
+    # futures); these cover common separator/name spellings of each species.
+    "butane": ["n_butane", "n-butane", "normal_butane", "normal butane"],
+    "isobutane": ["iso_butane", "iso-butane", "i_butane", "i-butane"],
+    "natural_gasoline": ["natgaso", "nat_gasoline", "pentanes_plus"],
+    # Natural gas: 'lng' -> liquefied ('natgas'); gaseous-pipeline spellings ->
+    # the distinct 'natural_gas' entry (see divergence note above).
+    "natgas": ["lng"],
+    "natural_gas": ["ng", "naturalgas", "nat_gas"],
+}
+
+
+def _build_commodity_aliases() -> dict[str, str]:
+    """Flatten ``_ALIAS_SPELLINGS`` (target -> [spellings]) into a
+    spelling -> target lookup, guarding against a spelling being assigned to
+    two different targets."""
+    aliases: dict[str, str] = {}
+    for canonical, spellings in _ALIAS_SPELLINGS.items():
+        for spelling in spellings:
+            if spelling in aliases and aliases[spelling] != canonical:
+                raise ValueError(
+                    f"alias {spelling!r} maps to both {aliases[spelling]!r} "
+                    f"and {canonical!r}"
+                )
+            aliases[spelling] = canonical
+    return aliases
+
+
+COMMODITY_ALIASES = _build_commodity_aliases()
+
+
 def _normalize_text(value: str) -> str:
     """Normalise text for keyword matching: lowercase, replace separators, collapse whitespace.
 
@@ -307,6 +374,7 @@ def infer_commodity_from_exchange_symbol(symbol: Optional[str]) -> Optional[str]
 __all__ = [
     "COMMODITY_KEYWORDS",
     "COMMODITY_CONVERSION_MAP",
+    "COMMODITY_ALIASES",
     "infer_commodity_and_group",
     "infer_ngl_species",
     "normalize_commodity_for_conversion",
