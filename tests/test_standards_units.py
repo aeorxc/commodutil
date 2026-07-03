@@ -88,6 +88,12 @@ def test_unit_map_canonical_set():
     Phase 2.1 residual consolidation added 'kg' as a canonical (kg + kilogram
     variants promoted from PUBLIC-only into UNIT_MAP; 'm^3' was already present
     via the spelled-out cubic-metre spellings).
+
+    Exchange gap fix (A1) added 'therm' as a canonical: the ICE 'THM' spelling
+    ('thm'/'thms') maps to it. It introduces no NEW physical unit — 'therm' was
+    already a pint alias — only a UNIT_MAP entry so parse_unit resolves 'THM'.
+    'MTONS'/'CBM'/'KL' folded into the pre-existing 'mt'/'m^3' canonicals, so
+    they add no new canonical value.
     """
     from commodutil.standards.units import UNIT_MAP
 
@@ -102,6 +108,7 @@ def test_unit_map_canonical_set():
         "MWh",
         "MW",
         "m^3",
+        "therm",
         "RIN",
         "FEU",
         "day",
