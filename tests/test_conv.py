@@ -90,6 +90,27 @@ class TestUtils:
         res = convfactors.convert(1000, "m^3", "GJ", "natural_gas")
         assert res == pytest.approx(36.0, abs=0.001)  # 1000 m³ * 0.036 GJ/m³ = 36 GJ
 
+    def test_ethanol_density_and_volume_energy_basis(self):
+        """Ethanol density is independent of the EIA volume-energy factor."""
+        ethanol = convfactors.COMMODITIES["ethanol"]
+        gasoline = convfactors.COMMODITIES["gasoline"]
+
+        assert ethanol.density.to("kg/L").magnitude == pytest.approx(0.7937)
+        assert ethanol.density != gasoline.density
+
+        # EIA fuel ethanol is stored as a per-volume HHV factor:
+        # 3.539 MMBtu/bbl -> 23.485167 GJ/m^3. Density changes only affect
+        # mass-based paths such as mt->bbl and mt->MMBtu.
+        assert convfactors.convfactor("bbl", "MMBtu", "ethanol") == pytest.approx(
+            3.539, rel=1e-8
+        )
+        assert convfactors.convfactor("mt", "bbl", "ethanol") == pytest.approx(
+            7.924670241, rel=1e-9
+        )
+        assert convfactors.convfactor("mt", "MMBtu", "ethanol") == pytest.approx(
+            28.045407895, rel=1e-9
+        )
+
     def test_simple_conversions(self):
         """Test simple unit conversions that don't need commodity"""
         # Barrel to gallons

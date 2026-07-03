@@ -131,8 +131,8 @@ COMMODITIES = {
         "naphtha", 0.706720311 * ureg.kg / ureg.L, 34.826266 * ureg.GJ / ureg.m**3
     ),  # HHV; EIA petrochemical naphtha <401F 5.248 MMBtu/bbl -> 49.28 GJ/t gross (was NCV 44.90)
     "ethanol": Commodity(
-        "ethanol", 0.755079324 * ureg.kg / ureg.L, 23.485167 * ureg.GJ / ureg.m**3
-    ),  # HHV; EIA fuel ethanol (undenatured) 3.539 MMBtu/bbl -> 31.10 GJ/t gross (was net ~27.81); NOTE density 0.7551 looks copied from gasoline (ethanol ~0.789) - flagged, left unchanged
+        "ethanol", 0.7937 * ureg.kg / ureg.L, 23.485167 * ureg.GJ / ureg.m**3
+    ),  # HHV; EIA fuel ethanol (undenatured) 3.539 MMBtu/bbl. Density: ASTM D4806 undenatured fuel ethanol SG 60/60F lower bound 0.7937 (Energy Transfer spec note; IEA AMF rounds ethanol density to 0.79 kg/L). Energy_content is per-volume, so bbl->MMBtu stays fixed while mt factors move.
     # Middle distillates
     "diesel": Commodity(
         "diesel", 0.844269902 * ureg.kg / ureg.L, 38.290312 * ureg.GJ / ureg.m**3
