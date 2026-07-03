@@ -55,6 +55,17 @@ COMMODITY_KEYWORDS = [
     ("VGO", "Refined Products", ["vgo"]),
     ("FAME", "Biofuel", ["fame"]),
     ("HVO", "Biofuel", ["hvo"]),
+    # Petrochemicals: keep polyethylene-specific entries before "Ethylene",
+    # because the ordered substring matcher would otherwise match the
+    # "ethylene" inside "polyethylene".
+    ("HDPE", "Petrochemical", ["hdpe", "high density polyethylene"]),
+    ("LLDPE", "Petrochemical", ["lldpe", "linear low density polyethylene"]),
+    # Keep "Polypropylene" before "Propylene" for the same substring reason.
+    # Bare "pp" is deliberately omitted: it is too short for naive substring
+    # matching (e.g. copper, shipping). Rely on long forms instead.
+    ("Polypropylene", "Petrochemical", ["polypropylene"]),
+    ("Propylene", "Petrochemical", ["polymer grade propylene", "pgp", "propylene"]),
+    ("Ethylene", "Petrochemical", ["ethylene"]),
     ("Isobutane", "NGL", ["isobutane"]),
     ("Butane", "NGL", ["butane"]),
     ("Ethane", "NGL", ["ethane"]),
@@ -143,6 +154,30 @@ def infer_commodity_and_group(
             if keyword in haystack:
                 return commodity_name, group_name
     return None, None
+
+
+def _ngl_species_from_keywords() -> frozenset[str]:
+    """Return the discrete NGL species currently declared in COMMODITY_KEYWORDS."""
+    return frozenset(
+        commodity_name
+        for commodity_name, group_name, _ in COMMODITY_KEYWORDS
+        if group_name == "NGL" and commodity_name != "NGL"
+    )
+
+
+def infer_ngl_species(text: object) -> Optional[str]:
+    """Return a discrete NGL species from free text, or ``None``.
+
+    This is consumed by the curvemetadata silver classifier when upgrading
+    generic NGL exchange rows. The policy is upgrade-only-when-unambiguous:
+    only an inferred NGL commodity that is one of the single-species keyword
+    entries is returned; spreads, baskets, and non-NGL rows stay generic at the
+    caller.
+    """
+    commodity_name, group_name = infer_commodity_and_group(str(text or ""))
+    if group_name == "NGL" and commodity_name in _ngl_species_from_keywords():
+        return commodity_name
+    return None
 
 
 def normalize_commodity_for_conversion(commodity: Optional[str]) -> Optional[str]:
@@ -273,6 +308,7 @@ __all__ = [
     "COMMODITY_KEYWORDS",
     "COMMODITY_CONVERSION_MAP",
     "infer_commodity_and_group",
+    "infer_ngl_species",
     "normalize_commodity_for_conversion",
     "infer_commodity_from_exchange_symbol",
 ]

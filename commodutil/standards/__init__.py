@@ -14,6 +14,7 @@ from commodutil.standards.commodities import (
     COMMODITY_KEYWORDS,
     infer_commodity_and_group,
     infer_commodity_from_exchange_symbol,
+    infer_ngl_species,
     normalize_commodity_for_conversion,
 )
 from commodutil.standards.commodity_groups import (
@@ -68,6 +69,7 @@ __all__ = [
     "COMMODITY_KEYWORDS",
     "infer_commodity_and_group",
     "infer_commodity_from_exchange_symbol",
+    "infer_ngl_species",
     "normalize_commodity_for_conversion",
     # commodity_groups
     "COMMODITY_GROUPS",
