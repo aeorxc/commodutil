@@ -206,13 +206,6 @@ COMMODITIES = {
     # GCV = 29.29 GJ/t) which understated coal $/MMBtu by ~11%.
 }
 
-# Alias -> canonical COMMODITIES key, for CommodityConverter's synonym/spelling
-# resolution. Derived (defensive copy) from the sole owner,
-# commodutil.standards.commodities.COMMODITY_ALIASES, which groups the spellings
-# by target; edit them there. tests/test_aliases.py freezes this mapping against
-# a literal snapshot so any owner edit that changes it fails loudly.
-ALIASES = dict(_COMMODITY_ALIASES)
-
 
 class CommodityConverter:
     """Clean, modern interface for commodity unit conversions"""
@@ -220,7 +213,12 @@ class CommodityConverter:
     def __init__(self):
         self.ureg = ureg
         self.commodities = COMMODITIES
-        self.aliases = ALIASES
+        # Alias (spelling/synonym) -> canonical COMMODITIES key. Sole owner is
+        # commodutil.standards.commodities.COMMODITY_ALIASES (grouped by target;
+        # edit there). Defensive copy so converter-local mutation can't touch
+        # the owner. The old convfactors.ALIASES re-export was removed with the
+        # B1 consolidation — import COMMODITY_ALIASES from standards instead.
+        self.aliases = dict(_COMMODITY_ALIASES)
 
     @lru_cache(maxsize=128)
     def get_commodity(self, name: str) -> Commodity:

@@ -114,8 +114,9 @@ COMMODITY_CONVERSION_MAP = {
 # Commodity aliases: exact-key spelling/synonym table for
 # commodutil.convfactors.CommodityConverter (which resolves
 # aliases.get(name.lower(), name) before COMMODITIES lookup). This is the SOLE
-# owner of the alias data; convfactors.ALIASES is a derived view of
-# COMMODITY_ALIASES below (see convfactors.py).
+# owner of the alias data; COMMODITY_ALIASES below is the ONLY public name for
+# it (the old convfactors.ALIASES re-export was removed in the same
+# consolidation — import it from here).
 #
 # Deliberately grouped by canonical target (the natural axis for maintenance:
 # "what are the accepted spellings of butane?") and flattened programmatically
