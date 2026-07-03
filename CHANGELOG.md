@@ -1,5 +1,11 @@
 # Changelog
 
+## 5.0.1 - 2026-07-03
+
+- Breaking: removed `default_unit_for_commodity` and `_DEFAULT_UNIT` from `commodutil.standards.units`; these fabricated per-commodity quote units, and the gold instrument registry answers this per-instrument.
+- Breaking: removed the `commodutil.standards.price_units` module. Price-unit resolution (`resolve_price_unit`, `resolve_price_unit_from_attrs`) moved into `commodutil.standards.price_unit` alongside the `PriceUnit` value type. Migrate imports to `commodutil.standards.price_unit`.
+- First release of the 5.x line; the 5.0.0 version number is unusable on the feed.
+
 ## 4.10.0 - 2026-07-03
 
 - Added exchange unit spellings for `MTONS`, `CBM`, `THM`, and `KL` to the unit registry, with `KL`/kilolitre spellings resolving to the canonical `m^3` unit.
