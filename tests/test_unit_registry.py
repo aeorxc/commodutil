@@ -317,8 +317,6 @@ def test_public_helper_functions_behaviour():
     assert units.canonical_price_unit_token("usc/gal") == "USc/gal"
     assert units.quantity_unit_from_price_unit("USD/MT") == "mt"
     assert units.quantity_unit_from_price_unit("bbl/day") is None
-    assert units.default_unit_for_commodity("natgas") == "mmbtu"
-    assert units.default_unit_for_commodity("crude") == "bbl"
 
 
 # ---- ICE unit-parse gap fix ----

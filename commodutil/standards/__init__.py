@@ -36,8 +36,6 @@ from commodutil.standards.currency import (
 )
 from commodutil.standards.price_unit import (
     PriceUnit,
-)
-from commodutil.standards.price_units import (
     resolve_price_unit,
     resolve_price_unit_from_attrs,
 )
@@ -55,7 +53,6 @@ from commodutil.standards.units import (
     canonical_price_unit_token,
     canonical_quantity_unit,
     canonical_unit_token,
-    default_unit_for_commodity,
     quantity_unit_from_price_unit,
     to_pint_token,
 )
@@ -88,7 +85,6 @@ __all__ = [
     "to_symbol",
     # price_unit
     "PriceUnit",
-    # price_units
     "resolve_price_unit",
     "resolve_price_unit_from_attrs",
     # regions
@@ -104,7 +100,6 @@ __all__ = [
     "canonical_price_unit_token",
     "canonical_quantity_unit",
     "canonical_unit_token",
-    "default_unit_for_commodity",
     "quantity_unit_from_price_unit",
     "to_pint_token",
 ]

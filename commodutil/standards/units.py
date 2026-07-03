@@ -3,8 +3,6 @@
 Owns:
 - UNIT_MAP: alias -> canonical unit map for normalising free-form unit
   strings from vendor contract specs ("barrel", "Barrels", "BBL" -> "bbl").
-- default_unit_for_commodity(): returns the canonical quoted unit for a
-  commodity (volume basis).
 - to_pint_token(): cleans a unit string into a form pint can parse
   (encoding fixes, cubic-meter notation, BTU casing, whitespace).
 
@@ -50,28 +48,6 @@ from commodutil.standards.unit_registry import (
 # commodutil.standards.unit_registry. To add a unit spelling, add it to a
 # UnitRow there — not here. Keys are matched case-insensitively at call time
 # (callers lower-case their input).
-
-
-# ---- Default unit per commodity ----
-
-_DEFAULT_UNIT = {
-    "natgas": "mmbtu",
-    "natural_gas": "mmbtu",
-    "gasoline": "gal",
-    "diesel": "gal",
-    "jet": "gal",
-}
-
-
-def default_unit_for_commodity(commodity: Optional[str]) -> str:
-    """Return the canonical quoted unit for a commodity (volume basis).
-
-    Falls back to 'bbl' for any commodity not in the explicit map (covers
-    crude / fuel oil / naphtha / VGO / NGL species etc.).
-    """
-    if not commodity:
-        return "bbl"
-    return _DEFAULT_UNIT.get(str(commodity).lower(), "bbl")
 
 
 # ---- Quantity-unit parsing ----
@@ -212,7 +188,6 @@ __all__ = [
     "canonical_price_unit_token",
     "canonical_quantity_unit",
     "canonical_unit_token",
-    "default_unit_for_commodity",
     "quantity_unit_from_price_unit",
     "to_pint_token",
 ]
