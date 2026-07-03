@@ -2,7 +2,7 @@
 Modern implementation of commodity unit conversions using Pint.
 Clean-slate design with no backward-compatibility constraints.
 
-Module map: quantity/pint conversion lives here; price/currency/FX lives in ``commodutil.priceconv``; vocabulary lives in ``commodutil.standards.unit_registry``; ``PriceUnit`` grammar lives in ``commodutil.standards.price_unit``; resolve precedence lives in ``commodutil.standards.price_units``.
+Module map: quantity/pint conversion lives here; price/currency/FX lives in ``commodutil.priceconv``; vocabulary lives in ``commodutil.standards.unit_registry``; ``PriceUnit`` grammar and resolve precedence live in ``commodutil.standards.price_unit``.
 """
 
 import logging

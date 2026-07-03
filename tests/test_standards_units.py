@@ -1,40 +1,29 @@
 """Tests for commodutil.standards.units."""
 
+import pytest
+
 from commodutil.standards.units import (
     canonical_price_unit_token,
     canonical_quantity_unit,
     canonical_unit_token,
-    default_unit_for_commodity,
     quantity_unit_from_price_unit,
 )
 
 
-def test_natgas_defaults_to_mmbtu():
-    assert default_unit_for_commodity("natgas") == "mmbtu"
-    assert default_unit_for_commodity("natural_gas") == "mmbtu"
+def test_default_unit_for_commodity_removed():
+    # default_unit_for_commodity / _DEFAULT_UNIT fabricated per-commodity
+    # quote-unit metadata that the gold source_price_unit guarantee now answers
+    # per-instrument. Removed with zero desk call sites; lock the removal so the
+    # old name can't quietly reappear.
+    import commodutil.standards as standards
+    from commodutil.standards import units
 
-
-def test_refined_products_default_to_gal():
-    assert default_unit_for_commodity("gasoline") == "gal"
-    assert default_unit_for_commodity("diesel") == "gal"
-    assert default_unit_for_commodity("jet") == "gal"
-
-
-def test_crude_and_unknown_default_to_bbl():
-    assert default_unit_for_commodity("crude") == "bbl"
-    # Not in map — fallback to bbl
-    assert default_unit_for_commodity("butane") == "bbl"
-    assert default_unit_for_commodity("fuel_oil") == "bbl"
-
-
-def test_empty_and_none_default_to_bbl():
-    assert default_unit_for_commodity("") == "bbl"
-    assert default_unit_for_commodity(None) == "bbl"
-
-
-def test_case_insensitive():
-    assert default_unit_for_commodity("NATGAS") == "mmbtu"
-    assert default_unit_for_commodity("Gasoline") == "gal"
+    with pytest.raises(AttributeError):
+        units.default_unit_for_commodity
+    with pytest.raises(AttributeError):
+        standards.default_unit_for_commodity
+    with pytest.raises(ImportError):
+        from commodutil.standards.units import default_unit_for_commodity  # noqa: F401
 
 
 # ---- UNIT_MAP tests ----

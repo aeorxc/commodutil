@@ -1,6 +1,6 @@
 """Price/currency/FX conversion helpers for commodutil.
 
-Module map: price/currency/FX conversion lives here; quantity/pint conversion lives in ``commodutil.convfactors``; vocabulary lives in ``commodutil.standards.unit_registry``; ``PriceUnit`` grammar lives in ``commodutil.standards.price_unit``; resolve precedence lives in ``commodutil.standards.price_units``.
+Module map: price/currency/FX conversion lives here; quantity/pint conversion lives in ``commodutil.convfactors``; vocabulary lives in ``commodutil.standards.unit_registry``; ``PriceUnit`` grammar and resolve precedence live in ``commodutil.standards.price_unit``.
 """
 
 from dataclasses import dataclass
@@ -8,7 +8,7 @@ from typing import Optional, Union
 
 import pandas as pd
 
-from commodutil.convfactors import convfactor, convert, logger
+from commodutil.convfactors import convfactor, logger
 from commodutil.standards import currency as _currency
 from commodutil.standards.price_unit import PriceUnit
 
