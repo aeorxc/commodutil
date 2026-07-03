@@ -4,11 +4,14 @@ from __future__ import annotations
 
 import pytest
 
+import commodutil.standards as standards
+from commodutil.standards import commodities as commodities_module
 from commodutil.standards.commodities import (
     COMMODITY_CONVERSION_MAP,
     COMMODITY_KEYWORDS,
     infer_commodity_and_group,
     infer_commodity_from_exchange_symbol,
+    infer_ngl_species,
     normalize_commodity_for_conversion,
 )
 
@@ -33,6 +36,31 @@ def test_natural_gasoline_before_natural_gas():
     assert "Natural Gasoline" in displays
     assert "Natural Gas" in displays
     assert displays.index("Natural Gasoline") < displays.index("Natural Gas")
+
+
+def test_petrochemical_keyword_ordering_guards():
+    displays = [d for d, _, _ in COMMODITY_KEYWORDS]
+    assert displays.index("HDPE") < displays.index("Ethylene")
+    assert displays.index("LLDPE") < displays.index("Ethylene")
+    assert displays.index("Polypropylene") < displays.index("Propylene")
+
+    assert infer_commodity_and_group("Mont Belvieu High-Density Polyethylene") == (
+        "HDPE",
+        "Petrochemical",
+    )
+    assert infer_commodity_and_group("Mont Belvieu Linear-Low-Density Polyethylene") == (
+        "LLDPE",
+        "Petrochemical",
+    )
+    assert infer_commodity_and_group("Mont Belvieu Polypropylene Futures") == (
+        "Polypropylene",
+        "Petrochemical",
+    )
+
+    polypropylene_keywords = next(
+        kws for display, _, kws in COMMODITY_KEYWORDS if display == "Polypropylene"
+    )
+    assert "pp" not in polypropylene_keywords
 
 
 def test_brent_entry_present():
@@ -89,6 +117,39 @@ def test_infer_commodity_and_group_hits(text, expected):
     assert result[1] == expected[1], f"Group mismatch for {text!r}"
 
 
+@pytest.mark.parametrize(
+    "symbol,text,expected",
+    [
+        ("HPD", "Mont Belvieu HDPE Export Future", ("HDPE", "Petrochemical")),
+        ("HPE", "Mont Belvieu HDPE Domestic Future", ("HDPE", "Petrochemical")),
+        ("LEL", "Mont Belvieu LLDPE Export Future", ("LLDPE", "Petrochemical")),
+        ("LPE", "Mont Belvieu LLDPE Domestic Future", ("LLDPE", "Petrochemical")),
+        ("MBB", "Mont Belvieu Ethylene Futures", ("Ethylene", "Petrochemical")),
+        ("MBE", "Mont Belvieu Ethylene Export Futures", ("Ethylene", "Petrochemical")),
+        (
+            "MBR",
+            "Mont Belvieu Ethylene Forward Future",
+            ("Ethylene", "Petrochemical"),
+        ),
+        (
+            "PGG",
+            "Mont Belvieu Polymer Grade Propylene (PGP) Future",
+            ("Propylene", "Petrochemical"),
+        ),
+        ("PPP", "Mont Belvieu Polypropylene Futures", ("Polypropylene", "Petrochemical")),
+        (
+            "PPW",
+            "Mont Belvieu Polypropylene Export Futures",
+            ("Polypropylene", "Petrochemical"),
+        ),
+    ],
+)
+def test_infer_commodity_and_group_cme_petrochemical_products(
+    symbol, text, expected
+):
+    assert infer_commodity_and_group(text) == expected, symbol
+
+
 def test_first_keyword_hit_wins():
     # COMMODITY_KEYWORDS is walked top-down; the first commodity whose
     # keyword list contains any substring of the haystack wins. "crude oil"
@@ -103,6 +164,57 @@ def test_first_keyword_hit_wins():
 @pytest.mark.parametrize("text", [None, "", "Unknown Widget"])
 def test_infer_commodity_and_group_misses(text):
     assert infer_commodity_and_group(text) == (None, None)
+
+
+# ---------- infer_ngl_species ---------------------------------------------
+
+
+def test_infer_ngl_species_reexported_from_standards():
+    assert standards.infer_ngl_species is infer_ngl_species
+
+
+@pytest.mark.parametrize(
+    "text,expected",
+    [
+        ("Mont Belvieu Propane Futures", "Propane"),
+        ("Mont Belvieu Normal Butane Futures", "Butane"),
+        ("Mont Belvieu Isobutane Futures", "Isobutane"),
+        ("Mont Belvieu Ethane Futures", "Ethane"),
+        ("Natural Gasoline, OPIS Mt. Belvieu Non-TET Future", "Natural Gasoline"),
+    ],
+)
+def test_infer_ngl_species_positive_single_species_names(text, expected):
+    assert infer_ngl_species(text) == expected
+
+
+@pytest.mark.parametrize(
+    "text",
+    [
+        "Mont Belvieu Propane vs Naphtha Spread Futures",
+        "NGL Basket, OPIS Mt. Belvieu Non-TET Future",
+        "RBOB Gasoline Futures",
+    ],
+)
+def test_infer_ngl_species_negative_ambiguous_or_non_ngl(text):
+    assert infer_ngl_species(text) is None
+
+
+def test_ngl_species_set_is_derived_from_commodity_keywords():
+    keywords_derived = {
+        display
+        for display, group, _ in COMMODITY_KEYWORDS
+        if group == "NGL" and display != "NGL"
+    }
+    assert commodities_module._ngl_species_from_keywords() == frozenset(
+        keywords_derived
+    )
+    assert keywords_derived == {
+        "Natural Gasoline",
+        "Isobutane",
+        "Butane",
+        "Ethane",
+        "Propane",
+    }
 
 
 # ---------- normalize_commodity_for_conversion ----------------------------
