@@ -203,16 +203,25 @@ UNIT_ROWS: Tuple[UnitRow, ...] = (
         # into UNIT_MAP. A prefix like 'cubic met' does NOT work under
         # word-boundary matching (trailing letters kill the lookahead), so each
         # form is listed explicitly.
+        #
+        # Phase 2.1 residual consolidation: the bare notations 'm3' / 'm^3' /
+        # 'm**3' are PROMOTED from public_only into UNIT_MAP so curvemetadata's
+        # word-boundary parse_unit resolves them directly and its local
+        # _EXTRA_UNIT_ALIASES fallback can be deleted. Word-boundary safe: 'm3'
+        # cannot match inside 'm30' (trailing [0-9] kills the lookahead); the
+        # '**'/'^' chars are regex-escaped by parse_unit. Purely additive to
+        # UNIT_MAP; PUBLIC_UNIT_MAP is unchanged (a UNIT_MAP entry is inherited
+        # by PUBLIC_UNIT_MAP either way).
         unit_map_spellings=(
             "cubic meter",
             "cubic meters",
             "cubic metre",
             "cubic metres",
-        ),
-        public_only_spellings=(
             "m3",
             "m^3",
             "m**3",
+        ),
+        public_only_spellings=(
             "cubic_meter",
             "cubic_meters",
             "cubic_metre",
@@ -222,8 +231,13 @@ UNIT_ROWS: Tuple[UnitRow, ...] = (
     UnitRow(
         "kg",
         "mass",
-        # curvemetadata: kg / kilogram(s) / kilogramme(s)
-        public_only_spellings=(
+        # Phase 2.1 residual consolidation: kg / kilogram(s) / kilogramme(s)
+        # PROMOTED from public_only into UNIT_MAP so parse_unit resolves them and
+        # curvemetadata's _EXTRA_UNIT_ALIASES fallback can be deleted. The
+        # numeric-prefixed scaled form ("25,000 kg") stays a curvemetadata-local
+        # regex (its no-space variant "25000kg" is unreachable by word-boundary
+        # matching). Additive to UNIT_MAP; PUBLIC_UNIT_MAP unchanged.
+        unit_map_spellings=(
             "kg",
             "kilogram",
             "kilograms",

@@ -59,6 +59,19 @@ _FROZEN_UNIT_MAP = {
     "cubic meters": "m^3",
     "cubic metre": "m^3",
     "cubic metres": "m^3",
+    # Phase 2.1 residual consolidation — DELIBERATE frozen-map update: kg and the
+    # bare cubic-metre notations ('m3'/'m^3'/'m**3') are promoted from PUBLIC-only
+    # into UNIT_MAP so curvemetadata's word-boundary parse_unit resolves them and
+    # its local _EXTRA_UNIT_ALIASES fallback is deleted (see unit_registry.py). No
+    # PUBLIC_UNIT_MAP behaviour change — a UNIT_MAP entry is inherited by PUBLIC:
+    "kg": "kg",
+    "kilogram": "kg",
+    "kilograms": "kg",
+    "kilogramme": "kg",
+    "kilogrammes": "kg",
+    "m3": "m^3",
+    "m^3": "m^3",
+    "m**3": "m^3",
     # ICE gap fix — structural / non-physical denominators (no conversion):
     "rin": "RIN",
     "rins": "RIN",
@@ -343,6 +356,12 @@ _ICE_CORPUS = {
     "1 FEU": "FEU",
     "forty foot container": "FEU",
     "hire per charter day": "day",
+    # Phase 2.1 residual consolidation — kg + bare cubic-metre promoted to UNIT_MAP:
+    "25,000 kg": "kg",
+    "1,000 m3": "m^3",
+    "500 m**3": "m^3",
+    "priced per m^3": "m^3",
+    "50 kilograms": "kg",
 }
 
 
@@ -362,6 +381,28 @@ def test_singular_only_would_miss_plural_regression():
     assert not re.search(r"(?<![a-z0-9])mmbtu(?![a-z0-9])", "2500 mmbtus")
     assert re.search(r"(?<![a-z0-9])mmbtus(?![a-z0-9])", "2500 mmbtus")
     assert "mmbtus" in units.UNIT_MAP and units.UNIT_MAP["mmbtus"] == "MMBtu"
+
+
+def test_bare_m3_does_not_match_inside_alphanumeric_word():
+    # nuance (b): promoting bare 'm3' to UNIT_MAP must NOT false-match inside a
+    # trailing-alphanumeric token. Under word boundaries 'm3' in "m30" is killed
+    # by the [0-9] lookahead; a no-space numeric run ("500m3") is killed by the
+    # [0-9] lookbehind. Both must resolve to None.
+    for text in ("m30", "500m3", "m3x", "cm3"):
+        assert _word_boundary_resolve(text) is None, text
+    # The intended forms (boundary-delimited) still resolve.
+    assert _word_boundary_resolve("1,000 m3") == "m^3"
+    assert _word_boundary_resolve("m3") == "m^3"
+    assert _word_boundary_resolve("500 m**3") == "m^3"
+
+
+def test_bare_kg_promoted_to_unit_map():
+    assert units.UNIT_MAP["kg"] == "kg"
+    assert units.UNIT_MAP["m3"] == "m^3"
+    assert units.UNIT_MAP["m**3"] == "m^3"
+    # 'kg' must not false-match inside a word under boundaries.
+    assert _word_boundary_resolve("bkg") is None
+    assert _word_boundary_resolve("50 kilograms") == "kg"
 
 
 def test_mwh_ordered_before_mw_in_unit_map():

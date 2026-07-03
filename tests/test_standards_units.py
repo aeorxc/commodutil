@@ -84,6 +84,10 @@ def test_unit_map_canonical_set():
     carry the physical energy/power quote units (MMBtu/GJ/MWh/MW/m^3) and the
     structural non-physical denominators (RIN/FEU/day) that ICE bronze rows
     quote, so curvemetadata parse_unit stops dropping them.
+
+    Phase 2.1 residual consolidation added 'kg' as a canonical (kg + kilogram
+    variants promoted from PUBLIC-only into UNIT_MAP; 'm^3' was already present
+    via the spelled-out cubic-metre spellings).
     """
     from commodutil.standards.units import UNIT_MAP
 
@@ -92,6 +96,7 @@ def test_unit_map_canonical_set():
         "gal",
         "mt",
         "lb",
+        "kg",
         "GJ",
         "MMBtu",
         "MWh",
