@@ -89,6 +89,13 @@ UNIT_ROWS: Tuple[UnitRow, ...] = (
             "metric tons",
             "metric tonne",
             "metric tonnes",
+            # Exchange gap fix (A1): ICE/CME contract_unit spells metric tonne
+            # as 'MTONS'/'MTON' (277-row miss). UNIT_MAP-only spellings — the raw
+            # token is normalised to 'mt' before any pint call, so pint's own
+            # 'mton' == milliton (0.001 t) reading is never reached. Word-boundary
+            # parse_unit needs the plural 'mtons' listed explicitly.
+            "mton",
+            "mtons",
             "mt",
             "tonne",
             "tonnes",
@@ -160,7 +167,16 @@ UNIT_ROWS: Tuple[UnitRow, ...] = (
             "@alias million_british_thermal_unit = mmbtu = MMBTU = million_btu",
         ),
     ),
-    UnitRow("therm", "energy", pint_specs=("@alias therm = Therm = THERM",)),
+    UnitRow(
+        "therm",
+        "energy",
+        # Exchange gap fix (A1): ICE contract_unit stores 'THM' (2-row casing
+        # miss). UNIT_MAP-only spelling normalises to the canonical 'therm' (a
+        # real pint unit) before any pint call. Plural 'thms' listed explicitly
+        # for word-boundary parse_unit.
+        unit_map_spellings=("thm", "thms"),
+        pint_specs=("@alias therm = Therm = THERM",),
+    ),
     UnitRow(
         "Btu",
         "energy",
@@ -220,6 +236,20 @@ UNIT_ROWS: Tuple[UnitRow, ...] = (
             "m3",
             "m^3",
             "m**3",
+            # Exchange gap fix (A1): ICE/CME spell cubic metre as 'CBM' (4 rows)
+            # and, on liquid contracts, kilolitre as 'KL'/'CBM'. 1 kL == 1 m^3
+            # EXACTLY, so kilolitre folds into the existing 'm^3' canonical
+            # rather than introducing a new 'kL' token (registry guardrail: add
+            # spellings of existing canonicals, do not invent canonicals). Note:
+            # this makes the plan's stated 'KL -> kL' target resolve to 'm^3'
+            # (numerically identical). UNIT_MAP-only; the raw spellings never
+            # reach pint. Plurals listed for word-boundary parse_unit.
+            "cbm",
+            "kl",
+            "kilolitre",
+            "kilolitres",
+            "kiloliter",
+            "kiloliters",
         ),
         public_only_spellings=(
             "cubic_meter",

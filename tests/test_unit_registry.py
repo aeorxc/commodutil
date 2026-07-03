@@ -38,6 +38,9 @@ _FROZEN_UNIT_MAP = {
     "metric tons": "mt",
     "metric tonne": "mt",
     "metric tonnes": "mt",
+    # Exchange gap fix (A1) — ICE/CME 'MTONS'/'MTON' metric-tonne spellings:
+    "mton": "mt",
+    "mtons": "mt",
     "mt": "mt",
     "tonne": "mt",
     "tonnes": "mt",
@@ -55,10 +58,22 @@ _FROZEN_UNIT_MAP = {
     "mwhs": "MWh",
     "mw": "MW",
     "mws": "MW",
+    # Exchange gap fix (A1) — ICE 'THM' therm spelling (canonical 'therm'):
+    "thm": "therm",
+    "thms": "therm",
     "cubic meter": "m^3",
     "cubic meters": "m^3",
     "cubic metre": "m^3",
     "cubic metres": "m^3",
+    # Exchange gap fix (A1) — ICE/CME 'CBM' + liquid-contract 'KL'/kilolitre.
+    # 1 kL == 1 m^3 exactly, so kilolitre folds into the m^3 canonical (no new
+    # 'kL' token; registry adds spellings of existing canonicals only):
+    "cbm": "m^3",
+    "kl": "m^3",
+    "kilolitre": "m^3",
+    "kilolitres": "m^3",
+    "kiloliter": "m^3",
+    "kiloliters": "m^3",
     # Phase 2.1 residual consolidation — DELIBERATE frozen-map update: kg and the
     # bare cubic-metre notations ('m3'/'m^3'/'m**3') are promoted from PUBLIC-only
     # into UNIT_MAP so curvemetadata's word-boundary parse_unit resolves them and
@@ -362,6 +377,12 @@ _ICE_CORPUS = {
     "500 m**3": "m^3",
     "priced per m^3": "m^3",
     "50 kilograms": "kg",
+    # Exchange gap fix (A1) — ICE/CME contract_unit spellings:
+    "100 MTONS": "mt",  # 277-row plural category
+    "500 MTON": "mt",
+    "5,000 CBM": "m^3",
+    "2 THM": "therm",
+    "10 KL": "m^3",  # kilolitre == m^3
 }
 
 
@@ -435,3 +456,60 @@ def test_ice_spellings_resolve_via_canonical_helpers():
     assert units.canonical_quantity_unit("mwh") == "MWh"
     assert units.canonical_quantity_unit("rin") == "RIN"
     assert units.canonical_quantity_unit("mw") == "MW"
+
+
+# ---- Exchange unit-spelling gap fix (A1) ----
+
+
+def test_exchange_spellings_resolve_via_canonical_helpers():
+    # Each raw ICE/CME contract_unit spelling normalises to an EXISTING canonical
+    # (no new canonical token was introduced). Case-insensitive by the string
+    # vocab; upper- and lower-case both resolve.
+    cases = {
+        "MTONS": "mt",
+        "mtons": "mt",
+        "MTON": "mt",
+        "mton": "mt",
+        "CBM": "m^3",
+        "cbm": "m^3",
+        "THM": "therm",
+        "thm": "therm",
+        "KL": "m^3",  # 1 kL == 1 m^3 exactly; folds into the m^3 canonical
+        "kl": "m^3",
+        "kilolitre": "m^3",
+        "kiloliter": "m^3",
+    }
+    for spelling, canonical in cases.items():
+        assert units.canonical_quantity_unit(spelling) == canonical, spelling
+        # Also reachable through the wider public token map.
+        assert units.canonical_unit_token(spelling) == canonical, spelling
+
+
+def test_exchange_spellings_plural_and_singular_both_resolve():
+    # curvemetadata parse_unit is word-boundary based and does NOT match plurals
+    # implicitly, so both forms must be explicit UNIT_MAP entries.
+    for singular, plural in [("mton", "mtons"), ("thm", "thms")]:
+        assert units.UNIT_MAP[singular] == units.UNIT_MAP[plural]
+        assert units.canonical_quantity_unit(singular) == units.UNIT_MAP[singular]
+        assert units.canonical_quantity_unit(plural) == units.UNIT_MAP[plural]
+
+
+def test_exchange_spellings_map_to_preexisting_canonicals_only():
+    # Guardrail: A1 adds only new SPELLINGS of canonicals that already exist in
+    # the registry — it must not invent a new canonical token (e.g. no bare
+    # 'kL'). Every A1 target is a canonical some other row already owns.
+    existing_canonicals = {row.canonical for row in registry.UNIT_ROWS}
+    for spelling in ("mton", "mtons", "cbm", "thm", "thms", "kl"):
+        assert units.UNIT_MAP[spelling] in existing_canonicals
+
+
+def test_exchange_spellings_do_not_false_match_inside_words():
+    # Short spellings must be boundary-delimited; the authoritative word-boundary
+    # parser must not fire them inside a larger alphanumeric token.
+    assert _word_boundary_resolve("rhythm") is None  # contains 'thm'
+    assert _word_boundary_resolve("mtonnage") is None  # contains 'mton'
+    assert _word_boundary_resolve("klm") is None  # contains 'kl'
+    # But the boundary-delimited forms still resolve.
+    assert _word_boundary_resolve("100 MTONS") == "mt"
+    assert _word_boundary_resolve("2 THM") == "therm"
+    assert _word_boundary_resolve("10 KL") == "m^3"
