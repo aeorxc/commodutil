@@ -65,7 +65,17 @@ COMMODITY_KEYWORDS = [
     # matching (e.g. copper, shipping). Rely on long forms instead.
     ("Polypropylene", "Petrochemical", ["polypropylene"]),
     ("Propylene", "Petrochemical", ["polymer grade propylene", "pgp", "propylene"]),
+    # Keep glycol-specific petrochemicals before "Ethylene"; otherwise the
+    # bare "ethylene" keyword wins before "ethylene glycol" can be classified.
+    ("MEG", "Petrochemical", ["mono ethylene glycol", "ethylene glycol"]),
     ("Ethylene", "Petrochemical", ["ethylene"]),
+    ("PTA", "Petrochemical", ["purified terephthalic", "pta"]),
+    ("Paraxylene", "Petrochemical", ["para xylene", "paraxylene"]),
+    ("Methanol", "Petrochemical", ["methanol"]),
+    ("Benzene", "Petrochemical", ["benzene"]),
+    ("Toluene", "Petrochemical", ["toluene"]),
+    ("Styrene", "Petrochemical", ["styrene"]),
+    ("MTBE", "Petrochemical", ["mtbe"]),
     ("Isobutane", "NGL", ["isobutane"]),
     ("Butane", "NGL", ["butane"]),
     ("Ethane", "NGL", ["ethane"]),

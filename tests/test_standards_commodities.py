@@ -43,6 +43,7 @@ def test_petrochemical_keyword_ordering_guards():
     assert displays.index("HDPE") < displays.index("Ethylene")
     assert displays.index("LLDPE") < displays.index("Ethylene")
     assert displays.index("Polypropylene") < displays.index("Propylene")
+    assert displays.index("MEG") < displays.index("Ethylene")
 
     assert infer_commodity_and_group("Mont Belvieu High-Density Polyethylene") == (
         "HDPE",
@@ -61,6 +62,14 @@ def test_petrochemical_keyword_ordering_guards():
         kws for display, _, kws in COMMODITY_KEYWORDS if display == "Polypropylene"
     )
     assert "pp" not in polypropylene_keywords
+
+    meg_keywords = next(kws for display, _, kws in COMMODITY_KEYWORDS if display == "MEG")
+    assert "meg" not in meg_keywords
+
+    paraxylene_keywords = next(
+        kws for display, _, kws in COMMODITY_KEYWORDS if display == "Paraxylene"
+    )
+    assert "px" not in paraxylene_keywords
 
 
 def test_brent_entry_present():
@@ -148,6 +157,31 @@ def test_infer_commodity_and_group_cme_petrochemical_products(
     symbol, text, expected
 ):
     assert infer_commodity_and_group(text) == expected, symbol
+
+
+@pytest.mark.parametrize(
+    "text,expected",
+    [
+        ("Methanol Futures", ("Methanol", "Petrochemical")),
+        ("Purified Terephthalic Acid Futures", ("PTA", "Petrochemical")),
+        ("PTA Futures", ("PTA", "Petrochemical")),
+        ("Mono Ethylene Glycol Futures", ("MEG", "Petrochemical")),
+        ("Ethylene Glycol Futures", ("MEG", "Petrochemical")),
+        ("Benzene Futures", ("Benzene", "Petrochemical")),
+        ("Paraxylene Futures", ("Paraxylene", "Petrochemical")),
+        ("Para-Xylene Futures", ("Paraxylene", "Petrochemical")),
+        ("Toluene Futures", ("Toluene", "Petrochemical")),
+        ("MTBE Futures", ("MTBE", "Petrochemical")),
+        ("Styrene Futures", ("Styrene", "Petrochemical")),
+    ],
+)
+def test_infer_commodity_and_group_silver_cme_petrochemical_ladder(text, expected):
+    assert infer_commodity_and_group(text) == expected
+
+
+@pytest.mark.parametrize("text", ["MEG Futures", "PX Futures", "Omega Futures"])
+def test_infer_commodity_and_group_excludes_ambiguous_silver_short_codes(text):
+    assert infer_commodity_and_group(text) == (None, None)
 
 
 def test_first_keyword_hit_wins():
