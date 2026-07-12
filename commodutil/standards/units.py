@@ -135,6 +135,50 @@ def canonical_price_unit_token(price_unit: object) -> Optional[str]:
     return f"{currency_token}/{unit_token}"
 
 
+def normalize_price_unit_strict(price_unit: object) -> Optional[str]:
+    """Return the exact canonical ``CCY/unit`` token, or ``None`` if unresolved.
+
+    The STRICT counterpart to :func:`canonical_price_unit_token`. It splits and
+    normalises each leg the same way (currency via ``normalize_currency_token``,
+    so casing/aliases fold: ``usd`` -> ``USD``, ``US cents`` -> ``USc``), but
+    where the lenient sibling PRESERVES an unrecognised currency or unit fragment
+    so it can label any quote string, this REFUSES it. A token is returned only
+    when BOTH legs resolve: a recognised currency over a denominator that maps to
+    a canonical *quantity* unit (``canonical_quantity_unit``:
+    ``bbl``/``gal``/``mt``/``RIN``/...). A bare unit with no currency (``mt``), an
+    unknown currency (``FOO/bbl``), or an unknown denominator (``usd_ton``,
+    ``USD/ton``) yields ``None``.
+
+    Use this to VALIDATE a curated price-unit token that must round-trip through
+    conversion; use :func:`canonical_price_unit_token` to LABEL free-form text.
+    """
+    if price_unit is None:
+        return None
+    cleaned = str(price_unit).strip()
+    if "/" not in cleaned:
+        return None
+    currency_text, _, unit_text = cleaned.partition("/")
+    currency_token = normalize_currency_token(currency_text.strip())
+    if currency_token is None:
+        return None
+    denominator = canonical_quantity_unit(unit_text.strip())
+    if denominator is None:
+        return None
+    return f"{currency_token}/{denominator}"
+
+
+def is_canonical_price_unit(price_unit: object) -> bool:
+    """Return True when ``price_unit`` is already in exact canonical ``CCY/unit``
+    form — equal to what :func:`normalize_price_unit_strict` produces (recognised
+    currency token, canonical quantity unit, correct casing, no stray
+    whitespace). Non-string inputs are never canonical.
+    """
+    return (
+        isinstance(price_unit, str)
+        and normalize_price_unit_strict(price_unit) == price_unit
+    )
+
+
 # ---- Pint-token normalisation ----
 
 
@@ -188,6 +232,8 @@ __all__ = [
     "canonical_price_unit_token",
     "canonical_quantity_unit",
     "canonical_unit_token",
+    "is_canonical_price_unit",
+    "normalize_price_unit_strict",
     "quantity_unit_from_price_unit",
     "to_pint_token",
 ]
