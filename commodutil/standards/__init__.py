@@ -53,6 +53,8 @@ from commodutil.standards.units import (
     canonical_price_unit_token,
     canonical_quantity_unit,
     canonical_unit_token,
+    is_canonical_price_unit,
+    normalize_price_unit_strict,
     quantity_unit_from_price_unit,
     to_pint_token,
 )
@@ -100,6 +102,8 @@ __all__ = [
     "canonical_price_unit_token",
     "canonical_quantity_unit",
     "canonical_unit_token",
+    "is_canonical_price_unit",
+    "normalize_price_unit_strict",
     "quantity_unit_from_price_unit",
     "to_pint_token",
 ]

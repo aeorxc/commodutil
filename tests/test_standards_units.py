@@ -6,6 +6,8 @@ from commodutil.standards.units import (
     canonical_price_unit_token,
     canonical_quantity_unit,
     canonical_unit_token,
+    is_canonical_price_unit,
+    normalize_price_unit_strict,
     quantity_unit_from_price_unit,
 )
 
@@ -157,6 +159,78 @@ def test_canonical_price_unit_token_preserves_unknown_fragments():
     assert canonical_price_unit_token("USD/StrangeUnit") == "USD/StrangeUnit"
     assert canonical_price_unit_token("StrangeUnit") == "StrangeUnit"
     assert canonical_price_unit_token(None) is None
+
+
+# ---- strict price-unit validator (normalize_price_unit_strict / is_canonical_price_unit) ----
+
+
+@pytest.mark.parametrize(
+    "value,expected",
+    [
+        ("USD/mt", "USD/mt"),  # already canonical -> unchanged
+        ("USD/MT", "USD/mt"),  # denominator case folded
+        ("usd/mt", "USD/mt"),  # currency case folded (twin of lenient sibling)
+        ("USC/GAL", "USc/gal"),
+        ("US cents / gallon", "USc/gal"),
+        ("USc/RIN", "USc/RIN"),  # RIN is a registered quantity unit
+        ("$/bbl", "$/bbl"),
+    ],
+)
+def test_normalize_price_unit_strict_resolves_both_legs(value, expected):
+    assert normalize_price_unit_strict(value) == expected
+
+
+@pytest.mark.parametrize(
+    "value",
+    [
+        "usd_ton",  # no currency leg, and 'usd_ton' is not a unit
+        "USD/ton",  # 'ton' is not a registry quantity unit (must be 'mt')
+        "FOO/bbl",  # unrecognised currency
+        "USD/StrangeUnit",  # unrecognised denominator (lenient sibling preserves)
+        "mt",  # bare unit: no currency leg
+        "USD",  # currency only: no denominator
+        "",
+        "   ",
+        None,
+    ],
+)
+def test_normalize_price_unit_strict_refuses_unresolved(value):
+    # Unlike the lenient canonical_price_unit_token, unknown fragments are
+    # refused (None), not preserved.
+    assert normalize_price_unit_strict(value) is None
+
+
+def test_normalize_price_unit_strict_is_stricter_than_lenient_sibling():
+    # Same input where the two deliberately diverge: lenient preserves, strict refuses.
+    assert canonical_price_unit_token("USD/StrangeUnit") == "USD/StrangeUnit"
+    assert normalize_price_unit_strict("USD/StrangeUnit") is None
+
+
+def test_normalize_price_unit_strict_output_is_canonical():
+    for raw in ("USD/MT", "usd/mt", "USC/GAL", "US cents / gallon"):
+        normalized = normalize_price_unit_strict(raw)
+        assert normalized is not None
+        assert is_canonical_price_unit(normalized)
+
+
+@pytest.mark.parametrize(
+    "value,expected",
+    [
+        ("USD/mt", True),
+        ("USc/gal", True),
+        ("USc/RIN", True),
+        ("$/bbl", True),
+        ("USD/MT", False),  # resolvable but not exact spelling
+        ("usd/mt", False),
+        ("usd_ton", False),
+        ("USD/ton", False),
+        ("mt", False),
+        ("", False),
+        (None, False),
+    ],
+)
+def test_is_canonical_price_unit(value, expected):
+    assert is_canonical_price_unit(value) is expected
 
 
 def test_public_facades_export_unit_token_helpers():

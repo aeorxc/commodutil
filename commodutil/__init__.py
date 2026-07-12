@@ -40,6 +40,8 @@ _LAZY_EXPORTS = {
     "canonical_price_unit_token": "commodutil.standards.units",
     "canonical_quantity_unit": "commodutil.standards.units",
     "canonical_unit_token": "commodutil.standards.units",
+    "is_canonical_price_unit": "commodutil.standards.units",
+    "normalize_price_unit_strict": "commodutil.standards.units",
     "quantity_unit_from_price_unit": "commodutil.standards.units",
     # dates
     "curmon": "commodutil.dates",
