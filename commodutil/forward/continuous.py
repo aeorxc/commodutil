@@ -36,8 +36,8 @@ def generate_series(df, expiry_dates=None, roll_days=0, front_month=1, back_adju
     continuous_dfs = []
 
     for front_month_x in front_month:
-        mask_switch = pd.DataFrame(index=df.index, columns=df.columns)
-        mask_adjust = pd.DataFrame(index=df.index, columns=df.columns)
+        mask_switch = pd.DataFrame(index=df.index, columns=df.columns, dtype=float)
+        mask_adjust = pd.DataFrame(index=df.index, columns=df.columns, dtype=float)
 
         # Iterating over the columns (contracts)
         for contract in df.columns:
@@ -79,7 +79,9 @@ def generate_series(df, expiry_dates=None, roll_days=0, front_month=1, back_adju
 
         # Back-adjustment
         if back_adjust:
-            mask_adjust_series = mask_adjust.fillna(method='bfill').sum(axis=1, skipna=True, min_count=1).fillna(0)
+            mask_adjust_series = mask_adjust.bfill().sum(
+                axis=1, skipna=True, min_count=1
+            ).fillna(0)
             continuous_df = continuous_df.add(mask_adjust_series, axis=0)
 
         continuous_dfs.append(continuous_df)

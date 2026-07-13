@@ -18,7 +18,7 @@ class TestArb(unittest.TestCase):
         index_dates = ['2023-08-03', '2023-08-04', '2023-08-07', '2023-08-08', '2023-08-09']
         df = pd.DataFrame(data, index=index_dates)
         res = arb.calc(df, 'RB', 'EBOB', 'TC2')
-        self.assertEqual(res.iloc[0][0], pytest.approx(-1.52, abs=0.01))
+        self.assertEqual(res.iloc[0, 0], pytest.approx(-1.52, abs=0.01))
 
 
 if __name__ == "__main__":
