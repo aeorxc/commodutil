@@ -85,8 +85,8 @@ class TestPandasUtils(unittest.TestCase):
         }
         df = pd.DataFrame(data)
         res = pandasutil.apply_formula(df, "G/7.45-BRN")
-        self.assertEqual(res.iloc[0][0], pytest.approx(35.598, abs=0.01))
-        self.assertEqual(res.iloc[-1][0], pytest.approx(38.859, abs=0.01))
+        self.assertEqual(res.iloc[0, 0], pytest.approx(35.598, abs=0.01))
+        self.assertEqual(res.iloc[-1, 0], pytest.approx(38.859, abs=0.01))
 
 
 if __name__ == "__main__":
