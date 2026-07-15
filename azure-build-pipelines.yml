@@ -9,6 +9,13 @@ extends:
   template: templates/python-packages-pipeline.yml@pipeline-templates
   parameters:
     packageName: 'commodutil'
+    pythonVersion: '3.12'
+    additionalPythonVersions:
+      - '3.11'
+    dependencyMode: project
+    dependencyGroups:
+      - test
+    installOdbc: false
     createRefinitivConfig: false
 
 pool: Self-Hosted-AWS
