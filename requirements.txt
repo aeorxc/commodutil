@@ -1,4 +1,0 @@
-pandas>=2.1
-dask[delayed]
-pint
-python-dateutil

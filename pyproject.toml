@@ -39,6 +39,15 @@ test = [
     "pytest-mock",
     "pytest-xdist",
 ]
+dev = [
+    { include-group = "test" },
+    "black",
+    "mypy",
+    "pylint",
+]
+release = [
+    "twine",
+]
 
 [tool.uv]
 # Preserve the published Python compatibility metadata. The lock covers the

@@ -7,34 +7,34 @@ on:
     branches: [ main ]
   workflow_dispatch:
 
-
-
 jobs:
   test:
     runs-on: ${{ matrix.os }}
     strategy:
+      fail-fast: false
       matrix:
-        os: [ ubuntu-latest ]
-        python-version: [ '3.9' ]
-        include:
-          - os: windows-latest
-            python-version: '3.9'
-    timeout-minutes: 10
+        os: [ubuntu-latest, windows-latest]
+        python-version: ['3.11', '3.12']
+    timeout-minutes: 15
 
     steps:
       - name: Check out code repository
-        uses: actions/checkout@v2
+        uses: actions/checkout@v7.0.0
 
-      - name: Set up Python ${{ matrix.python-version }}
-        uses: actions/setup-python@v2
+      - name: Set up uv and Python ${{ matrix.python-version }}
+        uses: astral-sh/setup-uv@v8.3.2
         with:
+          version: '0.11.28'
           python-version: ${{ matrix.python-version }}
+          enable-cache: true
+          cache-dependency-glob: pyproject.toml
 
-      - name: Install dependencies and package
+      # Oil_Feed is private and GitHub has no OIL_FEED_PAT secret yet. Resolve
+      # from public PyPI without changing the committed Azure lock.
+      - name: Resolve project test dependencies from public PyPI
         run: |
-          python -m pip install --upgrade pip
-          pip install -r requirements_dev.txt
-          pip install -e .
+          python -c "from pathlib import Path; Path('uv.lock').unlink()"
+          uv --no-config sync --default-index https://pypi.org/simple --no-default-groups --group test
 
-      - name: Run unittest tests
-        run: pytest
+      - name: Run unit tests
+        run: uv run --no-sync pytest
