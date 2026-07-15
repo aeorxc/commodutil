@@ -88,7 +88,7 @@ def spread_combination_quarter(contracts, combination_type, verbose_columns=True
         contracts.attrs = {}
     if combination_type.startswith("q"):
         q_contracts = quarterly_contracts(contracts)
-        m = re.search("q\dq\dq\d", combination_type)
+        m = re.search(r"q\dq\dq\d", combination_type)
         if m:
             q_spreads = fly_quarterly(
                 q_contracts,
@@ -104,7 +104,7 @@ def spread_combination_quarter(contracts, combination_type, verbose_columns=True
             if exclude_price_month:
                 contracts = q_spreads.apply(replace_last_month_with_nan, axis=0)
             return q_spreads
-        m = re.search("q\dq\d", combination_type)
+        m = re.search(r"q\dq\d", combination_type)
         if m:
             q_spreads = time_spreads_quarterly(
                 contracts, combination_type[0:2], combination_type[2:4]
@@ -121,7 +121,7 @@ def spread_combination_quarter(contracts, combination_type, verbose_columns=True
                 contracts = q_spreads.apply(replace_last_month_with_nan, axis=0)
             return q_spreads
 
-        m = re.search("q\d", combination_type)
+        m = re.search(r"q\d", combination_type)
         if m:
             q_contracts = q_contracts[
                 [

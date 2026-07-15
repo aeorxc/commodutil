@@ -35,7 +35,7 @@ def reindex_zscore(df, range=10, calc_year_start: int = None):
     """
     df = df
     df = df.rename(
-        columns={x: int(re.findall("\d\d\d\d", str(x))[0]) for x in df.columns}
+        columns={x: int(re.findall(r"\d\d\d\d", str(x))[0]) for x in df.columns}
     )  # turn columns into years
     d = df.loc[
         :, dates.curyear - range - 1 : dates.curyear - 1
