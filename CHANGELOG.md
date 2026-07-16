@@ -1,5 +1,10 @@
 # Changelog
 
+## 5.4.1 - 2026-07-16
+
+- Added pandas 3 compatibility and removed project-owned deprecation and invalid-escape warnings.
+- Migrated Azure Pipelines and GitHub Actions to reproducible, locked uv project-mode installs.
+
 ## 5.4.0 - 2026-07-12
 
 - Added `normalize_price_unit_strict` and `is_canonical_price_unit` to `commodutil.standards.units` (and the `commodutil` / `commodutil.standards` facades): the STRICT counterpart to the lenient `canonical_price_unit_token`. Where the lenient token preserves unrecognised currency/unit fragments so it can label any quote string, the strict variant returns a canonical `CCY/unit` token only when both legs resolve (recognised currency over a `canonical_quantity_unit` denominator) and `None` otherwise — for validating a curated price-unit qualifier that must round-trip through conversion (e.g. `usd_ton`/`USD/ton` refused, `USD/MT` -> `USD/mt`).
