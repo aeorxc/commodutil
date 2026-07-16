@@ -21,6 +21,7 @@ extends:
 pool: Self-Hosted-AWS
 
 trigger:
+  batch: true
   branches:
     include:
       - main
