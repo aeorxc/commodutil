@@ -9,10 +9,10 @@ description = "common commodity/oil analytics utils"
 authors = [
     {name = "aeorxc", email = "author@example.com"}
 ]
+license = "MIT"
 requires-python = ">=3.9"
 classifiers = [
     "Programming Language :: Python :: 3",
-    "License :: OSI Approved :: MIT License",
     "Operating System :: OS Independent",
 ]
 dependencies = [
@@ -59,3 +59,6 @@ where = ["."]
 include = ["commodutil*"]
 exclude = ["tests*", "*.tests*", "tests.*"]
 [tool.setuptools_scm]
+
+[tool.black]
+target-version = ["py39"]

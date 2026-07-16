@@ -26,7 +26,7 @@ class TestPandasUtils(unittest.TestCase):
             os.path.join(dirname, "test_cl.csv"),
             index_col=0,
             parse_dates=True,
-            dayfirst=True,
+            date_format="%Y-%m-%d",
         )
         contracts = cl.rename(
             columns={x: pd.to_datetime(convert_contract_to_date(x)) for x in cl.columns}

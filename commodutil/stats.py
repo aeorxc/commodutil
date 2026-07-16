@@ -20,6 +20,8 @@ def curve_seasonal_zscore(hist, fwd):
 
     if isinstance(fwd, pd.Series):
         fwd = pd.DataFrame(fwd)
+    else:
+        fwd = fwd.copy()
     fwd["zscore"] = fwd.apply(
         lambda x: (d[x.name.month].loc["mean"] - x.iloc[0])
         / d[x.name.month].loc["std"],

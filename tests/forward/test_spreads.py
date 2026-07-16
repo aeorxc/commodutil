@@ -1,4 +1,5 @@
-import os
+import warnings
+
 import pytest
 from commodutil.forward import spreads
 import pandas as pd
@@ -28,7 +29,9 @@ def test_all_monthly_spreads_extended(cl):
     from commodutil.forward.util import convert_columns_to_date
 
     contracts = convert_columns_to_date(cl)
-    res = spreads.all_monthly_spreads_extended(cl, col_format=None)
+    with warnings.catch_warnings():
+        warnings.simplefilter("error")
+        res = spreads.all_monthly_spreads_extended(cl, col_format=None)
     assert res is not None
 
     dt = pd.to_datetime("2019-03-20")

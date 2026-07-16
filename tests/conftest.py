@@ -10,6 +10,6 @@ def contracts():
         os.path.join(dirname, "test_cl.csv"),
         index_col=0,
         parse_dates=True,
-        dayfirst=True,
+        date_format="%Y-%m-%d",
     )
     return cl
