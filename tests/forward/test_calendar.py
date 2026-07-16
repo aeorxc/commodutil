@@ -1,7 +1,7 @@
-import os
+import warnings
+
 import pytest
 from commodutil.forward import calendar
-import pandas as pd
 
 
 def test_calendar(cl):
@@ -14,7 +14,9 @@ def test_calendar_spread(cl):
     assert res["CAL 2020-2021"]["2020-01-02"] == pytest.approx(4.35, abs=1e-2)
 
 def test_half_year(cl):
-    res = calendar.half_year_contracts(cl)
+    with warnings.catch_warnings():
+        warnings.simplefilter("error")
+        res = calendar.half_year_contracts(cl)
     assert res["H1 2020"]["2019-01-02"] == pytest.approx(50.04, abs=1e-2)
 
 def test_half_year_spread(cl):

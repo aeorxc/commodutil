@@ -231,7 +231,7 @@ def half_year_contracts(contracts):
                 s.name = "Summer {}".format(year)
                 dfs.append(s)
 
-    res = pd.concat(dfs, axis=1)
+    res = pd.concat(dfs, axis=1, sort=True)
     # sort columns by years
     cols = list(res.columns)
     cols.sort(key=lambda s: s.split()[1])

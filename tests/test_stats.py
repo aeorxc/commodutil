@@ -1,5 +1,6 @@
 import os
 import unittest
+import warnings
 
 import numpy as np
 import pandas as pd
@@ -17,7 +18,7 @@ class TestForwards(unittest.TestCase):
             os.path.join(dirname, "test_cl.csv"),
             index_col=0,
             parse_dates=True,
-            dayfirst=True,
+            date_format="%Y-%m-%d",
         )
         contracts = cl.rename(
             columns={x: pd.to_datetime(convert_contract_to_date(x)) for x in cl.columns}
@@ -25,8 +26,11 @@ class TestForwards(unittest.TestCase):
         hist = contracts[["2020-01-01"]].dropna()
         fwd = contracts[["2020-01-01"]]
 
-        res = stats.curve_seasonal_zscore(hist, fwd)
+        with warnings.catch_warnings():
+            warnings.simplefilter("error")
+            res = stats.curve_seasonal_zscore(hist, fwd)
         self.assertAlmostEqual(res["zscore"]["2019-01-02"], 0.92, 2)
+        self.assertNotIn("zscore", fwd.columns)
 
     def test_reindex_zscore(self):
         dirname, filename = os.path.split(os.path.abspath(__file__))
@@ -34,7 +38,7 @@ class TestForwards(unittest.TestCase):
             os.path.join(dirname, "test_cl.csv"),
             index_col=0,
             parse_dates=True,
-            dayfirst=True,
+            date_format="%Y-%m-%d",
         )
         contracts = cl.rename(
             columns={x: pd.to_datetime(convert_contract_to_date(x)) for x in cl.columns}

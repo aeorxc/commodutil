@@ -1,6 +1,5 @@
 import os
 import unittest
-from datetime import datetime
 
 import pandas as pd
 
@@ -17,7 +16,7 @@ class TestTransforms(unittest.TestCase):
             os.path.join(dirname, "test_cl.csv"),
             index_col=0,
             parse_dates=True,
-            dayfirst=True,
+            date_format="%Y-%m-%d",
         )
 
         seas = transforms.seasonailse(cl["CL_2020J"], fillna=True)
@@ -43,7 +42,7 @@ class TestTransforms(unittest.TestCase):
             os.path.join(dirname, "test_weekly.csv"),
             index_col=0,
             parse_dates=True,
-            dayfirst=True,
+            date_format="%Y-%m-%d %H:%M:%S",
         )
 
         seas = transforms.seasonalise_weekly(cl["PET.WCRSTUS1.W"])
@@ -62,7 +61,7 @@ class TestTransforms(unittest.TestCase):
             os.path.join(dirname, "test_cl.csv"),
             index_col=0,
             parse_dates=True,
-            dayfirst=True,
+            date_format="%Y-%m-%d",
         )
         contracts = cl.rename(
             columns={
@@ -87,7 +86,7 @@ class TestTransforms(unittest.TestCase):
             os.path.join(dirname, "test_cl.csv"),
             index_col=0,
             parse_dates=True,
-            dayfirst=True,
+            date_format="%Y-%m-%d",
         )[["CL_2020F"]].dropna()
 
         res = transforms.monthly_mean(df)

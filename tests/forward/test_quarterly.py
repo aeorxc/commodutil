@@ -1,13 +1,15 @@
-import os
+import warnings
+
 import pytest
 from commodutil.forward import quarterly
-from commodutil import dates
 import pandas as pd
 
 
 def test_quarterly_contracts(cl):
     contracts = cl
-    res = quarterly.quarterly_contracts(contracts)
+    with warnings.catch_warnings():
+        warnings.simplefilter("error")
+        res = quarterly.quarterly_contracts(contracts)
     assert res["Q2 2019"].loc[pd.to_datetime("2019-03-20")] == pytest.approx(60.18, abs=1e-2)
     assert res["Q3 2019"].loc[pd.to_datetime("2019-06-20")] == pytest.approx(56.95, abs=1e-2)
     assert res["Q4 2019"].loc[pd.to_datetime("2019-09-20")] == pytest.approx(58.01, abs=1e-2)

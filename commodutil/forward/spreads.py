@@ -1,4 +1,3 @@
-import datetime
 from calendar import month_abbr
 
 import pandas as pd
@@ -121,7 +120,7 @@ def all_monthly_spreads_extended(contracts, col_format=None):
     if not dfs:
         return None
 
-    res = pd.concat(dfs, axis=1)
+    res = pd.concat(dfs, axis=1, sort=True)
     legmap = {}
     for df in dfs:
         legmap.update(df.attrs)

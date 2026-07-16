@@ -100,7 +100,7 @@ def quarterly_contracts(contracts, col_format=None):
                 dfs.append(s)
 
     if len(dfs) > 0:
-        res = pd.concat(dfs, axis=1)
+        res = pd.concat(dfs, axis=1, sort=True)
         # sort columns by years
         cols = list(res.columns)
         cols.sort(key=lambda s: s.split()[1])
