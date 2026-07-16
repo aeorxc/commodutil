@@ -32,6 +32,28 @@ test = [
     "pytest-runner",
 ]
 
+[dependency-groups]
+test = [
+    "pytest",
+    "pytest-cov",
+    "pytest-mock",
+    "pytest-xdist",
+]
+dev = [
+    { include-group = "test" },
+    "black",
+    "mypy",
+    "pylint",
+]
+release = [
+    "twine",
+]
+
+[tool.uv]
+# Preserve the published Python compatibility metadata. The lock covers the
+# shared pipeline's supported CI matrix rather than narrowing the library API.
+environments = ["python_version >= '3.11' and python_version < '3.13'"]
+
 [tool.setuptools.packages.find]
 where = ["."]
 include = ["commodutil*"]
