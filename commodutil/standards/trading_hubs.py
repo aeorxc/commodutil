@@ -4,14 +4,6 @@ Owns canonical trading-hub codes (NYH, USGC, NWE, ARA, Med, Sing, MEG, and
 others) and their pattern-matching logic for commodity trading.
 
 Country-membership groups/baskets live in ``geography.py`` — a different vocabulary.
-
-Known divergence from curvemetadata.taxonomy.infer_region (as of 2026-05-14):
-the legacy implementation in curvemetadata uses `rf"\\b...\\b"` in a raw
-f-string, which is a *literal* backslash-b, not a regex word boundary. As a
-result, the short trading-hub patterns ("nyh", "usgc", "usac", "nwe", "rott",
-"ara", "med", "sing") never matched in curvemetadata production. This module
-uses `rf"\b...\b"` (a true word boundary), so short codes will start
-matching for the first time once consumers migrate.
 """
 
 from __future__ import annotations
@@ -41,8 +33,7 @@ VALID_TRADING_HUBS = frozenset(code for code, _ in TRADING_HUB_PATTERNS)
 def normalize_trading_hub(text: Optional[str]) -> Optional[str]:
     """Infer a trading hub or pricing location from a product description.
 
-    Consolidates pattern-matching logic from curvemetadata.taxonomy.infer_region
-    with RBOB-to-NYH heuristic.
+    Includes an RBOB-to-NYH heuristic.
 
     Args:
         text: Product name or description (e.g., "Brent NYH", "WTI USGC").
