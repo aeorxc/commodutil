@@ -34,6 +34,21 @@ from commodutil.standards.currency import (
     split_currency_unit,
     to_symbol,
 )
+from commodutil.standards.geography import (
+    COUNTRY_NAME_MAP,
+    COUNTRY_ROWS,
+    REGION_MEMBERS,
+    REGION_ROWS,
+    VALID_COUNTRY_CODES,
+    VALID_REGION_KEYS,
+    CountryRow,
+    RegionRow,
+    canonical_country,
+    country_in_region,
+    is_canonical_country,
+    is_canonical_region,
+    region_members,
+)
 from commodutil.standards.price_unit import (
     PriceUnit,
     resolve_price_unit,
@@ -85,6 +100,20 @@ __all__ = [
     "required_fx_pair",
     "split_currency_unit",
     "to_symbol",
+    # geography
+    "CountryRow",
+    "COUNTRY_ROWS",
+    "VALID_COUNTRY_CODES",
+    "COUNTRY_NAME_MAP",
+    "canonical_country",
+    "is_canonical_country",
+    "RegionRow",
+    "REGION_ROWS",
+    "VALID_REGION_KEYS",
+    "REGION_MEMBERS",
+    "is_canonical_region",
+    "region_members",
+    "country_in_region",
     # price_unit
     "PriceUnit",
     "resolve_price_unit",
