@@ -1,15 +1,15 @@
 """Tests for commodutil.standards.geography."""
 
+import pycountry
 import pytest
 
 from commodutil.standards.geography import (
+    COUNTRY_ALIASES,
     COUNTRY_NAME_MAP,
-    COUNTRY_ROWS,
     REGION_MEMBERS,
     REGION_ROWS,
     VALID_COUNTRY_CODES,
     VALID_REGION_KEYS,
-    CountryRow,
     _build_country_name_map,
     canonical_country,
     country_in_region,
@@ -19,29 +19,30 @@ from commodutil.standards.geography import (
 )
 
 
-def test_country_table_sanity():
-    assert len(COUNTRY_ROWS) >= 245
-    assert len(VALID_COUNTRY_CODES) == len(COUNTRY_ROWS)
-    for row in COUNTRY_ROWS:
-        assert len(row.code) == 2
-        assert row.code.isascii()
-        assert row.code.isalpha()
-        assert row.code.isupper()
-        assert row.name.strip()
+def test_country_universe_matches_pycountry():
+    pycountry_codes = frozenset(country.alpha_2 for country in pycountry.countries)
+    assert len(VALID_COUNTRY_CODES) >= 245
+    assert VALID_COUNTRY_CODES == pycountry_codes
 
 
-def test_country_names_and_aliases_are_collision_free():
-    expected_name_count = sum(1 + len(row.aliases) for row in COUNTRY_ROWS)
-    assert len(COUNTRY_NAME_MAP) == expected_name_count
+def test_country_alias_spot_checks():
+    assert COUNTRY_ALIASES["UK"] == "GB"
+    assert COUNTRY_ALIASES["UAE"] == "AE"
+    assert COUNTRY_ALIASES["Holland"] == "NL"
+    assert canonical_country("UK") == "GB"
+    assert canonical_country("UAE") == "AE"
+    assert canonical_country("Holland") == "NL"
+    assert canonical_country("unknown") is None
 
 
 def test_country_name_builder_rejects_cross_country_alias_collision():
-    rows = (
-        CountryRow("AA", "First", ("Shared",)),
-        CountryRow("BB", "Second", ("shared",)),
-    )
-    with pytest.raises(ValueError, match="maps to both"):
-        _build_country_name_map(rows)
+    with pytest.raises(ValueError, match="shadows"):
+        _build_country_name_map({"United Kingdom": "US"})
+
+
+def test_country_name_map_contains_pycountry_names_and_aliases():
+    assert COUNTRY_NAME_MAP["united kingdom"] == "GB"
+    assert COUNTRY_NAME_MAP["uk"] == "GB"
 
 
 @pytest.mark.parametrize(

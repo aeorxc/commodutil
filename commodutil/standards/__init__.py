@@ -35,13 +35,12 @@ from commodutil.standards.currency import (
     to_symbol,
 )
 from commodutil.standards.geography import (
+    COUNTRY_ALIASES,
     COUNTRY_NAME_MAP,
-    COUNTRY_ROWS,
     REGION_MEMBERS,
     REGION_ROWS,
     VALID_COUNTRY_CODES,
     VALID_REGION_KEYS,
-    CountryRow,
     RegionRow,
     canonical_country,
     country_in_region,
@@ -101,8 +100,7 @@ __all__ = [
     "split_currency_unit",
     "to_symbol",
     # geography
-    "CountryRow",
-    "COUNTRY_ROWS",
+    "COUNTRY_ALIASES",
     "VALID_COUNTRY_CODES",
     "COUNTRY_NAME_MAP",
     "canonical_country",
