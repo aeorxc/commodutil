@@ -1,7 +1,7 @@
 """commodutil.standards: canonical vocabularies for commodity trading.
 
 Re-exports the public surface of each submodule so callers can write
-`from commodutil.standards import normalize_region` instead of reaching
+`from commodutil.standards import normalize_trading_hub` instead of reaching
 into the submodule directly.
 """
 
@@ -34,19 +34,33 @@ from commodutil.standards.currency import (
     split_currency_unit,
     to_symbol,
 )
+from commodutil.standards.geography import (
+    COUNTRY_ALIASES,
+    COUNTRY_GROUP_MEMBERS,
+    COUNTRY_GROUP_ROWS,
+    COUNTRY_NAME_MAP,
+    VALID_COUNTRY_CODES,
+    VALID_COUNTRY_GROUP_KEYS,
+    CountryGroupRow,
+    canonical_country,
+    country_group_members,
+    country_in_group,
+    is_canonical_country,
+    is_canonical_country_group,
+)
 from commodutil.standards.price_unit import (
     PriceUnit,
     resolve_price_unit,
     resolve_price_unit_from_attrs,
 )
-from commodutil.standards.regions import (
+from commodutil.standards.trading_hubs import (
     CRUDE_GRADE_REGIONS,
-    REGION_PATTERNS,
+    TRADING_HUB_PATTERNS,
     VALID_CRUDE_GRADE_REGIONS,
-    VALID_REGIONS,
+    VALID_TRADING_HUBS,
     is_crude_grade_region,
-    is_valid_region,
-    normalize_region,
+    is_valid_trading_hub,
+    normalize_trading_hub,
 )
 from commodutil.standards.units import (
     UNIT_MAP,
@@ -85,18 +99,31 @@ __all__ = [
     "required_fx_pair",
     "split_currency_unit",
     "to_symbol",
+    # geography
+    "COUNTRY_ALIASES",
+    "VALID_COUNTRY_CODES",
+    "COUNTRY_NAME_MAP",
+    "canonical_country",
+    "is_canonical_country",
+    "CountryGroupRow",
+    "COUNTRY_GROUP_ROWS",
+    "VALID_COUNTRY_GROUP_KEYS",
+    "COUNTRY_GROUP_MEMBERS",
+    "is_canonical_country_group",
+    "country_group_members",
+    "country_in_group",
     # price_unit
     "PriceUnit",
     "resolve_price_unit",
     "resolve_price_unit_from_attrs",
-    # regions
+    # trading_hubs
     "CRUDE_GRADE_REGIONS",
-    "REGION_PATTERNS",
+    "TRADING_HUB_PATTERNS",
     "VALID_CRUDE_GRADE_REGIONS",
-    "VALID_REGIONS",
+    "VALID_TRADING_HUBS",
     "is_crude_grade_region",
-    "is_valid_region",
-    "normalize_region",
+    "is_valid_trading_hub",
+    "normalize_trading_hub",
     # units
     "UNIT_MAP",
     "canonical_price_unit_token",
