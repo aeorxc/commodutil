@@ -1,25 +1,25 @@
-"""Tests for commodutil.standards.regions."""
+"""Tests for commodutil.standards.trading_hubs."""
 
 from __future__ import annotations
 
-from commodutil.standards.regions import (
-    REGION_PATTERNS,
-    VALID_REGIONS,
-    is_valid_region,
-    normalize_region,
+from commodutil.standards.trading_hubs import (
+    TRADING_HUB_PATTERNS,
+    VALID_TRADING_HUBS,
+    is_valid_trading_hub,
+    normalize_trading_hub,
 )
 
 
-def test_normalize_region_brent_nyh():
-    assert normalize_region("Brent NYH") == "NYH"
+def test_normalize_trading_hub_brent_nyh():
+    assert normalize_trading_hub("Brent NYH") == "NYH"
 
 
-def test_normalize_region_rbob_heuristic():
+def test_normalize_trading_hub_rbob_heuristic():
     # RBOB convention: always NY Harbor regardless of other tokens
-    assert normalize_region("RBOB Feb25") == "NYH"
+    assert normalize_trading_hub("RBOB Feb25") == "NYH"
 
 
-def test_normalize_region_carbob_is_not_nyh():
+def test_normalize_trading_hub_carbob_is_not_nyh():
     """CARBOB is California gasoline (Los Angeles / USWC), NOT NY Harbor.
 
     Regression guard against the prior substring bug where `"rbob" in lower`
@@ -27,56 +27,56 @@ def test_normalize_region_carbob_is_not_nyh():
     uses a word-boundary regex plus an explicit CARBOB short-circuit that
     maps to "LA".
     """
-    assert normalize_region("CARBOB") != "NYH"
-    assert normalize_region("CARBOB") == "LA"
-    assert normalize_region("Los Angeles CARBOB") == "LA"
+    assert normalize_trading_hub("CARBOB") != "NYH"
+    assert normalize_trading_hub("CARBOB") == "LA"
+    assert normalize_trading_hub("Los Angeles CARBOB") == "LA"
     # Sanity: plain RBOB still resolves to NYH.
-    assert normalize_region("RBOB") == "NYH"
+    assert normalize_trading_hub("RBOB") == "NYH"
 
 
-def test_normalize_region_rdam_substring():
-    assert normalize_region("RDam fuel oil") == "Rott"
+def test_normalize_trading_hub_rdam_substring():
+    assert normalize_trading_hub("RDam fuel oil") == "Rott"
 
 
-def test_normalize_region_singapore_substring():
-    assert normalize_region("Singapore gasoil") == "Sing"
+def test_normalize_trading_hub_singapore_substring():
+    assert normalize_trading_hub("Singapore gasoil") == "Sing"
 
 
-def test_normalize_region_sahara_does_not_match_ara():
+def test_normalize_trading_hub_sahara_does_not_match_ara():
     # "ara" is a short pattern; must use word boundaries, so "Saharan" must NOT match.
-    assert normalize_region("Saharan crude") is None
+    assert normalize_trading_hub("Saharan crude") is None
 
 
-def test_normalize_region_none_input():
-    assert normalize_region(None) is None
+def test_normalize_trading_hub_none_input():
+    assert normalize_trading_hub(None) is None
 
 
-def test_normalize_region_empty_string():
-    assert normalize_region("") is None
+def test_normalize_trading_hub_empty_string():
+    assert normalize_trading_hub("") is None
 
 
-def test_is_valid_region_true():
-    assert is_valid_region("NYH") is True
+def test_is_valid_trading_hub_true():
+    assert is_valid_trading_hub("NYH") is True
 
 
-def test_is_valid_region_false():
-    assert is_valid_region("XXX") is False
+def test_is_valid_trading_hub_false():
+    assert is_valid_trading_hub("XXX") is False
 
 
-def test_region_patterns_codes_match_valid_regions():
-    codes = {code for code, _ in REGION_PATTERNS}
-    assert codes == set(VALID_REGIONS)
+def test_trading_hub_patterns_codes_match_valid_trading_hubs():
+    codes = {code for code, _ in TRADING_HUB_PATTERNS}
+    assert codes == set(VALID_TRADING_HUBS)
 
 
-def test_rbob_heuristic_takes_precedence_over_other_regions():
+def test_rbob_heuristic_takes_precedence_over_other_trading_hubs():
     # RBOB convention overrides any geographic pattern.
-    assert normalize_region("RBOB Singapore") == "NYH"
+    assert normalize_trading_hub("RBOB Singapore") == "NYH"
 
 
 def test_first_match_wins_for_overlapping_patterns():
-    # REGION_PATTERNS is ordered; first hit wins. "New York USGC" matches
+    # TRADING_HUB_PATTERNS is ordered; first hit wins. "New York USGC" matches
     # NYH before USGC because NYH is listed first.
-    assert normalize_region("New York USGC") == "NYH"
+    assert normalize_trading_hub("New York USGC") == "NYH"
 
 
 def test_parity_with_curvemetadata_long_patterns_only():
@@ -87,7 +87,7 @@ def test_parity_with_curvemetadata_long_patterns_only():
     boundary), so its short patterns never match in production. This test
     confirms parity for the long patterns that ACTUALLY worked in
     curvemetadata. Short-pattern divergence is documented in
-    regions.py module docstring.
+    trading_hubs.py module docstring.
     """
     try:
         from curvemetadata.taxonomy import infer_region
@@ -110,16 +110,16 @@ def test_parity_with_curvemetadata_long_patterns_only():
         "Rotterdam fuel",
     ]
     for text in long_pattern_cases:
-        assert normalize_region(text) == infer_region(text), (
+        assert normalize_trading_hub(text) == infer_region(text), (
             f"Parity divergence for {text!r}: "
-            f"new={normalize_region(text)!r}, "
+            f"new={normalize_trading_hub(text)!r}, "
             f"curvemetadata={infer_region(text)!r}"
         )
 
 
 def test_short_pattern_parity_with_curvemetadata():
-    """Short-pattern (len <= 3) regions used to diverge between
-    normalize_region and curvemetadata.taxonomy.infer_region because
+    """Short-pattern (len <= 3) trading hubs used to diverge between
+    normalize_trading_hub and curvemetadata.taxonomy.infer_region because
     the latter had a `\\b` regex bug (literal backslash-b instead of
     a word boundary). The bug was fixed in curvemetadata 1.4.0 (commit
     e8ba20e on the 1.2.0 release branch); this test is a regression
@@ -142,7 +142,7 @@ def test_short_pattern_parity_with_curvemetadata():
     if infer_region("Brent NYH") is None:
         pytest.skip(
             "Installed curvemetadata has the pre-1.4.0 `\\b` regex bug "
-            "(short-pattern regions never match). Upgrade curvemetadata "
+            "(short-pattern trading hubs never match). Upgrade curvemetadata "
             "to >=1.4.0 to enable this parity test."
         )
 
@@ -157,8 +157,8 @@ def test_short_pattern_parity_with_curvemetadata():
         ("Saharan crude", None),
     ]
     for text, expected in short_pattern_cases:
-        assert normalize_region(text) == expected, (
-            f"normalize_region({text!r}) should match {expected!r}"
+        assert normalize_trading_hub(text) == expected, (
+            f"normalize_trading_hub({text!r}) should match {expected!r}"
         )
         assert infer_region(text) == expected, (
             f"curvemetadata.infer_region({text!r}) should match {expected!r} "
@@ -243,7 +243,7 @@ def test_crude_grade_regions_keys_match_source_file():
     """CRUDE_GRADE_REGIONS keys are byte-identical to the source layout in
     oilpricingcharts.symbols_config_crudediffs. Re-keying would break the
     follow-up migration."""
-    from commodutil.standards.regions import CRUDE_GRADE_REGIONS
+    from commodutil.standards.trading_hubs import CRUDE_GRADE_REGIONS
 
     expected = {
         "north_sea",
@@ -262,7 +262,7 @@ def test_crude_grade_regions_keys_match_source_file():
 
 
 def test_crude_grade_regions_values_are_non_empty_tuples():
-    from commodutil.standards.regions import CRUDE_GRADE_REGIONS
+    from commodutil.standards.trading_hubs import CRUDE_GRADE_REGIONS
 
     for key, grades in CRUDE_GRADE_REGIONS.items():
         assert isinstance(grades, tuple), f"{key} must be a tuple"
@@ -275,7 +275,7 @@ def test_crude_grade_regions_values_are_non_empty_tuples():
 
 def test_crude_grade_regions_known_grades_present():
     """Spot-check a few well-known grades land in the right region."""
-    from commodutil.standards.regions import CRUDE_GRADE_REGIONS
+    from commodutil.standards.trading_hubs import CRUDE_GRADE_REGIONS
 
     assert "Forties" in CRUDE_GRADE_REGIONS["north_sea"]
     assert "Bonny Light" in CRUDE_GRADE_REGIONS["waf"]
@@ -285,7 +285,7 @@ def test_crude_grade_regions_known_grades_present():
 
 
 def test_valid_crude_grade_regions_matches_dict():
-    from commodutil.standards.regions import (
+    from commodutil.standards.trading_hubs import (
         CRUDE_GRADE_REGIONS,
         VALID_CRUDE_GRADE_REGIONS,
     )
@@ -294,7 +294,7 @@ def test_valid_crude_grade_regions_matches_dict():
 
 
 def test_is_crude_grade_region():
-    from commodutil.standards.regions import is_crude_grade_region
+    from commodutil.standards.trading_hubs import is_crude_grade_region
 
     assert is_crude_grade_region("north_sea") is True
     assert is_crude_grade_region("waf") is True
@@ -307,49 +307,49 @@ def test_is_crude_grade_region():
 # ---- MEG / Japan additions ----
 
 
-def test_meg_is_valid_region():
-    assert is_valid_region("MEG") is True
+def test_meg_is_valid_trading_hub():
+    assert is_valid_trading_hub("MEG") is True
 
 
-def test_japan_is_valid_region():
-    assert is_valid_region("Japan") is True
+def test_japan_is_valid_trading_hub():
+    assert is_valid_trading_hub("Japan") is True
 
 
-def test_normalize_region_meg_aliases():
-    assert normalize_region("MEG fuel oil") == "MEG"
-    assert normalize_region("Middle East Gulf naphtha") == "MEG"
-    assert normalize_region("Arabian Gulf gasoil") == "MEG"
-    assert normalize_region("Persian Gulf cargo") == "MEG"
+def test_normalize_trading_hub_meg_aliases():
+    assert normalize_trading_hub("MEG fuel oil") == "MEG"
+    assert normalize_trading_hub("Middle East Gulf naphtha") == "MEG"
+    assert normalize_trading_hub("Arabian Gulf gasoil") == "MEG"
+    assert normalize_trading_hub("Persian Gulf cargo") == "MEG"
 
 
-def test_normalize_region_japan():
-    assert normalize_region("Japan gasoil") == "Japan"
+def test_normalize_trading_hub_japan():
+    assert normalize_trading_hub("Japan gasoil") == "Japan"
 
 
 # ---- Sibling-vocab invariant ----
 
 
-def test_crude_grade_regions_and_valid_regions_do_not_overlap():
+def test_crude_grade_regions_and_valid_trading_hubs_do_not_overlap():
     """CRUDE_GRADE_REGIONS (producer-side grade groupings, snake_case e.g.
-    'north_sea') and VALID_REGIONS (canonical delivery / pricing region
+    'north_sea') and VALID_TRADING_HUBS (canonical delivery / pricing-location
     codes, e.g. 'NWE') describe different things and MUST stay disjoint.
     Any overlap would be a vocabulary bug."""
-    from commodutil.standards.regions import VALID_CRUDE_GRADE_REGIONS
+    from commodutil.standards.trading_hubs import VALID_CRUDE_GRADE_REGIONS
 
-    assert VALID_REGIONS.isdisjoint(VALID_CRUDE_GRADE_REGIONS)
+    assert VALID_TRADING_HUBS.isdisjoint(VALID_CRUDE_GRADE_REGIONS)
 
 
 def test_new_vocabs_exposed_via_standards_facade():
     from commodutil.standards import (
         CRUDE_GRADE_REGIONS,
-        VALID_REGIONS,
+        VALID_TRADING_HUBS,
         is_crude_grade_region,
-        is_valid_region,
+        is_valid_trading_hub,
     )
 
     assert "north_sea" in CRUDE_GRADE_REGIONS
-    assert "NWE" in VALID_REGIONS
-    assert "MEG" in VALID_REGIONS
-    assert "Japan" in VALID_REGIONS
+    assert "NWE" in VALID_TRADING_HUBS
+    assert "MEG" in VALID_TRADING_HUBS
+    assert "Japan" in VALID_TRADING_HUBS
     assert is_crude_grade_region("waf")
-    assert is_valid_region("USGC")
+    assert is_valid_trading_hub("USGC")

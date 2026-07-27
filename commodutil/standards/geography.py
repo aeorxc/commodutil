@@ -5,7 +5,8 @@ and membership-defined country groups remain the local vocabulary. Each group ke
 identifies a specific country basket, so callers cannot request an ambiguous
 bare "Europe".
 
-Trading-hub/pricing region codes live in ``regions.py`` — a different vocabulary.
+Trading-hub/pricing-location codes live in ``trading_hubs.py`` — a different
+vocabulary.
 
 To add a desk country spelling or country group, edit ``COUNTRY_ALIASES`` or
 ``COUNTRY_GROUP_ROWS`` below — nowhere else. All lookup maps, valid-key sets, and

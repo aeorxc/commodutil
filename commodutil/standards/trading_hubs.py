@@ -1,15 +1,14 @@
-"""commodutil.standards.regions: Region code canonicalization.
+"""Canonical trading-hub and pricing-location vocabulary.
 
-Owns canonical region codes and pattern-matching logic for commodity trading.
-Single source of truth; curvemetadata is expected to re-export from here in a
-follow-up PR.
+Owns canonical trading-hub codes (NYH, USGC, NWE, ARA, Med, Sing, MEG, and
+others) and their pattern-matching logic for commodity trading.
 
 Country-membership groups/baskets live in ``geography.py`` — a different vocabulary.
 
 Known divergence from curvemetadata.taxonomy.infer_region (as of 2026-05-14):
 the legacy implementation in curvemetadata uses `rf"\\b...\\b"` in a raw
 f-string, which is a *literal* backslash-b, not a regex word boundary. As a
-result, the short region patterns ("nyh", "usgc", "usac", "nwe", "rott",
+result, the short trading-hub patterns ("nyh", "usgc", "usac", "nwe", "rott",
 "ara", "med", "sing") never matched in curvemetadata production. This module
 uses `rf"\b...\b"` (a true word boundary), so short codes will start
 matching for the first time once consumers migrate.
@@ -20,8 +19,8 @@ from __future__ import annotations
 import re
 from typing import Optional
 
-# Canonical region codes and pattern matchers
-REGION_PATTERNS = [
+# Canonical trading-hub codes and pattern matchers
+TRADING_HUB_PATTERNS = [
     ("NYH", ["nyh", "new york harbor", "new york harbour", "new york"]),
     ("USGC", ["usgc", "gulf coast", "us gulf", "u.s. gulf"]),
     ("USAC", ["us atlantic coast", "u.s. atlantic coast", "usac"]),
@@ -35,12 +34,12 @@ REGION_PATTERNS = [
     ("Japan", ["japan"]),
 ]
 
-# Canonical region codes as frozenset for fast membership checks
-VALID_REGIONS = frozenset(code for code, _ in REGION_PATTERNS)
+# Canonical trading-hub codes as frozenset for fast membership checks
+VALID_TRADING_HUBS = frozenset(code for code, _ in TRADING_HUB_PATTERNS)
 
 
-def normalize_region(text: Optional[str]) -> Optional[str]:
-    """Infer geographic region from product name or description.
+def normalize_trading_hub(text: Optional[str]) -> Optional[str]:
+    """Infer a trading hub or pricing location from a product description.
 
     Consolidates pattern-matching logic from curvemetadata.taxonomy.infer_region
     with RBOB-to-NYH heuristic.
@@ -49,14 +48,14 @@ def normalize_region(text: Optional[str]) -> Optional[str]:
         text: Product name or description (e.g., "Brent NYH", "WTI USGC").
 
     Returns:
-        Canonical region code (e.g., "NYH", "USGC", "NWE") or None.
+        Canonical trading-hub code (e.g., "NYH", "USGC", "NWE") or None.
 
     Examples:
-        >>> normalize_region("Brent NYH")
+        >>> normalize_trading_hub("Brent NYH")
         'NYH'
-        >>> normalize_region("RBOB Feb25")
+        >>> normalize_trading_hub("RBOB Feb25")
         'NYH'
-        >>> normalize_region("Unknown Location")
+        >>> normalize_trading_hub("Unknown Location")
         None
     """
     if not text:
@@ -75,8 +74,8 @@ def normalize_region(text: Optional[str]) -> Optional[str]:
     if re.search(r"\brbob\b", lower):
         return "NYH"
 
-    # Pattern-match against REGION_PATTERNS
-    for code, patterns in REGION_PATTERNS:
+    # Pattern-match against TRADING_HUB_PATTERNS
+    for code, patterns in TRADING_HUB_PATTERNS:
         for pattern in patterns:
             if len(pattern) <= 3:
                 # Short patterns: word-boundary match only
@@ -89,16 +88,16 @@ def normalize_region(text: Optional[str]) -> Optional[str]:
     return None
 
 
-def is_valid_region(code: str) -> bool:
-    """Return True if code is a canonical region code.
+def is_valid_trading_hub(code: str) -> bool:
+    """Return True if code is a canonical trading-hub code.
 
     Args:
-        code: Region code string (e.g., "NYH", "USGC").
+        code: Trading-hub code string (e.g., "NYH", "USGC").
 
     Returns:
-        True if code is in VALID_REGIONS, False otherwise.
+        True if code is in VALID_TRADING_HUBS, False otherwise.
     """
-    return code in VALID_REGIONS
+    return code in VALID_TRADING_HUBS
 
 
 # ---- Crude grade regions ----
@@ -199,10 +198,10 @@ def is_crude_grade_region(key: str) -> bool:
 
 
 __all__ = [
-    "REGION_PATTERNS",
-    "VALID_REGIONS",
-    "normalize_region",
-    "is_valid_region",
+    "TRADING_HUB_PATTERNS",
+    "VALID_TRADING_HUBS",
+    "normalize_trading_hub",
+    "is_valid_trading_hub",
     "CRUDE_GRADE_REGIONS",
     "VALID_CRUDE_GRADE_REGIONS",
     "is_crude_grade_region",

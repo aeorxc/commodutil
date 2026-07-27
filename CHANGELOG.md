@@ -3,6 +3,7 @@
 ## 5.5.0 - 2026-07-27
 
 - Added `commodutil.standards.geography` with pycountry-backed countries, desk aliases, and membership-defined country groups; added `pycountry` as a production dependency.
+- Breaking: `standards.regions` renamed to `standards.trading_hubs`; region-named symbols renamed (`REGION_PATTERNS` -> `TRADING_HUB_PATTERNS`, `VALID_REGIONS` -> `VALID_TRADING_HUBS`, `normalize_region` -> `normalize_trading_hub`, `is_valid_region` -> `is_valid_trading_hub`); no compatibility shim. Migrate imports to `commodutil.standards.trading_hubs`. `CRUDE_GRADE_REGIONS` family unchanged (relocated).
 
 ## 5.4.1 - 2026-07-16
 

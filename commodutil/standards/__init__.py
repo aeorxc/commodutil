@@ -1,7 +1,7 @@
 """commodutil.standards: canonical vocabularies for commodity trading.
 
 Re-exports the public surface of each submodule so callers can write
-`from commodutil.standards import normalize_region` instead of reaching
+`from commodutil.standards import normalize_trading_hub` instead of reaching
 into the submodule directly.
 """
 
@@ -53,14 +53,14 @@ from commodutil.standards.price_unit import (
     resolve_price_unit,
     resolve_price_unit_from_attrs,
 )
-from commodutil.standards.regions import (
+from commodutil.standards.trading_hubs import (
     CRUDE_GRADE_REGIONS,
-    REGION_PATTERNS,
+    TRADING_HUB_PATTERNS,
     VALID_CRUDE_GRADE_REGIONS,
-    VALID_REGIONS,
+    VALID_TRADING_HUBS,
     is_crude_grade_region,
-    is_valid_region,
-    normalize_region,
+    is_valid_trading_hub,
+    normalize_trading_hub,
 )
 from commodutil.standards.units import (
     UNIT_MAP,
@@ -116,14 +116,14 @@ __all__ = [
     "PriceUnit",
     "resolve_price_unit",
     "resolve_price_unit_from_attrs",
-    # regions
+    # trading_hubs
     "CRUDE_GRADE_REGIONS",
-    "REGION_PATTERNS",
+    "TRADING_HUB_PATTERNS",
     "VALID_CRUDE_GRADE_REGIONS",
-    "VALID_REGIONS",
+    "VALID_TRADING_HUBS",
     "is_crude_grade_region",
-    "is_valid_region",
-    "normalize_region",
+    "is_valid_trading_hub",
+    "normalize_trading_hub",
     # units
     "UNIT_MAP",
     "canonical_price_unit_token",

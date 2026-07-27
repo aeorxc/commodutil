@@ -7,7 +7,7 @@ facade eagerly imported convfactors and its pint registry).
 
 Cheap paths:
     import commodutil                                  # near-instant
-    from commodutil.standards.regions import ...       # stdlib only
+    from commodutil.standards.trading_hubs import ...  # stdlib only
     from commodutil.standards.currency import ...      # stdlib only
 
 Heavier paths (lazy-load their sub-module on first attribute access):
