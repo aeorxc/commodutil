@@ -129,6 +129,7 @@ dependencies = [
     { name = "dask" },
     { name = "pandas" },
     { name = "pint" },
+    { name = "pycountry" },
     { name = "python-dateutil" },
 ]
 
@@ -163,6 +164,7 @@ requires-dist = [
     { name = "dask", extras = ["delayed"] },
     { name = "pandas", specifier = ">=2.1" },
     { name = "pint" },
+    { name = "pycountry" },
     { name = "pytest", marker = "extra == 'test'" },
     { name = "pytest-runner", marker = "extra == 'test'" },
     { name = "python-dateutil" },
@@ -599,6 +601,15 @@ version = "3.0"
 source = { registry = "https://pkgs.dev.azure.com/RWEST-MFI-TE/_packaging/Oil_Feed/pypi/simple/" }
 wheels = [
     { url = "https://pkgs.dev.azure.com/RWEST-MFI-TE/_packaging/4b611f94-a77d-4335-88c0-5ee8de9053e6@b3fdad73-d911-49cf-a63c-d8b206e47219/pypi/download/pycparser/3/pycparser-3.0-py3-none-any.whl", hash = "sha256:b727414169a36b7d524c1c3e31839a521725078d7b2ff038656844266160a992" },
+]
+
+[[package]]
+name = "pycountry"
+version = "26.2.16"
+source = { registry = "https://pkgs.dev.azure.com/RWEST-MFI-TE/_packaging/Oil_Feed/pypi/simple/" }
+sdist = { url = "https://pkgs.dev.azure.com/RWEST-MFI-TE/_packaging/4b611f94-a77d-4335-88c0-5ee8de9053e6/pypi/download/pycountry/26.2.16/pycountry-26.2.16.tar.gz", hash = "sha256:5b6027d453fcd6060112b951dd010f01f168b51b4bf8a1f1fc8c95c8d94a0801" }
+wheels = [
+    { url = "https://pkgs.dev.azure.com/RWEST-MFI-TE/_packaging/4b611f94-a77d-4335-88c0-5ee8de9053e6/pypi/download/pycountry/26.2.16/pycountry-26.2.16-py3-none-any.whl", hash = "sha256:115c4baf7cceaa30f59a4694d79483c9167dbce7a9de4d3d571c5f3ea77c305a" },
 ]
 
 [[package]]
