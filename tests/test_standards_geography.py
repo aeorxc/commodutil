@@ -35,6 +35,27 @@ def test_country_alias_spot_checks():
     assert canonical_country("unknown") is None
 
 
+@pytest.mark.parametrize(
+    "value,expected",
+    [
+        ("Korea (South)", "KR"),
+        ("Korea (North)", "KP"),
+        ("Congo (Democratic Republic)", "CD"),
+        ("Congo (Republic)", "CG"),
+        ("Falkland Islands", "FK"),
+        ("Bosnia Herzegovina", "BA"),
+        ("Sint Eustatius", "BQ"),
+    ],
+)
+def test_empirically_validated_country_aliases(value, expected):
+    assert canonical_country(value) == expected
+
+
+def test_kosovo_is_not_an_iso_country():
+    # Kosovo has no ISO 3166-1 code and belongs in vendor crosswalks.
+    assert canonical_country("Kosovo") is None
+
+
 def test_country_name_builder_rejects_cross_country_alias_collision():
     with pytest.raises(ValueError, match="shadows"):
         _build_country_name_map({"United Kingdom": "US"})

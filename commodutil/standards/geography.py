@@ -71,6 +71,27 @@ COUNTRY_ALIASES: dict[str, str] = {
     "U.S.A.": "US",
     "Holy See": "VA",
     "US Virgin Islands": "VI",
+    # From empirical vendor-vocabulary validation (see commodflows research).
+    # ISO merges Bonaire and Sint Eustatius into BQ; sub-island detail is
+    # lost by design.
+    "Bosnia Herzegovina": "BA",
+    "Bonaire": "BQ",
+    "Caribbean Netherlands": "BQ",
+    "Sint Eustatius": "BQ",
+    "Congo (Democratic Republic)": "CD",
+    "Democratic Republic of the Congo": "CD",
+    "Congo (Republic)": "CG",
+    "Cape Verde Islands": "CV",
+    "Falkland Islands": "FK",
+    "Micronesia": "FM",
+    "Korea (North)": "KP",
+    "Korea (South)": "KR",
+    "St Lucia": "LC",
+    "Saint Helena": "SH",
+    "St Helena Island": "SH",
+    "Trinidad & Tobago": "TT",
+    "St Vincent": "VC",
+    "Virgin Islands (British)": "VG",
 }
 
 
