@@ -1,12 +1,14 @@
-"""Canonical countries and membership-defined physical regions.
+"""Canonical countries and membership-defined country groups.
 
 Countries are delegated to pycountry, the ISO 3166-1 authority. Desk aliases
-and membership-defined regions remain the local vocabulary. Each region key
+and membership-defined country groups remain the local vocabulary. Each group key
 identifies a specific country basket, so callers cannot request an ambiguous
 bare "Europe".
 
-To add a desk country spelling or region, edit ``COUNTRY_ALIASES`` or
-``REGION_ROWS`` below — nowhere else. All lookup maps, valid-key sets, and
+Trading-hub/pricing region codes live in ``regions.py`` — a different vocabulary.
+
+To add a desk country spelling or country group, edit ``COUNTRY_ALIASES`` or
+``COUNTRY_GROUP_ROWS`` below — nowhere else. All lookup maps, valid-key sets, and
 memberships are derived from those definitions at import time.
 """
 
@@ -95,7 +97,7 @@ COUNTRY_ALIASES: dict[str, str] = {
 }
 
 
-def _build_country_name_map(aliases: dict[str, str]) -> Dict[str, str]:
+def _build_country_name_map(aliases: Dict[str, str]) -> Dict[str, str]:
     """Build the case-folded name map and reject conflicting aliases."""
     result: Dict[str, str] = {}
     for country in pycountry.countries:
@@ -150,17 +152,17 @@ def is_canonical_country(code: object) -> bool:
 
 
 @dataclass(frozen=True)
-class RegionRow:
-    """One definition-named physical region and its country membership."""
+class CountryGroupRow:
+    """One definition-named country group and its membership."""
 
     key: str
     description: str
     members: Tuple[str, ...]
 
 
-# The one region table. Additions belong here and nowhere else.
-REGION_ROWS: Tuple[RegionRow, ...] = (
-    RegionRow(
+# The one country-group table. Additions belong here and nowhere else.
+COUNTRY_GROUP_ROWS: Tuple[CountryGroupRow, ...] = (
+    CountryGroupRow(
         "EUROPE_WIDE",
         "Broad 43-country Europe basket",
         (
@@ -209,7 +211,7 @@ REGION_ROWS: Tuple[RegionRow, ...] = (
             "TR",
         ),
     ),
-    RegionRow(
+    CountryGroupRow(
         "EUROPE_OECD",
         "27-country OECD Europe basket",
         (
@@ -242,7 +244,7 @@ REGION_ROWS: Tuple[RegionRow, ...] = (
             "TR",
         ),
     ),
-    RegionRow(
+    CountryGroupRow(
         "NWE_15",
         "15-country North West Europe basket",
         (
@@ -263,7 +265,7 @@ REGION_ROWS: Tuple[RegionRow, ...] = (
             "SE",
         ),
     ),
-    RegionRow(
+    CountryGroupRow(
         "MED_19",
         "19-country Mediterranean basket",
         (
@@ -291,42 +293,46 @@ REGION_ROWS: Tuple[RegionRow, ...] = (
 )
 
 
-def _build_region_members(
-    rows: Tuple[RegionRow, ...],
+def _build_country_group_members(
+    rows: Tuple[CountryGroupRow, ...],
 ) -> Dict[str, frozenset[str]]:
     result: Dict[str, frozenset[str]] = {}
     for row in rows:
         if row.key in result:
-            raise ValueError(f"duplicate region key {row.key!r}")
+            raise ValueError(f"duplicate country-group key {row.key!r}")
         unknown = set(row.members) - VALID_COUNTRY_CODES
         if unknown:
             raise ValueError(
-                f"region {row.key!r} has unknown country codes: {sorted(unknown)!r}"
+                f"country group {row.key!r} has unknown country codes: "
+                f"{sorted(unknown)!r}"
             )
         if len(set(row.members)) != len(row.members):
-            raise ValueError(f"region {row.key!r} has duplicate members")
+            raise ValueError(f"country group {row.key!r} has duplicate members")
         result[row.key] = frozenset(row.members)
     return result
 
 
-REGION_MEMBERS: Dict[str, frozenset[str]] = _build_region_members(REGION_ROWS)
-VALID_REGION_KEYS: frozenset[str] = frozenset(REGION_MEMBERS)
+COUNTRY_GROUP_MEMBERS: Dict[str, frozenset[str]] = _build_country_group_members(
+    COUNTRY_GROUP_ROWS
+)
+VALID_COUNTRY_GROUP_KEYS: frozenset[str] = frozenset(COUNTRY_GROUP_MEMBERS)
 
 
-def is_canonical_region(key: object) -> bool:
-    """Return True only for an exact definition-named region key."""
-    return isinstance(key, str) and key in VALID_REGION_KEYS
+def is_canonical_country_group(key: object) -> bool:
+    """Return True only for an exact definition-named country-group key."""
+    return isinstance(key, str) and key in VALID_COUNTRY_GROUP_KEYS
 
 
-def region_members(key: str) -> frozenset[str]:
-    """Return the immutable country membership for a canonical region key."""
-    return REGION_MEMBERS[key]
+def country_group_members(key: str) -> frozenset[str]:
+    """Return the immutable country membership for a canonical group key."""
+    return COUNTRY_GROUP_MEMBERS[key]
 
 
-def country_in_region(country: object, region: str) -> bool:
-    """Return whether a lenient country input belongs to a canonical region."""
+def country_in_group(country: object, group: str) -> bool:
+    """Return whether a lenient country input belongs to a canonical group."""
+    members = COUNTRY_GROUP_MEMBERS[group]
     code = canonical_country(country)
-    return code in REGION_MEMBERS[region] if code is not None else False
+    return code in members if code is not None else False
 
 
 __all__ = [
@@ -335,11 +341,11 @@ __all__ = [
     "COUNTRY_NAME_MAP",
     "canonical_country",
     "is_canonical_country",
-    "RegionRow",
-    "REGION_ROWS",
-    "VALID_REGION_KEYS",
-    "REGION_MEMBERS",
-    "is_canonical_region",
-    "region_members",
-    "country_in_region",
+    "CountryGroupRow",
+    "COUNTRY_GROUP_ROWS",
+    "VALID_COUNTRY_GROUP_KEYS",
+    "COUNTRY_GROUP_MEMBERS",
+    "is_canonical_country_group",
+    "country_group_members",
+    "country_in_group",
 ]

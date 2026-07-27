@@ -1,5 +1,9 @@
 # Changelog
 
+## 5.5.0 - 2026-07-27
+
+- Added `commodutil.standards.geography` with pycountry-backed countries, desk aliases, and membership-defined country groups; added `pycountry` as a production dependency.
+
 ## 5.4.1 - 2026-07-16
 
 - Added pandas 3 compatibility and removed project-owned deprecation and invalid-escape warnings.

@@ -4,6 +4,8 @@ Owns canonical region codes and pattern-matching logic for commodity trading.
 Single source of truth; curvemetadata is expected to re-export from here in a
 follow-up PR.
 
+Country-membership groups/baskets live in ``geography.py`` — a different vocabulary.
+
 Known divergence from curvemetadata.taxonomy.infer_region (as of 2026-05-14):
 the legacy implementation in curvemetadata uses `rf"\\b...\\b"` in a raw
 f-string, which is a *literal* backslash-b, not a regex word boundary. As a
