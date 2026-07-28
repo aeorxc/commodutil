@@ -69,6 +69,19 @@ def test_country_name_map_contains_pycountry_names_and_aliases():
 @pytest.mark.parametrize(
     "value,expected",
     [
+        ("Antigua & Barbuda", "AG"),
+        ("Trinidad & Tobago", "TT"),
+        ("Bosnia & Herzegovina", "BA"),
+        ("&", None),
+    ],
+)
+def test_canonical_country_normalizes_ampersands(value, expected):
+    assert canonical_country(value) == expected
+
+
+@pytest.mark.parametrize(
+    "value,expected",
+    [
         ("GB", "GB"),
         ("gb", "GB"),
         ("UK", "GB"),

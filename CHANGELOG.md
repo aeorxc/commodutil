@@ -1,5 +1,9 @@
 # Changelog
 
+## 5.5.2 - 2026-07-28
+
+- Fixed country-name resolution to normalize ampersands to `and`, matching ISO names such as Antigua and Barbuda.
+
 ## 5.5.0 - 2026-07-27
 
 - Added `commodutil.standards.geography` with pycountry-backed countries, desk aliases, and membership-defined country groups; added `pycountry` as a production dependency.

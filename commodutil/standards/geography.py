@@ -98,6 +98,11 @@ COUNTRY_ALIASES: dict[str, str] = {
 }
 
 
+def _normalize_country_name(name: str) -> str:
+    """Return the case-folded lookup key for a country name."""
+    return " ".join(name.replace("&", " and ").split()).casefold()
+
+
 def _build_country_name_map(aliases: Dict[str, str]) -> Dict[str, str]:
     """Build the case-folded name map and reject conflicting aliases."""
     result: Dict[str, str] = {}
@@ -106,7 +111,7 @@ def _build_country_name_map(aliases: Dict[str, str]) -> Dict[str, str]:
             name = getattr(country, attribute, None)
             if name is None:
                 continue
-            key = name.casefold()
+            key = _normalize_country_name(name)
             existing = result.get(key)
             if existing is not None and existing != country.alpha_2:
                 raise ValueError(
@@ -120,7 +125,7 @@ def _build_country_name_map(aliases: Dict[str, str]) -> Dict[str, str]:
             raise ValueError(
                 f"country alias {alias!r} has unknown country code {code!r}"
             )
-        key = alias.casefold()
+        key = _normalize_country_name(alias)
         existing = result.get(key)
         if existing is not None and existing != code:
             raise ValueError(
@@ -144,7 +149,7 @@ def canonical_country(text: object) -> Optional[str]:
     code = cleaned.upper()
     if code in VALID_COUNTRY_CODES:
         return code
-    return COUNTRY_NAME_MAP.get(cleaned.casefold())
+    return COUNTRY_NAME_MAP.get(_normalize_country_name(cleaned))
 
 
 def is_canonical_country(code: object) -> bool:
