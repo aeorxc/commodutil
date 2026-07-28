@@ -15,6 +15,7 @@ memberships are derived from those definitions at import time.
 
 from __future__ import annotations
 
+import re
 from dataclasses import dataclass
 from typing import Dict, Optional, Tuple
 
@@ -69,11 +70,13 @@ COUNTRY_ALIASES: dict[str, str] = {
     "Turkey": "TR",
     "Turkiye": "TR",
     "Republic of China": "TW",
+    "Taiwan, China": "TW",
     "USA": "US",
     "U.S.": "US",
     "U.S.A.": "US",
     "Holy See": "VA",
     "US Virgin Islands": "VI",
+    "Virgin Islands (US)": "VI",
     # From empirical vendor-vocabulary validation (see commodflows research).
     # ISO merges Bonaire and Sint Eustatius into BQ; sub-island detail is
     # lost by design.
@@ -100,7 +103,9 @@ COUNTRY_ALIASES: dict[str, str] = {
 
 def _normalize_country_name(name: str) -> str:
     """Return the case-folded lookup key for a country name."""
-    return " ".join(name.replace("&", " and ").split()).casefold()
+    normalized = name.replace("&", " and ")
+    normalized = re.sub(r"\bSt\.?(?=\s|$)", "Saint", normalized, flags=re.IGNORECASE)
+    return " ".join(normalized.split()).casefold()
 
 
 def _build_country_name_map(aliases: Dict[str, str]) -> Dict[str, str]:

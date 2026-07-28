@@ -1,5 +1,9 @@
 # Changelog
 
+## 5.5.3 - 2026-07-28
+
+- Fixed country-name resolution for standalone `St`/`St.` abbreviations and the vendor spellings `Taiwan, China` and `Virgin Islands (US)`.
+
 ## 5.5.2 - 2026-07-28
 
 - Fixed country-name resolution to normalize ampersands to `and`, matching ISO names such as Antigua and Barbuda.

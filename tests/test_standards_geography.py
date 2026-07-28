@@ -82,6 +82,20 @@ def test_canonical_country_normalizes_ampersands(value, expected):
 @pytest.mark.parametrize(
     "value,expected",
     [
+        ("St Kitts & Nevis", "KN"),
+        ("St. Lucia", "LC"),
+        ("Taiwan, China", "TW"),
+        ("Virgin Islands (US)", "VI"),
+        ("Stockholm", None),
+    ],
+)
+def test_canonical_country_normalizes_live_vendor_spellings(value, expected):
+    assert canonical_country(value) == expected
+
+
+@pytest.mark.parametrize(
+    "value,expected",
+    [
         ("GB", "GB"),
         ("gb", "GB"),
         ("UK", "GB"),
